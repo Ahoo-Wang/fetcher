@@ -14,7 +14,7 @@ Legacy TypeScript class, method, and parameter decorators for declarative Fetche
 pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 ```
 
-Enable legacy TypeScript decorators in the consuming project: `experimentalDecorators: true` and `emitDecoratorMetadata: true`. `reflect-metadata` is a regular dependency imported by the package; it is installed automatically.
+Enable legacy TypeScript decorators in the consuming project: `experimentalDecorators: true`. `emitDecoratorMetadata` is not needed; the package never reads `design:*` metadata. `reflect-metadata` is a regular dependency imported by the package; it is installed automatically.
 
 Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 
@@ -24,11 +24,11 @@ Use `@api` plus method decorators for a hand-written service. Use `@path`/`@quer
 
 ## Choose a topic
 
-| Topic                                               | Use it for                                                                                                                                                                                                                                                                                           |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Services and endpoints](services-and-endpoints.md) | Use legacy TypeScript decorators to replace service methods with Fetcher requests. Enable `experimentalDecorators` and `emitDecoratorMetadata` (matching this package's tsconfig); stage-3 decorators do not support this parameter-decorator contract. The package imports reflect-metadata itself. |
-| [Parameter binding](parameters.md)                  | Parameter decorators bind arguments by index, not by their declared TypeScript type. Explicit names survive minification and are the reliable choice for path/query/header fields.                                                                                                                   |
-| [Metadata and execution lifecycle](execution.md)    | Decorated methods resolve a fresh exchange for each call while reusing a per-instance, per-method executor. Hooks run on the service instance, so avoid storing mutable per-request state on that instance when calls can overlap.                                                                   |
+| Topic                                               | Use it for                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Services and endpoints](services-and-endpoints.md) | Use legacy TypeScript decorators to replace service methods with Fetcher requests. Enable `experimentalDecorators`; `emitDecoratorMetadata` is not needed. Standard (stage-3) decorators do not support this parameter-decorator contract: compiled that way, `@api` and the method decorators throw a TypeError that says so. The package imports reflect-metadata itself. |
+| [Parameter binding](parameters.md)                  | Parameter decorators bind arguments by index, not by their declared TypeScript type. Explicit names survive minification and are the reliable choice for path/query/header fields.                                                                                                                                                                                          |
+| [Metadata and execution lifecycle](execution.md)    | Decorated methods resolve a fresh exchange for each call while reusing a per-instance, per-method executor. Hooks run on the service instance, so avoid storing mutable per-request state on that instance when calls can overlap.                                                                                                                                          |
 
 ## Minimal complete example
 

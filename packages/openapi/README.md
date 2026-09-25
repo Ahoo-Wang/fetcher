@@ -1,6 +1,6 @@
 # `@ahoo-wang/fetcher-openapi`
 
-TypeScript types for OpenAPI 3.x documents. This package is type-only: it adds
+TypeScript types for OpenAPI 3.0 and 3.1 documents. This package is type-only: it adds
 no runtime code and does not parse, validate, or generate clients.
 
 ## Install
@@ -28,7 +28,7 @@ export const identifier: Schema = {
 
 ## Core capabilities
 
-- Root document, info, server, path, and operation types.
+- Root document (including 3.1 webhooks), info, server, path, and operation types.
 - Parameters, request bodies, responses, media types, and headers.
 - Components, references, schemas, discriminators, and XML metadata.
 - Security schemes, OAuth flows, tags, and `x-*` extensions.

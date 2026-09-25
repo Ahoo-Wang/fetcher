@@ -10,11 +10,11 @@ Use this guide for a stable HTTP contract with named operations. You will create
 ## 1. Prepare the compiler and server
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^5.0.0 @ahoo-wang/fetcher-decorator@^5.0.0 reflect-metadata
+pnpm add @ahoo-wang/fetcher@^5.0.0 @ahoo-wang/fetcher-decorator@^5.0.0
 pnpm add -D typescript@6.0.3
 ```
 
-Compile with TypeScript legacy decorators; a toolchain that only strips types cannot execute parameter decorators. Import `reflect-metadata` before service definitions. Merge these settings into your application tsconfig:
+Compile with TypeScript legacy decorators; a toolchain that only strips types cannot execute parameter decorators. The package imports `reflect-metadata` itself, and `emitDecoratorMetadata` is not needed. Merge these settings into your application tsconfig:
 
 ```json
 {
@@ -23,7 +23,6 @@ Compile with TypeScript legacy decorators; a toolchain that only strips types ca
     "module": "ESNext",
     "moduleResolution": "bundler",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "strict": true
   }
 }
@@ -34,7 +33,6 @@ The example assumes your application provides `GET /users/{id}?include=profile` 
 ## 2. Define and call both operations
 
 ```ts
-import 'reflect-metadata';
 import { Fetcher, ExchangeError } from '@ahoo-wang/fetcher';
 import {
   api,
@@ -92,10 +90,10 @@ In an isolated test, replace `globalThis.fetch` with a stub returning `Response.
 
 ## Failures and lifetime
 
-Missing metadata: check compiler settings and import order. An undefined binding: check argument order and parameter decorators. Non-2xx responses reject with an exchange error by default; JSON decoding can also fail. The returned `User` type does not validate server JSON. This example fully consumes both responses and owns no listener or stream to dispose.
+A TypeError naming `experimentalDecorators`: the service was compiled with standard decorators; enable that setting. An undefined binding: check argument order and parameter decorators. Non-2xx responses reject with an exchange error by default; JSON decoding can also fail. The returned `User` type does not validate server JSON. This example fully consumes both responses and owns no listener or stream to dispose.
 
 Continue with [service and endpoint metadata](../../reference/decorator/services-and-endpoints), [parameter bindings](../../reference/decorator/parameters), and [execution and cancellation](../../reference/decorator/execution).
 
-[apiDecorator.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L140) implements method replacement.
+[apiDecorator.ts:154](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L154) implements method replacement.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).

@@ -30,7 +30,7 @@ Create clean, declarative API services using `@ahoo-wang/fetcher-decorator`.
 import 'reflect-metadata';
 ```
 
-The decorators are legacy TypeScript decorators (parameter decorators do not exist in TC39 standard decorators): the consuming `tsconfig.json` needs `"experimentalDecorators": true`. Babel builds need `@babel/plugin-proposal-decorators` in `legacy` mode.
+The decorators are legacy TypeScript decorators (parameter decorators do not exist in TC39 standard decorators): the consuming `tsconfig.json` needs `"experimentalDecorators": true`; `emitDecoratorMetadata` is not needed. Compiled as standard decorators, `@api` and the method decorators throw a TypeError that names `experimentalDecorators`. Babel builds need `@babel/plugin-proposal-decorators` in `legacy` mode.
 
 ## Installation
 
@@ -111,11 +111,11 @@ export class UserService {
 
 ### 3. Parameter Decorators
 
-All parameter decorators (`@path`, `@query`, `@header`, `@attribute`) support **object expansion**: pass a plain object and its keys are expanded into individual parameters. `@attribute` also supports `Map` objects.
+`@path`, `@query` and `@header` support **object expansion**: pass a plain object (an object literal or `Object.create(null)`) and its keys are expanded into individual parameters. An unnamed `@attribute()` merges a plain object or `Map` the same way; a named `@attribute('user')` stores the value under `user` whatever it is.
 
-- Any `typeof value === 'object'` argument is expanded, **including arrays**: `@query('ids') ids: string[]` becomes `0=…&1=…`, not `ids=…`. Pass a joined string (or build the query yourself) for array parameters.
-- `undefined`/`null` arguments to `@path`/`@query`/`@header` are skipped.
-- When the name is omitted (`@path()`), it is read from the compiled function source (`Function.prototype.toString`). Minifiers rename parameters, so pass explicit names in bundled code; an unbound `{placeholder}` in the endpoint path logs a `[fetcher-decorator]` warning and then fails URL resolution with `Missing required path parameter`.
+- Only plain objects are expanded. An array, a `Date`, a class instance or a primitive is bound to the parameter name (explicit, else inferred, else `param<index>`) and serialized by fetcher: `@query('ids') ids: number[]` sends `ids=1&ids=2`, a `Date` is sent as ISO 8601, and an array header is sent as a `, `-joined list.
+- `undefined`/`null` arguments to `@path`/`@query`/`@header` are skipped, and so are `undefined`/`null` entries of an expanded `@path`/`@query` object; an `undefined`/`null` entry of a `@header` object removes that header.
+- When the name is omitted (`@path()`), it is read from the compiled function source (`Function.prototype.toString`); commas inside defaults, strings and comments are handled, a destructured parameter has no name, and a rest parameter's name drops the `...`. Minifiers rename parameters, so pass explicit names in bundled code; a placeholder (in the fetcher's `urlTemplateStyle`) with no path parameter after every layer, `@request` included, is merged logs a `[fetcher-decorator]` warning, and URL resolution then fails with `Missing required path parameter` unless an interceptor supplies it.
 - Only one body is sent: if several arguments carry `@body()`, the right-most one wins. `@request()` takes a `ParameterRequest` (`FetchRequestInit` plus `path`) that is merged over the decorator-built request with `mergeRequest`, so its `method`, `body`, `timeout`, headers and `urlParams` win; its `path` replaces the endpoint path.
 
 ```text
@@ -296,7 +296,7 @@ export class AdminUserService extends BaseUserService {
 // new AdminUserService().getStatus() -> GET /admin/users/status
 ```
 
-Note: `@api()` walks the whole prototype chain and rebinds every decorated method on the child class with the child's `@api()` metadata, so inherited endpoints use the child's fetcher and base path. A child base path with a path placeholder (e.g. `/users/{userId}`) therefore breaks every inherited endpoint that has no matching `@path` argument.
+Note: `@api()` walks the whole prototype chain and rebinds every decorated method on the child class with the child's `@api()` metadata, so inherited endpoints use the child's fetcher and base path. A child base path with a path placeholder (e.g. `/users/{userId}`) therefore breaks every inherited endpoint that has no matching `@path` argument. A child that overrides an inherited endpoint method without decorating the override keeps its own implementation (for example one that calls `super.getStatus()`); decorate the override to redefine the endpoint.
 
 ### 9. Fetcher Resolution Priority
 
@@ -307,7 +307,7 @@ Resolution is `getFetcher(endpoint.fetcher ?? api.fetcher)`, where `api` is the 
 3. **Class-level fetcher** (from `@api()` decorator)
 4. **Default fetcher** (`fetcherRegistrar.default`, registered as `'default'`)
 
-A string name resolves through `fetcherRegistrar.requiredGet()` at call time and throws `Fetcher <name> not found` if unregistered. The merged metadata is captured the **first time each method is called** on an instance (cached in the instance's `requestExecutors` map), so set `apiMetadata` in the constructor or before the first call; later reassignments do not affect methods already called.
+A string name resolves through `fetcherRegistrar.requiredGet()` at call time and throws `Fetcher <name> not found` if unregistered. The merged metadata is cached per instance and method (in a module-level `WeakMap`, not on the instance) and rebuilt when `apiMetadata` is replaced, so assigning a new `apiMetadata` object takes effect on the next call; mutating the existing object in place does not.
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -335,7 +335,7 @@ service.apiMetadata = { fetcher: customFetcher }; // overrides class-level for t
 
 ## Auto-Generated Error Pattern
 
-The `throw autoGeneratedError()` in method bodies is a placeholder. `@api()` replaces every method that has endpoint metadata on the class prototype at decoration time. Never put real logic in these methods. `autoGeneratedError(...)` returns an `AutoGenerated` error; its arguments are **ignored** -- they exist only to prevent ESLint `no-unused-vars` errors. If an `AutoGenerated` error is actually thrown, the class is missing `@api()` or the method is missing an endpoint decorator.
+The `throw autoGeneratedError()` in method bodies is a placeholder. `@api()` replaces every method that has endpoint metadata on the class prototype at decoration time (except an undecorated override of an inherited endpoint). A replaced method called without its instance throws a `TypeError`; bind it before passing it around. Never put real logic in these methods. `autoGeneratedError(...)` returns an `AutoGenerated` error; its arguments are **ignored** -- they exist only to prevent ESLint `no-unused-vars` errors. If an `AutoGenerated` error is actually thrown, the class is missing `@api()` or the method is missing an endpoint decorator.
 
 ```text
 // CORRECT - placeholder for auto-generation

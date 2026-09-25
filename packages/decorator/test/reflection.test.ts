@@ -34,7 +34,7 @@ describe('reflection', () => {
       }
 
       const result = getParameterNames(funcWithRest);
-      expect(result).toEqual(['a', '...rest']);
+      expect(result).toEqual(['a', 'rest']);
     });
 
     it('should extract parameter names from a function with complex types', () => {
@@ -113,8 +113,31 @@ describe('reflection', () => {
       }
 
       const result = getParameterNames(funcWithDestructuring);
-      // Based on the actual implementation, destructuring parameters get split on commas
-      expect(result).toEqual(['{ a', 'b }', '[c', 'd]']);
+      // A destructuring pattern binds no single name; the slot keeps the index.
+      expect(result).toEqual(['', '']);
+    });
+
+    it('should not split on commas inside defaults, strings and comments', () => {
+      const func = new Function(
+        'a = [1, 2]',
+        "b = { x: 1, y: ')' }",
+        'c = f(1, 2)',
+        "d = 'p, q'",
+        '/* e, */ e',
+        '{ f, g }',
+        'h',
+        'return 0;',
+      ) as (...args: any[]) => any;
+
+      expect(getParameterNames(func)).toEqual([
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        '',
+        'h',
+      ]);
     });
 
     it('should handle functions with complex parameter names', () => {
@@ -189,6 +212,17 @@ describe('reflection', () => {
 
       expect(result0).toBe('a');
       expect(result1).toBe('b');
+    });
+
+    it('should return undefined for a destructured parameter', () => {
+      class Target {
+        method({ a }: { a: string }, b: string) {
+          return [a, b];
+        }
+      }
+      const target = Target.prototype;
+      expect(getParameterName(target, 'method', 0)).toBeUndefined();
+      expect(getParameterName(target, 'method', 1)).toBe('b');
     });
 
     it('should return undefined when parameter index is out of bounds', () => {

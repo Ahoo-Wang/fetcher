@@ -32,7 +32,12 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   packages do receive corrections — see **Changed** (e.g. `@ahoo-wang/fetcher`
   omits `undefined`/`null` query values, repeats array query parameters,
   keeps the timeout when a `signal` is passed, sends no default `Content-Type`
-  and rejects a status failure with the `HttpStatusValidationError` itself) and **Fixed** in the 6.0 release
+  and rejects a status failure with the `HttpStatusValidationError` itself;
+  `fetcher-decorator` binds an array, `Date` or other non-plain-object argument
+  to its parameter name instead of spreading it, stores a named
+  `@attribute('x')` object whole, and keeps a subclass override that has no
+  endpoint decorator; `fetcher-openapi` requires `Info.title`, `Info.version`
+  and `Response.description` and adds the OpenAPI 3.1 fields) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249).
 
@@ -131,6 +136,19 @@ superclass; `error.exchange.error` still returns it. A timeout is still
 `Content-Type: application/json` by default: a plain-object or string body
 still gets it, but a server that expects it on bodyless requests or on binary
 bodies needs it set on those requests.
+
+For `@ahoo-wang/fetcher-decorator`: an array passed to `@query('ids')` is now
+sent as `ids=1&ids=2` (it was `0=1&1=2`), an array header as a comma-separated
+list, and a `Date` as ISO 8601; a server that read the old keys needs the new
+form. A named `@attribute('user')` holding an object now stores it under
+`user` instead of merging its keys. A subclass method that overrides an
+inherited endpoint without its own endpoint decorator now runs as written;
+decorate it if it was meant to redefine the request.
+
+For `@ahoo-wang/fetcher-openapi`: objects typed `Info` or `Response` must now
+set `title` and `version`, or `description`; `SecurityScheme.in` no longer
+accepts `'path'`, and a `SecurityRequirement` holds only scheme names (no
+`x-` keys).
 
 ## Rewrites
 

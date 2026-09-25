@@ -6,16 +6,15 @@
 ## 安装
 
 ```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator reflect-metadata
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-decorator
 ```
 
-Peer 依赖为 `@ahoo-wang/fetcher`。启用 `experimentalDecorators` 与
-`emitDecoratorMetadata`，并在启动时导入一次 `reflect-metadata`。
+Peer 依赖为 `@ahoo-wang/fetcher`。启用 `experimentalDecorators`（不需要
+`emitDecoratorMetadata`）。本包自身依赖并导入 `reflect-metadata`。
 
 ## 示例
 
 ```ts
-import 'reflect-metadata';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { api, get, path } from '@ahoo-wang/fetcher-decorator';
 

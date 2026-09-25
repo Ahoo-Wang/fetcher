@@ -19,6 +19,7 @@ import type {
 } from '@ahoo-wang/fetcher';
 import {
   combineURLs,
+  formatUrlParam,
   type FetchExchangeInit,
   getFetcher,
   JsonResultExtractor,
@@ -29,6 +30,7 @@ import {
   resolveTimeout,
   type RequestHeaders,
   type UrlParams,
+  type UrlTemplateResolver,
 } from '@ahoo-wang/fetcher';
 import type { ApiMetadata } from './apiDecorator.js';
 import type { EndpointMetadata } from './endpointDecorator.js';
@@ -43,63 +45,46 @@ import { EndpointReturnType } from './endpointReturnTypeCapable.js';
  * RFC 6570 `{name}` path-template placeholders, e.g. `{userId}` in
  * `/users/{userId}`.
  */
-const RFC6570_PLACEHOLDER = /\{([^}]+)\}/g;
 /**
- * Express-style `:name` path placeholders, e.g. `:userId` in `/users/:userId`.
- */
-const EXPRESS_PLACEHOLDER = /:([A-Za-z_$][\w$]*)/g;
-
-/**
- * Warns when a path template contains a placeholder that has no matching key
- * in the resolved `pathParams`.
- *
- * Production minifiers rename method parameters (`userId` → `e`); the runtime
- * reflection that fills `pathParams` then yields a minified name that does not
- * match the template placeholder, so the request goes out with the literal
- * `{userId}` still embedded in the URL — a silent, production-only failure.
- * This surfaces the mismatch as a console warning so it is observable. The
- * fix for end users is to pass the name explicitly, e.g. `@path('userId')`.
- *
- * Advisory only; never throws or alters the request.
+ * Warns when a path template placeholder has no path parameter. fetcher then
+ * fails with `Missing required path parameter`, unless an interceptor supplies
+ * it; the usual cause is a minifier renaming the parameter an unnamed
+ * `@path()` inferred its name from.
  */
 function warnUnboundPathPlaceholders(
   templatePath: string,
   pathParams: Record<string, unknown>,
+  resolver: UrlTemplateResolver,
 ): void {
   if (!templatePath) return;
-
-  const placeholders = new Set<string>();
-  let match: RegExpExecArray | null;
-  RFC6570_PLACEHOLDER.lastIndex = 0;
-  while ((match = RFC6570_PLACEHOLDER.exec(templatePath)) !== null) {
-    placeholders.add(match[1]);
-  }
-  EXPRESS_PLACEHOLDER.lastIndex = 0;
-  while ((match = EXPRESS_PLACEHOLDER.exec(templatePath)) !== null) {
-    placeholders.add(match[1]);
-  }
-
-  if (placeholders.size === 0) return;
-
-  const unbound = [...placeholders].filter(name => !(name in pathParams));
+  const unbound = resolver
+    .extractPathParams(templatePath)
+    .filter(name => !(name in pathParams));
   if (unbound.length > 0) {
     console.warn(
       `[fetcher-decorator] Path template "${templatePath}" has placeholder(s) ` +
-        `${unbound.map(n => `{${n}}`).join(', ')} with no matching path parameter. ` +
-        `The URL will be sent with the literal placeholder unresolved. ` +
+        `${unbound.join(', ')} with no matching path parameter, so resolving ` +
+        `the URL fails unless an interceptor supplies it. ` +
         `This usually means the parameter name was changed by a minifier; ` +
         `pass the name explicitly, e.g. @path('${unbound[0]}').`,
     );
   }
 }
 
-/**
- * Metadata container for a function with HTTP endpoint decorators.
- *
- * Encapsulates all the metadata needed to execute an HTTP request
- * for a decorated method, including API-level defaults, endpoint-specific
- * configuration, and parameter metadata.
- */
+/** An object literal or `Object.create(null)`: the only objects spread into keys. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function formatHeader(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  return Array.isArray(value)
+    ? value.map(formatUrlParam).join(', ')
+    : formatUrlParam(value);
+}
+
 export class FunctionMetadata implements NamedCapable {
   /**
    * Name of the function.
@@ -135,7 +120,7 @@ export class FunctionMetadata implements NamedCapable {
    * @param name - The name of the function
    * @param api - API-level metadata
    * @param endpoint - Endpoint-level metadata
-   * @param parameters - Parameter metadata array
+   * @param parameters - Parameter metadata by argument index
    */
   constructor(
     name: string,
@@ -274,9 +259,9 @@ export class FunctionMetadata implements NamedCapable {
    * //     query: { include: 'profile' }
    * //   },
    * //   headers: {
-   * //     'Authorization': 'Bearer token',
    * //     ...apiHeaders,
-   * //     ...endpointHeaders
+   * //     ...endpointHeaders,
+   * //     'Authorization': 'Bearer token', // parameters win
    * //   }
    * // }
    * ```
@@ -351,13 +336,17 @@ export class FunctionMetadata implements NamedCapable {
       parameterRequest,
     ) as any;
     const parameterPath = parameterRequest.path;
+    // `path` only selects the URL; it is not a fetch option.
+    delete mergedRequest.path;
     mergedRequest.url = this.resolvePath(parameterPath);
 
-    // Minify safety: surface a warning when a path template placeholder has no
-    // matching path parameter (e.g. parameter renamed to a minified single
-    // letter in production builds). See warnUnboundPathPlaceholders.
-    const templatePath = parameterPath || this.endpoint.path || '';
-    warnUnboundPathPlaceholders(templatePath, pathParams);
+    // Minify safety: the placeholders of the fetcher's template style against
+    // the path parameters after every layer (including @request) merged.
+    warnUnboundPathPlaceholders(
+      parameterPath || this.endpoint.path || '',
+      mergedRequest.urlParams?.path ?? {},
+      this.fetcher.urlBuilder.urlTemplateResolver,
+    );
 
     return {
       request: mergedRequest,
@@ -365,6 +354,12 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
+  /**
+   * Binds a path or query argument. A plain object is spread into its keys
+   * (`@query() filter: { status, page }`); anything else, arrays and dates
+   * included, is bound to the parameter's name and serialized by fetcher's
+   * `UrlBuilder`. Absent values (`undefined`, `null`) are left out.
+   */
   private processHttpParam(
     param: ParameterMetadata,
     value: any,
@@ -373,14 +368,13 @@ export class FunctionMetadata implements NamedCapable {
     if (value === undefined || value === null) {
       return;
     }
-    if (typeof value === 'object') {
-      Object.entries(value).forEach(([key, value]) => {
-        params[key] = value;
-      });
+    if (isPlainObject(value)) {
+      for (const [key, item] of Object.entries(value)) {
+        if (item !== undefined && item !== null) params[key] = item;
+      }
       return;
     }
-    const paramName = param.name || `param${param.index}`;
-    params[paramName] = value;
+    params[param.name || `param${param.index}`] = value;
   }
 
   private processPathParam(
@@ -399,45 +393,26 @@ export class FunctionMetadata implements NamedCapable {
     this.processHttpParam(param, value, query);
   }
 
+  /**
+   * Binds a header argument: a plain object sets one header per key, any
+   * other value the header named after the parameter. An array is sent as a
+   * comma-separated list, a date in ISO 8601. An `undefined` or `null` entry
+   * of an object removes that header.
+   */
   private processHeaderParam(
     param: ParameterMetadata,
     value: any,
     headers: RequestHeaders,
   ) {
     if (value === undefined || value === null) return;
-    const values =
-      typeof value === 'object'
-        ? value
-        : { [param.name || `param${param.index}`]: value };
-    for (const [name, headerValue] of Object.entries(values)) {
-      setHeader(headers, name, headerValue as string | undefined);
+    const entries: [string, unknown][] = isPlainObject(value)
+      ? Object.entries(value)
+      : [[param.name || `param${param.index}`, value]];
+    for (const [name, headerValue] of entries) {
+      setHeader(headers, name, formatHeader(headerValue));
     }
   }
 
-  /**
-   * Processes a request parameter value.
-   *
-   * This method handles the @request() decorator parameter by casting
-   * the provided value to a FetcherRequest. The @request() decorator
-   * allows users to pass a complete FetcherRequest object to customize
-   * the request configuration.
-   *
-   * @param value - The value provided for the @request() parameter
-   * @returns The value cast to FetcherRequest type
-   *
-   * @example
-   * ```typescript
-   * @post('/users')
-   * createUsers(@request() request: FetcherRequest): Promise<Response>
-   *
-   * // Usage:
-   * const customRequest: FetcherRequest = {
-   *   headers: { 'X-Custom': 'value' },
-   *   timeout: 5000
-   * };
-   * await service.createUsers(customRequest);
-   * ```
-   */
   private processRequestParam(value: any): ParameterRequest {
     if (!value) {
       return {};
@@ -452,16 +427,27 @@ export class FunctionMetadata implements NamedCapable {
     };
   }
 
+  /**
+   * Binds an attribute argument. An explicitly named one
+   * (`@attribute('user')`) stores the value under that name. Otherwise a Map
+   * or plain object is merged entry by entry, and any other value is stored
+   * under the inferred parameter name.
+   */
   private processAttributeParam(
     param: ParameterMetadata,
     value: any,
     attributes: Map<string, any>,
   ) {
-    if (typeof value === 'object' || value instanceof Map) {
+    if (value === undefined) return;
+    if (param.explicit && param.name) {
+      attributes.set(param.name, value);
+      return;
+    }
+    if (value instanceof Map || isPlainObject(value)) {
       mergeRecordToMap(value, attributes);
       return;
     }
-    if (param.name && value !== undefined) {
+    if (param.name) {
       attributes.set(param.name, value);
     }
   }

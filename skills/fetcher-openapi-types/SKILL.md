@@ -16,8 +16,8 @@ description: >
 - Reference-able slots are `X | Reference` — `Components` values, `Operation.parameters`, `requestBody`, `Schema.items`, `properties`, `allOf`/`anyOf`/`oneOf`/`not`, response and header maps. Narrow before reading fields.
 - `PathItem` has its own optional `$ref`, so a bare `'$ref' in obj` check misclassifies path items; only use it on slots typed `X | Reference`.
 - `Schema.type` is `SchemaType | SchemaType[]` (3.1 `['string', 'null']`), and `exclusiveMinimum`/`exclusiveMaximum` are `boolean | number` (3.0 vs 3.1).
-- These types are looser than the spec in places: `Info.title`/`version` and `Response.description` are optional; `Operation.responses`, `RequestBody.content` and `OAuthFlow.scopes` are required.
-- Every object type except `Reference` accepts `` `x-${string}` `` keys via `Extensible`; intersect with `CommonExtensions` for typed `x-internal`, `x-deprecated`, `x-tags` and friends.
+- The types cover 3.0 and 3.1 as a superset: `Info.title`/`version` and `Response.description` are required as in the spec, and 3.1 additions (`webhooks`, `jsonSchemaDialect`, `Info.summary`, `License.identifier`, `Components.pathItems`, `mutualTLS`) are optional fields; `Operation.responses`, `RequestBody.content` and `OAuthFlow.scopes` are required.
+- Every object type except `Reference` and `SecurityRequirement` accepts `` `x-${string}` `` keys via `Extensible`; intersect with `CommonExtensions` for typed `x-internal`, `x-deprecated`, `x-tags` and friends.
 - `ComponentTypeMap` maps each `Components` key to its non-reference type (e.g. `schemas` → `Schema`) for generic component lookups.
 
 ## Minimal example

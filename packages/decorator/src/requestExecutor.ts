@@ -61,8 +61,10 @@ export const DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__';
 export class RequestExecutor {
   /**
    * Creates a new RequestExecutor instance.
-   * @param target - The target object that the method is called on.
-   *                 This can contain a custom fetcher instance in its 'fetcher' property.
+   * @param target - The service instance the method is called on. Its
+   *                 `apiMetadata` (see ApiMetadataCapable), including a
+   *                 `fetcher`, is already merged into `metadata` by
+   *                 buildRequestExecutor.
    * @param metadata - The function metadata containing all request information
    */
   constructor(

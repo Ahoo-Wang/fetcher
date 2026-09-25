@@ -1,6 +1,6 @@
 # `@ahoo-wang/fetcher-openapi`
 
-OpenAPI 3.x 文档的 TypeScript 类型。这是纯类型包：不增加运行时代码，也不解析、校验
+OpenAPI 3.0 与 3.1 文档的 TypeScript 类型。这是纯类型包：不增加运行时代码，也不解析、校验
 或生成客户端。
 
 ## 安装
@@ -28,7 +28,7 @@ export const identifier: Schema = {
 
 ## 核心能力
 
-- 根文档、信息、服务器、路径与操作类型。
+- 根文档（含 3.1 webhooks）、信息、服务器、路径与操作类型。
 - 参数、请求体、响应、媒体类型与请求头。
 - Components、引用、Schema、Discriminator 与 XML 元数据。
 - 安全方案、OAuth flows、Tags 与 `x-*` 扩展。

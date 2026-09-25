@@ -14,7 +14,7 @@ description: '使用 TypeScript 传统类、方法、参数装饰器声明 Fetch
 pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 ```
 
-消费项目需要启用旧版 TypeScript 装饰器：`experimentalDecorators: true`、`emitDecoratorMetadata: true`。`reflect-metadata` 是包自身导入的普通依赖，会自动安装。
+消费项目需要启用旧版 TypeScript 装饰器：`experimentalDecorators: true`。不需要 `emitDecoratorMetadata`，本包从不读取 `design:*` 元数据。`reflect-metadata` 是包自身导入的普通依赖，会自动安装。
 
 5.0.0 为消费者声明 Node >=18.20.8。仓库开发另要求 Node >=22.12.0 / pnpm 10.34.5。所用功能依赖的浏览器/运行时 API 也必须存在，engine 范围不代表每个 Web API（如 Response.bytes）均可用。
 
@@ -24,11 +24,11 @@ pnpm add @ahoo-wang/fetcher-decorator @ahoo-wang/fetcher
 
 ## 选择专题
 
-| 专题                                    | 用途                                                                                                                                                                                                         |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [服务与端点](services-and-endpoints.md) | 使用 TypeScript 传统装饰器把服务方法替换成 Fetcher 请求。启用 `experimentalDecorators`、`emitDecoratorMetadata`，与本包 tsconfig 一致；stage-3 装饰器不支持此参数装饰器契约。包自身会导入 reflect-metadata。 |
-| [参数绑定](parameters.md)               | 参数装饰器按参数索引绑定，不根据 TypeScript 声明类型绑定。显式名称能保留到压缩构建后，是路径/查询/头字段的可靠选择。                                                                                         |
-| [元数据与执行生命周期](execution.md)    | 每次装饰方法调用解析新的 exchange，同时复用实例级、方法级执行器。钩子运行在服务实例上；并发调用可能重叠时，不要把请求专属可变状态存在该实例上。                                                              |
+| 专题                                    | 用途                                                                                                                                                                                                                                                                    |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [服务与端点](services-and-endpoints.md) | 使用 TypeScript 传统装饰器把服务方法替换成 Fetcher 请求。启用 `experimentalDecorators`，不需要 `emitDecoratorMetadata`。标准（stage-3）装饰器不支持此参数装饰器契约：按标准装饰器编译时，`@api` 与方法装饰器会抛出说明原因的 TypeError。包自身会导入 reflect-metadata。 |
+| [参数绑定](parameters.md)               | 参数装饰器按参数索引绑定，不根据 TypeScript 声明类型绑定。显式名称能保留到压缩构建后，是路径/查询/头字段的可靠选择。                                                                                                                                                    |
+| [元数据与执行生命周期](execution.md)    | 每次装饰方法调用解析新的 exchange，同时复用实例级、方法级执行器。钩子运行在服务实例上；并发调用可能重叠时，不要把请求专属可变状态存在该实例上。                                                                                                                         |
 
 ## 最小完整示例
 

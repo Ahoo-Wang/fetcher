@@ -19,7 +19,8 @@
 
 import type { Info } from './info';
 import type { Server } from './server';
-import type { Paths } from './paths';
+import type { PathItem, Paths } from './paths';
+import type { Reference } from './reference';
 import type { Components } from './components';
 import type { SecurityRequirement } from './security';
 import type { Tag } from './tags';
@@ -43,6 +44,10 @@ export interface OpenAPI extends Extensible {
   info: Info;
   servers?: Server[];
   paths: Paths;
+  /** Incoming requests the API may send (3.1). */
+  webhooks?: Record<string, PathItem | Reference>;
+  /** Default `$schema` for Schema Objects (3.1). */
+  jsonSchemaDialect?: string;
   components?: Components;
   security?: SecurityRequirement[];
   tags?: Tag[];

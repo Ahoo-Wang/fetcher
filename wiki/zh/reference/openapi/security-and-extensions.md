@@ -9,18 +9,18 @@ description: '安全与扩展 — Fetcher 5.0.0'
 
 ## 安全对象
 
-| 类型                  | 契约                                                                                                                   |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `SecurityScheme`      | 必填 type：apiKey/http/oauth2/openIdConnect；可选 description、name、in、scheme、bearerFormat、flows、openIdConnectUrl |
-| `OAuthFlow`           | 必填 scopes 映射（`scope → 描述`）；可选 authorizationUrl、tokenUrl、refreshUrl                                        |
-| `OAuthFlows`          | 可选 implicit、password、clientCredentials、authorizationCode 流对象                                                   |
-| `SecurityRequirement` | 将方案名映射到 string[] 权限范围名称                                                                                   |
+| 类型                  | 契约                                                                                                                                                           |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SecurityScheme`      | 必填 type：apiKey/http/mutualTLS（3.1）/oauth2/openIdConnect；可选 description、name、in（query/header/cookie）、scheme、bearerFormat、flows、openIdConnectUrl |
+| `OAuthFlow`           | 必填 scopes 映射（`scope → 描述`）；可选 authorizationUrl、tokenUrl、refreshUrl                                                                                |
+| `OAuthFlows`          | 可选 implicit、password、clientCredentials、authorizationCode 流对象                                                                                           |
+| `SecurityRequirement` | 将方案名映射到 string[] 权限范围名称；每个键都是方案名，因此不继承 Extensible                                                                                  |
 
 声明不会针对方案或流程让特定字段成为条件必填。例如缺少 name/in 的 apiKey 方案不会被 TypeScript 拒绝。数组和 scope 映射只是数据，没有默认值、返回值、网络效果或清理方法。
 
 ## 扩展
 
-`Extensible` 允许模板键族 `x-${string}`，值为 any。多数文档对象继承它。`CommonExtensions` 单独命名 `x-internal`、`x-deprecated`（message/since/removedIn/replacement）、`x-tags`、`x-examples`、`x-order`、`x-group`。它不会自动合并到每个 Extensible 对象，也不实现生成器行为。生成器专用 Wow 扩展见[识别规则](../generator/wow-discovery)。
+`Extensible` 允许模板键族 `x-${string}`，值为 any。多数文档对象继承它，`Reference` 与 `SecurityRequirement` 除外。`CommonExtensions` 单独命名 `x-internal`、`x-deprecated`（message/since/removedIn/replacement）、`x-tags`、`x-examples`、`x-order`、`x-group`。它不会自动合并到每个 Extensible 对象，也不实现生成器行为。生成器专用 Wow 扩展见[识别规则](../generator/wow-discovery)。
 
 ## 完整示例
 
@@ -74,10 +74,10 @@ export interface OAuthFlows extends Extensible {
 
 ```ts
 export interface SecurityScheme extends Extensible {
-  type: 'apiKey' | 'http' | 'oauth2' | 'openIdConnect';
+  type: 'apiKey' | 'http' | 'mutualTLS' | 'oauth2' | 'openIdConnect';
   description?: string;
   name?: string;
-  in?: ParameterLocation;
+  in?: Exclude<ParameterLocation, 'path'>;
   scheme?: string;
   bearerFormat?: string;
   flows?: OAuthFlows;
@@ -87,10 +87,10 @@ export interface SecurityScheme extends Extensible {
 
 ### SecurityRequirement {#securityrequirement}
 
-[packages/openapi/src/security.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L77)
+[packages/openapi/src/security.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/security.ts#L80)
 
 ```ts
-export interface SecurityRequirement extends Extensible {
+export interface SecurityRequirement {
   [name: string]: string[];
 }
 ```

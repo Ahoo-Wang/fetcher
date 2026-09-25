@@ -6,7 +6,7 @@ description: >
 
 # fetcher-v6-migration
 
-6.0 only **removes**: the Wow-coupled packages moved to the Wow repository (`typescript/` there) and are released with Wow. `@ahoo-wang/fetcher`, `-decorator`, `-eventbus`, `-eventstream`, `-openai`, `-openapi`, `-storage` and `-cosec` have no breaking API change (behavior corrections are under **Changed** in the 6.0 release notes — a query sent as `?a=undefined`, a timeout dropped when a `signal` is passed, a `Content-Type: application/json` sent on every request, a status failure hidden behind `ExchangeError.cause` — other bug fixes are under **Fixed**); `@ahoo-wang/fetcher-react` only lost exports.
+6.0 only **removes**: the Wow-coupled packages moved to the Wow repository (`typescript/` there) and are released with Wow. `@ahoo-wang/fetcher`, `-decorator`, `-eventbus`, `-eventstream`, `-openai`, `-openapi`, `-storage` and `-cosec` have no breaking API change (behavior corrections are under **Changed** in the 6.0 release notes — a query sent as `?a=undefined`, a timeout dropped when a `signal` is passed, a `Content-Type: application/json` sent on every request, a status failure hidden behind `ExchangeError.cause`, a decorator array argument spread into `0=…&1=…`, an undecorated subclass override replaced by `@api`, OpenAPI types that left `Info.title`/`version` and `Response.description` optional — other bug fixes are under **Fixed**); `@ahoo-wang/fetcher-react` only lost exports.
 
 ## 1. Check what is published — never assume
 

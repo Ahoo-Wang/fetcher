@@ -21,8 +21,10 @@ const parameterNameCache = new WeakMap<Function, string[]>();
  * the names of its parameters. It handles various function formats including
  * regular functions, arrow functions, and methods.
  *
- * Note: This implementation provides basic parameter name extraction and may not
- * handle all edge cases of complex TypeScript parameter declarations.
+ * Commas, parentheses and brackets inside default values, strings and comments
+ * do not split parameters. A destructured parameter (`{ a, b }` or `[a, b]`)
+ * has no name and yields `''`, which keeps the other names at their index; a
+ * rest parameter yields its name without `...`.
  *
  * @param func - The function to extract parameter names from
  * @returns An array of parameter names, or an empty array if extraction fails
@@ -40,7 +42,10 @@ const parameterNameCache = new WeakMap<Function, string[]>();
  *
  * function complex(param1: string, param2: number = 10, ...rest: any[]) {}
  * const complexParamNames = getParameterNames(complex);
- * // Returns: ['param1', 'param2', '...rest']
+ * // Returns: ['param1', 'param2', 'rest']
+ *
+ * function destructured({ a, b }, c = [1, 2]) {}
+ * // Returns: ['', 'c']
  * ```
  */
 export function getParameterNames(func: (...args: any[]) => any): string[] {
@@ -105,9 +110,8 @@ export function getParameterName(
     const method = target[propertyKey as keyof typeof target];
     if (method && typeof method === 'function') {
       const paramNames = getParameterNames(method);
-      if (parameterIndex < paramNames.length) {
-        return paramNames[parameterIndex];
-      }
+      // '' (a destructured parameter) has no name either.
+      return paramNames[parameterIndex] || undefined;
     }
   } catch {
     // If we can't get the parameter name, return undefined
@@ -117,145 +121,75 @@ export function getParameterName(
   return undefined;
 }
 
-/**
- * Checks if a parameter string contains actual parameters.
- *
- * @param paramsStr - The parameter string to check
- * @returns True if the string contains parameters, false otherwise
- */
 function hasParameters(paramsStr: string): boolean {
-  return (
-    paramsStr !== null && paramsStr !== undefined && paramsStr.trim() !== ''
-  );
+  return paramsStr.trim() !== '';
 }
 
 /**
- * Extracts the parameter string from a function string representation.
- *
- * @param fnStr - The string representation of the function
- * @returns The parameter string, or empty string if not found
+ * Walks `source` from `from`, skipping string and template literals and
+ * comments, and calls `visit` for every other character with the bracket
+ * depth before it. Stops when `visit` returns `true`; returns that index, or
+ * -1.
  */
-function extractParameterString(fnStr: string): string {
-  // Handle arrow functions that start with parentheses
-  if (fnStr.startsWith('(')) {
-    const endParenIndex = findClosingParenthesis(fnStr, 0);
-    if (endParenIndex === -1) return '';
-    return fnStr.substring(1, endParenIndex);
-  }
-
-  // Handle regular functions, async functions, and methods
-  const startParenIndex = fnStr.indexOf('(');
-  if (startParenIndex === -1) return '';
-
-  const endParenIndex = findClosingParenthesis(fnStr, startParenIndex);
-  if (endParenIndex === -1) return '';
-
-  return fnStr.substring(startParenIndex + 1, endParenIndex);
-}
-
-/**
- * Finds the matching closing parenthesis for an opening parenthesis.
- *
- * @param str - The string to search in
- * @param openingParenIndex - The index of the opening parenthesis
- * @returns The index of the matching closing parenthesis, or -1 if not found
- */
-function findClosingParenthesis(
-  str: string,
-  openingParenIndex: number,
+function scan(
+  source: string,
+  from: number,
+  visit: (char: string, index: number, depth: number) => boolean | void,
 ): number {
-  let parenDepth = 1;
-
-  for (let i = openingParenIndex + 1; i < str.length; i++) {
-    const char = str[i];
-
-    if (char === '(') {
-      parenDepth++;
-    } else if (char === ')') {
-      parenDepth--;
-      if (parenDepth === 0) {
-        return i;
+  let depth = 0;
+  for (let i = from; i < source.length; i++) {
+    const char = source[i];
+    if (char === '"' || char === "'" || char === '`') {
+      for (i++; i < source.length && source[i] !== char; i++) {
+        if (source[i] === '\\') i++;
       }
+      continue;
     }
+    if (char === '/' && source[i + 1] === '/') {
+      const end = source.indexOf('\n', i);
+      i = end < 0 ? source.length : end;
+      continue;
+    }
+    if (char === '/' && source[i + 1] === '*') {
+      const end = source.indexOf('*/', i + 2);
+      i = end < 0 ? source.length : end + 1;
+      continue;
+    }
+    if (visit(char, i, depth)) return i;
+    if (char === '(' || char === '[' || char === '{') depth++;
+    else if (char === ')' || char === ']' || char === '}') depth--;
   }
-
-  return -1; // No matching closing parenthesis found
+  return -1;
 }
 
-/**
- * Parses and cleans parameter names from a parameter string.
- *
- * @param paramsStr - The parameter string to parse
- * @returns An array of cleaned parameter names
- */
+function extractParameterString(fnStr: string): string {
+  const open = fnStr.indexOf('(');
+  if (open === -1) return '';
+  const close = scan(
+    fnStr,
+    open + 1,
+    (char, _, depth) => char === ')' && depth === 0,
+  );
+  return close === -1 ? '' : fnStr.substring(open + 1, close);
+}
+
 function parseParameterNames(paramsStr: string): string[] {
-  return paramsStr
-    .split(',')
-    .map(trimWhitespace)
-    .filter(isNotEmpty)
+  const parts: string[] = [];
+  let start = 0;
+  scan(paramsStr, 0, (char, index, depth) => {
+    if (char === ',' && depth === 0) {
+      parts.push(paramsStr.substring(start, index));
+      start = index + 1;
+    }
+  });
+  parts.push(paramsStr.substring(start));
+  return parts
+    .map(part => part.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').trim())
+    .filter(part => part.length > 0)
     .map(extractParameterName);
 }
 
-/**
- * Trims whitespace from a string.
- *
- * @param str - The string to trim
- * @returns The trimmed string
- */
-function trimWhitespace(str: string): string {
-  return str.trim();
-}
-
-/**
- * Checks if a string is not empty.
- *
- * @param str - The string to check
- * @returns True if the string is not empty, false otherwise
- */
-function isNotEmpty(str: string): boolean {
-  return str.length > 0;
-}
-
-/**
- * Extracts a clean parameter name by removing type annotations and default values.
- *
- * @param param - The raw parameter string
- * @returns The cleaned parameter name
- */
+/** The identifier a parameter binds; `''` for a destructuring pattern. */
 function extractParameterName(param: string): string {
-  // Remove default value assignment (everything after =)
-  let cleanedParam = removeDefaultValue(param);
-
-  // Remove type annotations (everything after :)
-  cleanedParam = removeTypeAnnotation(cleanedParam);
-
-  return cleanedParam.trim();
-}
-
-/**
- * Removes default value from a parameter string.
- *
- * @param param - The parameter string
- * @returns The parameter string without default value
- */
-function removeDefaultValue(param: string): string {
-  const equalsIndex = param.indexOf('=');
-  if (equalsIndex !== -1) {
-    return param.substring(0, equalsIndex);
-  }
-  return param;
-}
-
-/**
- * Removes type annotation from a parameter string.
- *
- * @param param - The parameter string
- * @returns The parameter string without type annotation
- */
-function removeTypeAnnotation(param: string): string {
-  const colonIndex = param.indexOf(':');
-  if (colonIndex !== -1) {
-    return param.substring(0, colonIndex);
-  }
-  return param;
+  return param.replace(/^\.\.\./, '').match(/^[A-Za-z_$][\w$]*/)?.[0] ?? '';
 }

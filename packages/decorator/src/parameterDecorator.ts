@@ -156,6 +156,13 @@ export interface ParameterMetadata {
    * This is used to map the runtime argument values to the correct parameter metadata.
    */
   index: number;
+
+  /**
+   * Whether `name` was given to the decorator (`@attribute('user')`), as
+   * opposed to inferred from the method's source. An explicitly named
+   * attribute stores its value under that name even when it is an object.
+   */
+  explicit?: boolean;
 }
 
 export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
@@ -223,6 +230,7 @@ export function parameter(type: ParameterType, name: string = '') {
       type: type,
       name: paramName,
       index: parameterIndex,
+      explicit: name !== '',
     };
     existingParameters.set(parameterIndex, parameterMetadata);
     Reflect.defineMetadata(

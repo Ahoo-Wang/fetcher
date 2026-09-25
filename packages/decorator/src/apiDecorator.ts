@@ -28,6 +28,7 @@ import { RequestExecutor } from './requestExecutor.js';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator.js';
 import 'reflect-metadata';
 import { FunctionMetadata } from './functionMetadata.js';
+import { assertLegacyDecorator } from './legacyDecorators.js';
 import type { EndpointReturnTypeCapable } from './endpointReturnTypeCapable.js';
 
 /**
@@ -119,6 +120,19 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   if (!endpointMetadata) {
     return;
   }
+  // A subclass that overrides an inherited endpoint without decorating the
+  // override wrote its own implementation: keep it. (The metadata lookup above
+  // walks the prototype chain and finds the parent's endpoint.)
+  if (
+    Object.prototype.hasOwnProperty.call(constructor.prototype, functionName) &&
+    !Reflect.hasOwnMetadata(
+      ENDPOINT_METADATA_KEY,
+      constructor.prototype,
+      functionName,
+    )
+  ) {
+    return;
+  }
   // Get parameter metadata for this method
   const parameterMetadata =
     Reflect.getMetadata(
@@ -138,7 +152,16 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   // Create request executor
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = async function (...args: unknown[]) {
+  constructor.prototype[functionName] = async function (
+    this: unknown,
+    ...args: unknown[]
+  ) {
+    if (typeof this !== 'object' || this === null) {
+      throw new TypeError(
+        `${constructor.name}.${functionName} was called without its instance; ` +
+          `call it on the service (service.${functionName}(...)) or bind it first.`,
+      );
+    }
     const requestExecutor: RequestExecutor = buildRequestExecutor(
       this,
       functionMetadata,
@@ -148,14 +171,20 @@ function bindExecutor<T extends new (...args: any[]) => any>(
 }
 
 /**
+ * Executors built per service instance and method, off the instance itself so
+ * no field is added to user objects.
+ */
+const requestExecutors = new WeakMap<
+  object,
+  Map<string, { apiMetadata?: ApiMetadata; executor: RequestExecutor }>
+>();
+
+/**
  * Builds or retrieves a cached RequestExecutor for the given function metadata.
  *
- * This function implements a caching mechanism to ensure that each decorated method
- * gets a consistent RequestExecutor instance. If an executor already exists for the
- * function, it returns the cached instance; otherwise, it creates a new one.
- *
- * The function merges API metadata from the target instance with the default metadata
- * to allow runtime customization of API behavior.
+ * The instance's `apiMetadata` (see {@link ApiMetadataCapable}) is spread over
+ * the class metadata. The executor is cached per instance and method, and
+ * rebuilt when the instance's `apiMetadata` object is replaced.
  *
  * @param target - The target object instance that contains the method
  * @param defaultFunctionMetadata - The function metadata containing endpoint configuration
@@ -165,22 +194,21 @@ export function buildRequestExecutor(
   target: any,
   defaultFunctionMetadata: FunctionMetadata,
 ): RequestExecutor {
-  let requestExecutors: Map<string, RequestExecutor> =
-    target['requestExecutors'];
-  if (!requestExecutors) {
-    requestExecutors = new Map<string, RequestExecutor>();
-    target['requestExecutors'] = requestExecutors;
+  let executors = requestExecutors.get(target);
+  if (!executors) {
+    executors = new Map();
+    requestExecutors.set(target, executors);
   }
-  let requestExecutor = requestExecutors.get(defaultFunctionMetadata.name);
-  if (requestExecutor) {
-    return requestExecutor;
+  const targetApiMetadata: ApiMetadata | undefined = target['apiMetadata'];
+  const cached = executors.get(defaultFunctionMetadata.name);
+  if (cached && cached.apiMetadata === targetApiMetadata) {
+    return cached.executor;
   }
-  const targetApiMetadata: ApiMetadata = target['apiMetadata'];
   const mergedApiMetadata: ApiMetadata = {
     ...defaultFunctionMetadata.api,
     ...targetApiMetadata,
   };
-  requestExecutor = new RequestExecutor(
+  const executor = new RequestExecutor(
     target,
     new FunctionMetadata(
       defaultFunctionMetadata.name,
@@ -189,8 +217,11 @@ export function buildRequestExecutor(
       defaultFunctionMetadata.parameters,
     ),
   );
-  requestExecutors.set(defaultFunctionMetadata.name, requestExecutor);
-  return requestExecutor;
+  executors.set(defaultFunctionMetadata.name, {
+    apiMetadata: targetApiMetadata,
+    executor,
+  });
+  return executor;
 }
 
 /**
@@ -229,7 +260,11 @@ export function api(
   basePath: string = '',
   metadata: Omit<ApiMetadata, 'basePath'> = {},
 ) {
-  return function <T extends new (...args: any[]) => any>(constructor: T): T {
+  return function <T extends new (...args: any[]) => any>(
+    constructor: T,
+    context?: unknown,
+  ): T {
+    assertLegacyDecorator(context, '@api');
     const apiMetadata: ApiMetadata = {
       basePath,
       ...metadata,

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  Fetcher,
+  UrlTemplateStyle,
   HttpMethod,
   JsonResultExtractor,
   ExchangeResultExtractor,
@@ -485,13 +487,11 @@ describe('FunctionMetadata', () => {
       expect(request.urlParams?.path).toEqual({ param0: 42 });
     });
 
-    it('should expand an array argument into indexed path params', () => {
-      // Arrays are objects: Object.entries yields numeric-string keys. This
-      // documents current behavior (may warrant a future fix to use repeated
-      // query params instead).
+    it('should bind an array argument to the parameter name', () => {
+      // fetcher's UrlBuilder serializes it (repeated query keys).
       const fm = metadataWithParam({ name: 'tags', index: 0 });
       const { request } = fm.resolveExchangeInit([['x', 'y']]);
-      expect(request.urlParams?.path).toEqual({ '0': 'x', '1': 'y' });
+      expect(request.urlParams?.path).toEqual({ tags: ['x', 'y'] });
     });
   });
 
@@ -565,12 +565,12 @@ describe('FunctionMetadata', () => {
     warnSpy.mockRestore();
   });
 
-  it('should also warn for Express-style :name placeholders with no match', () => {
+  it('should warn for Express-style :name placeholders when the fetcher uses that style', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const functionMetadata = new FunctionMetadata(
       'getUser',
-      {},
+      { fetcher: new Fetcher({ urlTemplateStyle: UrlTemplateStyle.Express }) },
       { method: HttpMethod.GET, path: '/users/:userId' },
       new Map([[0, { type: ParameterType.PATH, name: 'e', index: 0 }]]),
     );
@@ -578,6 +578,35 @@ describe('FunctionMetadata', () => {
     functionMetadata.resolveExchangeInit(['123']);
 
     expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('should not warn for :name under the default URI template style, where it is literal', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    new FunctionMetadata(
+      'getUser',
+      {},
+      { method: HttpMethod.GET, path: '/users/:userId' },
+      new Map(),
+    ).resolveExchangeInit([]);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('should not warn when @request supplies the path parameter', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { request } = new FunctionMetadata(
+      'getUser',
+      {},
+      { method: HttpMethod.GET, path: '/users/{id}' },
+      new Map([[0, { type: ParameterType.REQUEST, index: 0 }]]),
+    ).resolveExchangeInit([{ urlParams: { path: { id: 1 } } }]);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    expect(request).not.toHaveProperty('path');
     warnSpy.mockRestore();
   });
 });

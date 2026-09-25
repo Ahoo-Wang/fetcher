@@ -6,7 +6,7 @@ description: 'Openapi reference — Fetcher 5.0.0'
 
 # Openapi reference
 
-Static OpenAPI document types for authoring specifications and generator inputs. No runtime parser, validator, client, or reference resolver is included.
+Static OpenAPI document types for authoring specifications and generator inputs. They describe 3.0 and 3.1 documents as a superset: `Schema` keeps 3.0 `nullable` alongside 3.1 type arrays and `const`, and 3.1 additions are optional fields. No runtime parser, validator, client, or reference resolver is included.
 
 ## Install
 
