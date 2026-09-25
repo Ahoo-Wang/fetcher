@@ -24,6 +24,11 @@ the refactor fixes the principles, not the symptoms one at a time.
 6. **Render is pure, server and client agree.** No side effect during render;
    `getServerSnapshot` returns what the server rendered.
 
+Public behavior changes are confirmed with the maintainer before they merge
+(2026-09-25). Stages 1–5 were confirmed then; stage 6 keeps sending
+credentials to every origin by default (maintainer's choice), with an opt-in
+`sameOriginTrust`.
+
 Compatibility: 6.0 is not a rewrite. Public names stay. A behavior changes only
 when the old behavior is a defect no caller can want (`?a=undefined`, a timeout
 silently dropped); each such change is listed in `docs/releases/v6.0.0.md`
@@ -46,10 +51,10 @@ update this file.
 - [x] **3. `decorator` + `openapi`** (#1932) — parameter binding delegates
       serialization to fetcher (principle 2); subclass overrides; parameter
       name reflection; executor cache off the instance; OpenAPI 3.1 accuracy.
-- [ ] **4. `eventstream` + `openai`** (#1933) — EOF semantics per WHATWG, incomplete
+- [x] **4. `eventstream` + `openai`** (#1933) — EOF semantics per WHATWG, incomplete
       stream detection, linear line splitting, polyfill iterator cleanup,
       openai chunk types and `signal`.
-- [x] **5. `eventbus` + `storage`** (this PR) — corrupt value recovery, `set(undefined)`,
+- [x] **5. `eventbus` + `storage`** (#1934) — corrupt value recovery, `set(undefined)`,
       channel ownership and close, SSR.
 - [ ] **6. `cosec`** — trusted origins (principle 1), cross-tab single-flight
       refresh, JWT payload validation, clock skew.
@@ -151,8 +156,9 @@ One PR, #1933.
 
 ## Pause point
 
-2026-09-25: stages 1–3 merged (#1927, #1930, #1931, #1932); stage 4 (#1933)
-and stage 5 PRs in flight. `downstream-wow.yml` now runs every Wow package
-(`--no-bail`); with stage 3 all of them pass except the expected
-`content-type` golden. Next: merge 4 and 5, then stage 6 (`cosec`) — deep
-review, plan it here, PRs.
+2026-09-25: stages 1–5 merged (#1927, #1930–#1934). Stage 6 (`cosec`) draft
+on local branch `refactor/cosec-trust`: rework the trust boundary to trust
+everything by default (confirmed), then cross-tab refresh (`KeyStorage.reload`
+so the losing tab re-reads storage before removing), JWT payload must be an
+object, storages close the broadcast bus they created. Each public behavior
+change goes to the maintainer before merging.
