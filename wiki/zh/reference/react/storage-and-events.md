@@ -100,7 +100,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L92)
+[packages/react/src/eventbus/useEventSubscription.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L93)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 

@@ -57,7 +57,8 @@ export interface UseEventSubscriptionReturn {
  * @param options.bus - The typed event bus instance to subscribe to.
  * @param options.handler - The event handler function that will be called when events are published.
  * @returns An object containing subscribe and unsubscribe functions.
- * @throws Will throw an error if the event bus or handler is invalid.
+ * If the handler's name is already subscribed on the bus, it logs a warning
+ * and leaves that other subscription in place (it is not removed on unmount).
  *
  * @example
  * ```typescript

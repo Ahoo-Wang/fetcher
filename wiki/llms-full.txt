@@ -2269,7 +2269,7 @@ Remount the subtree that owns request state when the tenant or user changes, so 
 | KeyStorage               | `destroy()` removes its own event handler and closes the bus it created                              | Persistent data and any event bus passed in `eventBus`; default serial bus is local, not cross-tab synchronization |
 | BroadcastTypedEventBus   | `destroy()` closes its messenger                                                                     | Appropriate lifetime of shared users before closing it                                                             |
 
-See [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94), [packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242), [packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
+See [packages/react/src/eventbus/useEventSubscription.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L95), [packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242), [packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527), and [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236). Follow [React cleanup](../guides/react/cleanup.md), [storage and events](../guides/integrations/storage-and-events.md), and [SSR scope](./runtime-support.md).
 
 The saved-view confirmation rules of the 5.x Viewer and FetcherViewer are documented with that line in the [saved-view guide](../guides/viewer/saved-views.md) and the [FetcherViewer reference](../reference/viewer/fetcher-viewer.md).
 
@@ -7025,15 +7025,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosec_request_interceptor_order"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L109)
+**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L110)
 
 <span id="ignore_refresh_token_attribute_key"></span>
 
-**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L136)
+**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L137)
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L220)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L221)
 
 <span id="requesttrust"></span>
 
@@ -7085,11 +7085,11 @@ cosec.deviceIdStorage.destroy();
 
 <span id="resource_attribution_request_interceptor_order"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L50)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L53)
 
 <span id="resourceattributionrequestinterceptor"></span>
 
-**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L58)
+**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L61)
 
 <span id="spaceidprovider"></span>
 
@@ -7783,7 +7783,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
+[packages/react/src/core/useQueryState.ts:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L115)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -7791,7 +7791,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
+[packages/react/src/core/useQueryState.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L201)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -8438,7 +8438,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L92)
+[packages/react/src/eventbus/useEventSubscription.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L93)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 
@@ -20123,7 +20123,7 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 | KeyStorage             | `destroy()` 移除自身事件处理器并关闭自己创建的总线              | 持久化数据及通过 `eventBus` 传入的总线；默认串行总线是本地事件，不是跨标签同步 |
 | BroadcastTypedEventBus | `destroy()` 关闭其 messenger                                    | 关闭前确保共享使用者的生命周期合适                                             |
 
-见 [packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)、[packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242)、[packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
+见 [packages/react/src/eventbus/useEventSubscription.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L95)、[packages/storage/src/keyStorage.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L242)、[packages/storage/src/keyStorage.ts:527](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L527) 和 [packages/eventbus/src/broadcastTypedEventBus.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L236)。继续阅读 [React 清理](../guides/react/cleanup.md)、[存储与事件](../guides/integrations/storage-and-events.md)及 [SSR 作用域](./runtime-support.md)。
 
 5.x Viewer 与 FetcherViewer 的保存视图确认规则随 5.x 线记录在[保存视图指南](../guides/viewer/saved-views.md)与 [FetcherViewer 参考](../reference/viewer/fetcher-viewer.md)中。
 
@@ -24871,15 +24871,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosec_request_interceptor_order"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:109](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L109)
+**`COSEC_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/cosecRequestInterceptor.ts:110](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L110)
 
 <span id="ignore_refresh_token_attribute_key"></span>
 
-**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L136)
+**`IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`** — [packages/cosec/src/cosecRequestInterceptor.ts:137](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L137)
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:220](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L220)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:221](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L221)
 
 <span id="requesttrust"></span>
 
@@ -24931,11 +24931,11 @@ cosec.deviceIdStorage.destroy();
 
 <span id="resource_attribution_request_interceptor_order"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L50)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L53)
 
 <span id="resourceattributionrequestinterceptor"></span>
 
-**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L58)
+**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L61)
 
 <span id="spaceidprovider"></span>
 
@@ -25629,7 +25629,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
+[packages/react/src/core/useQueryState.ts:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L115)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -25637,7 +25637,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
+[packages/react/src/core/useQueryState.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L201)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 
@@ -26284,7 +26284,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L92)
+[packages/react/src/eventbus/useEventSubscription.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L93)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 

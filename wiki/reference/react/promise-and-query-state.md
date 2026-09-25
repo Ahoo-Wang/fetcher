@@ -272,7 +272,7 @@ export function useQueryState<Q>(
 ): UseQueryStateReturn<Q>;
 ```
 
-[packages/react/src/core/useQueryState.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L114)
+[packages/react/src/core/useQueryState.ts:115](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L115)
 
 ### isValidateQuery {#api-isValidateQuery}
 
@@ -280,7 +280,7 @@ export function useQueryState<Q>(
 export function isValidateQuery<Q>(query: Q | undefined): query is Q;
 ```
 
-[packages/react/src/core/useQueryState.ts:200](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L200)
+[packages/react/src/core/useQueryState.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useQueryState.ts#L201)
 
 ### UseQueryStateOptions {#api-UseQueryStateOptions}
 

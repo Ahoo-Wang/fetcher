@@ -45,7 +45,10 @@ export interface ResourceAttributionOptions {
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME =
   'ResourceAttributionRequestInterceptor';
 /**
- * Order priority for the ResourceAttributionRequestInterceptor, set to maximum safe integer to ensure it runs last
+ * Order priority for the ResourceAttributionRequestInterceptor: one step
+ * before URL resolution, so the tenant and owner path parameters it adds are
+ * in place when the URL template is resolved, and after interceptors with the
+ * default order (0).
  */
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
   URL_RESOLVE_INTERCEPTOR_ORDER - DEFAULT_INTERCEPTOR_ORDER_STEP;
