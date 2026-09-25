@@ -7,14 +7,14 @@ description: '安全 Hook 与路由守卫 — @ahoo-wang/fetcher-react 5.0.0'
 
 `SecurityProvider` 要求现有 `TokenStorage` 和 children，通过 context 提供 `useSecurity` 状态。令牌创建/刷新由 CoSec 负责；路由守卫仅决定渲染哪个 React 节点，不是服务端授权边界。
 
-| API                                       | 契约                                                                                                                                                         |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `useSecurity(tokenStorage, options = {})` | 返回 currentUser、authenticated、signIn、signOut；无令牌使用 `ANONYMOUS_USER`，其 sub 为 anonymous、jti 为空、iat/exp 为零。                                 |
-| `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。                                                    |
-| `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                     |
-| `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                     |
-| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                      |
-| `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则显示 refreshing 节点或 fallback，默认文字 `Refreshing...`。 |
+| API                                       | 契约                                                                                                                                                                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useSecurity(tokenStorage, options = {})` | 返回 currentUser、authenticated、signIn、signOut；无令牌使用 `ANONYMOUS_USER`，其 sub 为 anonymous、jti 为空、iat/exp 为零。`authenticated`（access token 未过期）在渲染时计算；refresh token 到期时 Hook 会重新渲染，闲置页面随之退出登录，而仍可续期的会话由下一个请求续期。 |
+| `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。                                                                                                                                                                      |
+| `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                                                                                                                                       |
+| `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                                                                                                                                       |
+| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                                                                                                                                        |
+| `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则显示 refreshing 节点或 fallback，默认文字 `Refreshing...`。                                                                                                                   |
 
 `RouteGuard.onUnauthorized` 在 render 提交后的 effect 中运行，每次 `authenticated` 变为（或初始即为）false 时调用一次，因此可以在其中调用 `navigate()`；开发环境的 StrictMode 可能像对待任何 effect 一样运行两次。使用的是最新的回调；仅回调变化不会再次调用。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
 
@@ -104,7 +104,7 @@ export function useSecurity(
 
 实现默认值: `options = {}`.
 
-[packages/react/src/cosec/useSecurity.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L150)
+[packages/react/src/cosec/useSecurity.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L155)
 
 ### ANONYMOUS_USER {#api-ANONYMOUS_USER}
 
