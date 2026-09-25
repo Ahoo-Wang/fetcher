@@ -1,12 +1,16 @@
-# Advisory: the integration cases that reach the public internet
-# (integration-test/test/external/: JSONPlaceholder, and an OpenAI-compatible
-# provider when the FETCHER_LLM_* secrets are set). They prove the built
-# packages work against real third-party services, but those services time out
-# on their own schedule, so this workflow is not a required check and is not
-# in release admission (.github/scripts/release-admission.mjs). A red run is
-# reported, not hidden (no continue-on-error): read it as "a live service
-# disagreed", check whether the host is reachable, and only then suspect the
-# change. The deterministic behaviour is covered by the package unit tests.
+# Advisory: the integration cases that reach the public internet. That is the
+# `external` project (integration-test/test/external/: an OpenAI-compatible
+# provider when the FETCHER_LLM_* secrets are set), plus a second pass of the
+# JSONPlaceholder suites — which the required integration-test.yml runs against
+# a local JSONPlaceholder — pointed at the live jsonplaceholder.typicode.com,
+# so drift between the local fixture and the real service shows up here. They
+# prove the built packages work against real third-party services, but those
+# services time out on their own schedule, so this workflow is not a required
+# check and is not in release admission (.github/scripts/release-admission.mjs).
+# A red run is reported, not hidden (no continue-on-error): read it as "a live
+# service disagreed", check whether the host is reachable, and only then
+# suspect the change. The deterministic behaviour is covered by the package
+# unit tests and the required integration run.
 name: Integration External
 
 on:
@@ -70,3 +74,11 @@ jobs:
           FETCHER_LLM_BASE_URL: ${{ secrets.FETCHER_LLM_BASE_URL }}
           FETCHER_LLM_API_KEY: ${{ secrets.FETCHER_LLM_API_KEY }}
           FETCHER_LLM_MODEL: ${{ secrets.FETCHER_LLM_MODEL }}
+
+      # The required run's JSONPlaceholder suites, against the live site
+      # instead of the local server (setting the variable skips starting it).
+      - name: Test JSONPlaceholder suites against the live site
+        if: ${{ !cancelled() }}
+        run: pnpm test:it
+        env:
+          JSONPLACEHOLDER_BASE_URL: https://jsonplaceholder.typicode.com

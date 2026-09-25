@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "build": "vite build",
-    "test": "vitest run --project required --coverage --passWithNoTests",
+    "test": "vitest run --project required --coverage",
     "test:external": "vitest run --project external --coverage",
     "lint": "eslint . --fix",
     "clean": "rm -rf dist"
@@ -57,6 +57,7 @@
     "@vitest/ui": "catalog:",
     "eslint": "catalog:",
     "globals": "catalog:",
+    "json-server": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",

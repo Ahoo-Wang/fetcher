@@ -12,8 +12,8 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `pr-quality.yml`                 | Lightweight title/description checks, including edited events, without install/build.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `changes.yml`                    | Reusable conservative change classification. Workflows always start; irrelevant jobs skip without leaving workflow-level path checks pending.                                                                                                                                                                                                                                                                                                                                                                                       |
 | `build-storybook.yml`            | Package build, story type check, one Storybook production build with its static index check, and Chromium interaction tests in two shards on separate runners, run from source without a package build. `STORYBOOK_BROWSERS` widens the matrix; see below.                                                                                                                                                                                                                                                                          |
-| `integration-test.yml`           | Build the integration workspace and dependencies, type-check it, and run its `required` project: the integration cases that reach nothing outside the job. Required, and part of release admission.                                                                                                                                                                                                                                                                                                                                 |
-| `integration-external.yml`       | Advisory, not required and not in release admission: the `external` integration project (`integration-test/test/external/`), the cases that call public-internet hosts (JSONPlaceholder, the OpenAI-compatible provider behind the `FETCHER_LLM_*` secrets). Runs on pull requests touching the packages they exercise, on every push to `main`/`5.x`, daily and on dispatch. See below.                                                                                                                                            |
+| `integration-test.yml`           | Build the integration workspace and dependencies, type-check it, and run its `required` project: the integration cases that reach nothing outside the job, including the Fetcher and decorator suites against a local JSONPlaceholder (json-server, started by the Vitest globalSetup). Required, and part of release admission.                                                                                                                                                                                                    |
+| `integration-external.yml`       | Advisory, not required and not in release admission: the `external` integration project (`integration-test/test/external/`, the OpenAI-compatible provider behind the `FETCHER_LLM_*` secrets), then the JSONPlaceholder suites again against the live site. Runs on pull requests touching the packages they exercise, on every push to `main`/`5.x`, daily and on dispatch. See below.                                                                                                                                            |
 | `downstream-wow.yml`             | Advisory, not required: on changes to the core packages Wow consumes, build them, link them into a checkout of Ahoo-Wang/Wow through `pnpm.overrides`, and run Wow's TypeScript unit tests and type checks.                                                                                                                                                                                                                                                                                                                         |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -188,11 +188,20 @@ not a required check and `release-admission.mjs` does not list it, so a
 third-party timeout (the LLM provider's connect timeouts forced repeated reruns
 of required runs) blocks neither a merge nor a release. It has no
 `continue-on-error`: a failure still shows as a red run, to be read as "a live
-service disagreed" first and a regression second. The same packages keep their
-deterministic coverage in the unit tests (MSW). The `FETCHER_LLM_*` secrets go
-only to this workflow; without them the LLM cases skip. The daily schedule runs
-on the default branch only. A regression test in `release-admission.test.mjs`
-requires that the required run keeps excluding `test/external/` and receives no
+service disagreed" first and a regression second. The `FETCHER_LLM_*` secrets
+go only to this workflow; without them the LLM cases skip. The daily schedule
+runs on the default branch only.
+
+The Fetcher and decorator JSONPlaceholder suites keep their end-to-end coverage
+in the required run: `integration-test/test/jsonplaceholder/globalSetup.ts`
+starts json-server 0.17 with JSONPlaceholder's own fake-write mode on a free
+local port, serving a fixture cut from the real dataset, and publishes it as
+`JSONPLACEHOLDER_BASE_URL`. The advisory workflow then runs the same suites
+with `JSONPLACEHOLDER_BASE_URL=https://jsonplaceholder.typicode.com` (a set
+variable skips the local server), so drift between the fixture and the live
+service shows up there. A regression test in `release-admission.test.mjs`
+requires that the required run keeps excluding `test/external/`, starts the
+local server, fails on an empty run (no `--passWithNoTests`) and receives no
 secrets.
 
 ## Downstream Wow check

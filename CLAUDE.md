@@ -18,7 +18,7 @@ pnpm build
 # Run unit tests (all packages)
 pnpm test:unit
 
-# Run integration tests (required cases; nothing outside the machine)
+# Run integration tests (required cases; starts a local JSONPlaceholder server)
 pnpm test:it
 
 # Run the advisory integration cases that reach public-internet hosts

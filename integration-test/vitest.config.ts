@@ -15,11 +15,13 @@ import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 import viteConfig from './vite.config';
 
 // Two projects. `required` is what `pnpm test` (and the required Integration
-// Test workflow) runs: cases that need nothing outside the CI job. `external`
-// holds every case that reaches a host on the public internet
-// (JSONPlaceholder, an OpenAI-compatible provider); it runs as
-// `pnpm test:external` in the advisory Integration External workflow, so a
-// third-party outage cannot block a merge or a release.
+// Test workflow) runs: cases that need nothing outside the CI job. The
+// JSONPlaceholder suites are among them — they run against a local
+// JSONPlaceholder that test/jsonplaceholder/globalSetup.ts starts (or against
+// JSONPLACEHOLDER_BASE_URL when it is set). `external` holds every case that
+// reaches a host on the public internet (an OpenAI-compatible provider); it
+// runs as `pnpm test:external` in the advisory Integration External workflow,
+// so a third-party outage cannot block a merge or a release.
 export default mergeConfig(
   viteConfig,
   defineConfig({
@@ -30,6 +32,7 @@ export default mergeConfig(
           test: {
             name: 'required',
             include: ['test/**/*.test.ts'],
+            globalSetup: ['test/jsonplaceholder/globalSetup.ts'],
             exclude: [...configDefaults.exclude, 'test/external/**'],
           },
         },
