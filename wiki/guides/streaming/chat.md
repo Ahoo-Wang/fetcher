@@ -83,9 +83,9 @@ The reader lock is released after success or failure. If the consumer fails befo
 
 ## 4. Check the protocol locally
 
-Mock fetch with a `Response` whose content type is `text/event-stream` and body is `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`. Assert that `onText` receives `Hello`. Also test malformed JSON and an aborted request. Restore fetch after the isolated test. This checks the client without spending provider quota.
+Mock fetch with a `Response` whose content type is `text/event-stream` and body is `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`. Assert that `onText` receives `Hello`. Also test malformed JSON, a body that ends before `[DONE]`, and an aborted request. Restore fetch after the isolated test. This checks the client without spending provider quota.
 
-Network/status errors reject the initial request; malformed SSE/JSON or transport failure can reject a later read. Handle both. Avoid automatically replaying a partially displayed answer: retry starts a new completion.
+Network/status errors reject the initial request; malformed SSE/JSON, transport failure, or a stream that ends before `[DONE]` (`EventStreamIncompleteError`) can reject a later read. Handle both. Avoid automatically replaying a partially displayed answer: retry starts a new completion.
 
 ## When you do not need caller-owned cancellation
 
@@ -105,10 +105,10 @@ export async function complete(baseURL: string, model: string) {
 }
 ```
 
-Pass `stream: true` for a `JsonServerSentEventStream<ChatResponse>`. The public `completions` method has no per-call signal argument, which is why the cancellable guide uses Fetcher directly.
+Pass `stream: true` for a `JsonServerSentEventStream<ChatResponse>`. The public `completions` method also takes an optional `AbortSignal` as its second argument; the cancellable recipe above uses Fetcher directly to show the reader cleanup explicitly.
 
 See [streaming contracts](../../reference/openai/streaming), [ChatClient and request types](../../reference/openai/client-and-completions), and [stream consumption](../../reference/eventstream/consumption-and-cancellation).
 
-[completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88) connects response extraction to the done detector.
+[completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75) connects response extraction to the done detector.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).

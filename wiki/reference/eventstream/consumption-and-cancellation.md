@@ -11,17 +11,17 @@ A ReadableStream has one active reader. Decide which layer owns reading and canc
 
 `isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream)`. Native iterators are left untouched and retain their platform semantics.
 
-| `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                           |
-| `locked`                                | Wrapper's ownership flag, initially true.                                                                                |
-| `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow.                       |
-| `return()`                              | Cancels the reader, logs cancellation failure at debug level, releases lock, returns done. Used by `break` in for-await. |
-| `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.    |
-| `throw(error)`                          | Logs and releases lock, returns done; does not rethrow or cancel.                                                        |
-| `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                               |
+| `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                                 |
+| `locked`                                | Wrapper's ownership flag, initially true.                                                                                      |
+| `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow; returns done once released. |
+| `return()`                              | Cancels the stream so its source stops, releases lock, returns done; no-op once released. Used by `break` in for-await.        |
+| `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.          |
+| `throw(error)`                          | Cancels the stream with `error` as the reason, releases lock and rethrows `error`, as an async generator would.                |
+| `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                                     |
 
-Use `return()` for intentional early termination. Releasing a lock alone leaves the source active. After consuming a response body, neither reader release nor cancellation makes the body reusable. For a manually acquired reader, cancel on early exit and release in finally. See [Fetcher cancellation](../fetcher/errors-and-cancellation.md) for the network controller and the header-only timeout boundary.
+Use `return()` for intentional early termination. Releasing a lock alone leaves the source active; do not call `releaseLock()` before `break`, since a released iterator can no longer cancel the connection. After consuming a response body, neither reader release nor cancellation makes the body reusable. For a manually acquired reader, cancel on early exit and release in finally. See [Fetcher cancellation](../fetcher/errors-and-cancellation.md) for the network controller and the header-only timeout boundary.
 
 ## SafeTransformer {#transformers}
 
@@ -75,7 +75,7 @@ void transform;
 
 | Symbol                                                                                      | Implementation                                                                                                                                  |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54) |
+| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51) |
 | <a id="isreadablestreamasynciterablesupported"></a>`isReadableStreamAsyncIterableSupported` | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                         |
 | <a id="transformerphase"></a>`TransformerPhase`                                             | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                         |
 | <a id="safetransformer"></a>`SafeTransformer`                                               | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                         |

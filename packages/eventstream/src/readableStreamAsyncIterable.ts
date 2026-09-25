@@ -40,14 +40,11 @@
  *
  * @example
  * ```typescript
- * // With early termination
- * const asyncIterable = new ReadableStreamAsyncIterable(stream);
- *
- * for await (const chunk of asyncIterable) {
- *   if (someCondition) {
- *     asyncIterable.releaseLock(); // Manually release if needed
- *     break;
- *   }
+ * // With early termination: `break` calls `return()`, which cancels the
+ * // stream (closing the connection) and releases the lock. Do not release
+ * // the lock yourself first, or the stream can no longer be cancelled.
+ * for await (const chunk of new ReadableStreamAsyncIterable(stream)) {
+ *   if (someCondition) break;
  * }
  * ```
  */
@@ -103,13 +100,16 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    * @throws If an error occurs while reading from the stream.
    */
   async next(): Promise<IteratorResult<T>> {
+    // Released (finished, cancelled or released by hand): iteration is over.
+    if (!this._locked) {
+      return { done: true, value: undefined };
+    }
     try {
       const { done, value } = await this.reader.read();
       if (done) {
         this.releaseLock();
         return { done: true, value: undefined };
       }
-
       return { done: false, value };
     } catch (error) {
       this.releaseLock();
@@ -118,31 +118,40 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   }
 
   /**
-   * Implements the return method of the async iterator.
-   * Cancels the stream reader and releases the lock.
+   * Implements the return method of the async iterator: cancels the stream,
+   * so its source stops producing, and releases the lock. `break` out of a
+   * for-await loop calls it.
    * @returns A promise that resolves to a done IteratorResult.
    */
   async return(): Promise<IteratorResult<T>> {
-    try {
-      await this.reader.cancel();
-    } catch (error) {
-      console.debug('Failed to cancel stream reader:', error);
-    } finally {
-      this.releaseLock();
+    if (this._locked) {
+      try {
+        await this.reader.cancel();
+      } catch {
+        // Already errored: nothing left to cancel.
+      } finally {
+        this.releaseLock();
+      }
     }
     return { done: true, value: undefined };
   }
 
   /**
-   * Implements the throw method of the async iterator.
-   * Releases the lock and returns a done result.
+   * Implements the throw method of the async iterator: cancels the stream
+   * with `error` as the reason, releases the lock and rethrows `error`, as an
+   * async generator that does not catch it would.
    * @param error - The error to be thrown.
-   * @returns A promise that resolves to a done IteratorResult.
    */
   async throw(error: any): Promise<IteratorResult<T>> {
-    // Ensure the reader lock is released before throwing
-    console.debug('Throwing error:', error);
-    this.releaseLock();
-    return { done: true, value: undefined };
+    if (this._locked) {
+      try {
+        await this.reader.cancel(error);
+      } catch {
+        // Already errored: nothing left to cancel.
+      } finally {
+        this.releaseLock();
+      }
+    }
+    throw error;
   }
 }

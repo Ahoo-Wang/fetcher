@@ -37,7 +37,12 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   to its parameter name instead of spreading it, stores a named
   `@attribute('x')` object whole, and keeps a subclass override that has no
   endpoint decorator; `fetcher-openapi` requires `Info.title`, `Info.version`
-  and `Response.description` and adds the OpenAPI 3.1 fields) and **Fixed** in the 6.0 release
+  and `Response.description` and adds the OpenAPI 3.1 fields;
+  `@ahoo-wang/fetcher-eventstream` drops a final line cut off before its line
+  terminator and, with a terminate detector, errors a stream that ends without
+  the terminating event with `EventStreamIncompleteError` — for
+  `@ahoo-wang/fetcher-openai`, a completion stream that ends before
+  `data: [DONE]`) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249).
 
@@ -149,6 +154,21 @@ For `@ahoo-wang/fetcher-openapi`: objects typed `Info` or `Response` must now
 set `title` and `version`, or `description`; `SecurityScheme.in` no longer
 accepts `'path'`, and a `SecurityRequirement` holds only scheme names (no
 `x-` keys).
+
+For projects that consume event streams with a terminate detector
+(`@ahoo-wang/fetcher-eventstream`) or stream chat completions
+(`@ahoo-wang/fetcher-openai`):
+
+```sh
+# 7. Streams that now reject when they end before their terminating event
+grep -rnE 'requiredJsonEventStream\(|jsonEventStream\(|toJsonServerSentEventStream\(|completions\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+A stream that ends without its terminating event (for OpenAI, `data: [DONE]`)
+now rejects the `for await` loop with `EventStreamIncompleteError` instead of
+ending as if complete; handle it where mid-stream errors are handled, and do
+not treat the partial answer as final. `ChatResponse.usage` is now optional:
+read it with `?.`.
 
 ## Rewrites
 

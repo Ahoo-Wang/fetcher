@@ -43,7 +43,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }

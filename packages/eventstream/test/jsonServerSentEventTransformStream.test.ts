@@ -18,6 +18,7 @@ import {
   JsonServerSentEventTransformStream,
   toJsonServerSentEventStream,
   type TerminateDetector,
+  EventStreamIncompleteError,
 } from '../src';
 
 describe('JsonServerSentEventTransformStream', () => {
@@ -164,14 +165,20 @@ describe('JsonServerSentEventTransformStream', () => {
       event: 'message',
     };
 
-    // Write and immediately close to avoid hanging
+    // Write and close without the terminating event
     writer.write(testEvent);
-    writer.close();
+    const closed = writer.close();
 
     // Read result
     const result = await reader.read();
     expect(result.done).toBe(false);
     expect(result.value?.data).toEqual({ message: 'test' });
+
+    // Ending before the terminating event errors the stream.
+    await expect(reader.read()).rejects.toBeInstanceOf(
+      EventStreamIncompleteError,
+    );
+    await expect(closed).rejects.toBeInstanceOf(EventStreamIncompleteError);
 
     // Verify detector was called
     expect(detectorCallCount).toBe(1);
@@ -344,15 +351,14 @@ describe('toJsonServerSentEventStream', () => {
   });
 });
 
-
-
-
 describe('JsonServerSentEventTransform terminated guard', () => {
   it('should drop all chunks after termination', () => {
-    const terminateDetector: TerminateDetector = (event) =>
+    const terminateDetector: TerminateDetector = event =>
       event.event === 'terminate';
 
-    const transformer = new JsonServerSentEventTransform<any>(terminateDetector);
+    const transformer = new JsonServerSentEventTransform<any>(
+      terminateDetector,
+    );
     const controller = {
       enqueue: vi.fn(),
       error: vi.fn(),
@@ -472,7 +478,9 @@ describe('JsonServerSentEventTransform terminated guard', () => {
       throw new Error('detector broken');
     };
 
-    const transformer = new JsonServerSentEventTransform<any>(terminateDetector);
+    const transformer = new JsonServerSentEventTransform<any>(
+      terminateDetector,
+    );
     const controller = {
       enqueue: vi.fn(),
       error: vi.fn(),

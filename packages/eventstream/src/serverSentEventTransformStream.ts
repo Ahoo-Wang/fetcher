@@ -121,10 +121,13 @@ export class ServerSentEventTransformer extends SafeTransformer<
           data: currentEvent.data.join('\n'),
           id: currentEvent.id || '',
           retry: currentEvent.retry,
-        } as ServerSentEvent);
+        });
       }
       currentEvent.event = DEFAULT_EVENT_TYPE;
       currentEvent.data = [];
+      // `id` is the last event ID and carries over; `retry` is reported only
+      // on the event whose block set it.
+      currentEvent.retry = undefined;
       return;
     }
 
@@ -152,6 +155,12 @@ export class ServerSentEventTransformer extends SafeTransformer<
     processFieldInternal(field, value, currentEvent);
   }
 
+  /**
+   * Dispatches an event whose lines all arrived but whose closing blank line
+   * did not: some servers end the stream that way. (The WHATWG parser drops
+   * it; a line cut off mid-way never gets here, since the event stream's line
+   * splitter drops an unterminated final line.)
+   */
   protected onFlush(
     controller: TransformStreamDefaultController<ServerSentEvent>,
   ): void {
@@ -163,7 +172,7 @@ export class ServerSentEventTransformer extends SafeTransformer<
           data: currentEvent.data.join('\n'),
           id: currentEvent.id || '',
           retry: currentEvent.retry,
-        } as ServerSentEvent);
+        });
       }
     } finally {
       this.resetEventState();

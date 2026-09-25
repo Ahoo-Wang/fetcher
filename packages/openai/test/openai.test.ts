@@ -22,6 +22,7 @@ import {
 } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
+import { EventStreamIncompleteError } from '@ahoo-wang/fetcher-eventstream';
 import { OpenAI } from '../src';
 
 const server = setupServer(
@@ -234,7 +235,12 @@ describe('OpenAI Test', () => {
     server.use(
       http.post('https://api.openai.com/v1/chat/completions', () =>
         HttpResponse.json(
-          { error: { message: 'Invalid API key', type: 'invalid_request_error' } },
+          {
+            error: {
+              message: 'Invalid API key',
+              type: 'invalid_request_error',
+            },
+          },
           { status: 401 },
         ),
       ),
@@ -266,5 +272,46 @@ describe('OpenAI Test', () => {
     expect(events[0].data.choices[0].delta.content).toBe('Hello');
     expect(events[1].data.choices[0].delta.content).toBe(' there!');
     expect(events[2].data.choices[0].finish_reason).toBe('stop');
+  });
+
+  it('should error a stream that ends before data: [DONE]', async () => {
+    server.use(
+      http.post(
+        'https://api.openai.com/v1/chat/completions',
+        () =>
+          new HttpResponse(
+            'data: {"id":"c","object":"chat.completion.chunk","created":1,"choices":[{"index":0,"delta":{"content":"Hel"}}]}\n\n',
+            { headers: { 'Content-Type': 'text/event-stream' } },
+          ),
+      ),
+    );
+    const stream = await openAI.chat.completions({
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'Hello' }],
+      stream: true,
+    });
+
+    const contents: unknown[] = [];
+    await expect(
+      (async () => {
+        for await (const event of stream) {
+          contents.push(event.data.choices[0].delta?.content);
+        }
+      })(),
+    ).rejects.toBeInstanceOf(EventStreamIncompleteError);
+    expect(contents).toEqual(['Hel']);
+  });
+
+  it('should cancel a completion through its signal', async () => {
+    const controller = new AbortController();
+    const reason = new Error('user cancelled');
+    controller.abort(reason);
+
+    await expect(
+      openAI.chat.completions(
+        { model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'Hi' }] },
+        controller.signal,
+      ),
+    ).rejects.toMatchObject({ cause: reason });
   });
 });

@@ -58,9 +58,9 @@ try {
 }
 ```
 
-Errors _during_ iteration are not `EventStreamConvertError`: a `data` payload that is not valid JSON (for example an undetected `[DONE]`) errors the JSON stream with the `SyntaxError` from `JSON.parse`, which `for await` rethrows.
+Errors _during_ iteration are not `EventStreamConvertError`: a `data` payload that is not valid JSON (for example an undetected `[DONE]`) errors the JSON stream with the `SyntaxError` from `JSON.parse`, which `for await` rethrows. With a detector, a stream that ends without the terminating event (a lost connection or a server that stopped early) errors with `EventStreamIncompleteError` (also extends `FetcherError`, exported from this package), so a partial answer does not look complete; without a detector the stream ends normally.
 
-SSE media types are matched case-insensitively after removing parameters, using the complete type (`text/event-stream`). Field names remain case-sensitive. CR, LF and CRLF delimit lines, including pairs split across chunks; only an empty line ends an event block. Lines starting with `:` are comments; multiple `data:` lines are joined with `\n`; a block without a `data` line dispatches nothing. Empty blocks reset the event type while retaining the last event ID. A final block without a trailing blank line is still emitted when the body ends.
+SSE media types are matched case-insensitively after removing parameters, using the complete type (`text/event-stream`). Field names remain case-sensitive. CR, LF and CRLF delimit lines, including pairs split across chunks; only an empty line ends an event block. Lines starting with `:` are comments; multiple `data:` lines are joined with `\n`; a block without a `data` line dispatches nothing. Empty blocks reset the event type while retaining the last event ID; `retry` is reported only on the event whose block set it. A final block whose lines all arrived but whose trailing blank line did not is still emitted when the body ends (the WHATWG parser drops it); a final line cut off before its line terminator is dropped, not parsed.
 
 ## SSE Stream Processing Pipeline
 
@@ -69,7 +69,7 @@ SSE media types are matched case-insensitively after removing parameters, using 
 ```
 Response.body (Uint8Array)
   -> TextDecoderStream('utf-8')                (bytes -> string)
-  -> TextLineTransformStream                   (string -> lines; transformer TextLineTransformer)
+  -> TextLineTransformStream(false)            (string -> lines; transformer TextLineTransformer; false drops an unterminated final line)
   -> ServerSentEventTransformStream            (lines -> ServerSentEvent; transformer ServerSentEventTransformer)
   -> JsonServerSentEventTransformStream(det?)  (ServerSentEvent -> JsonServerSentEvent<DATA>; transformer JsonServerSentEventTransform)
 ```
@@ -83,7 +83,7 @@ interface ServerSentEvent {
   id?: string; // emitted as '' when the server never sent an id
   event: string; // 'message' unless an `event:` field was sent
   data: string; // raw data; multiple data lines joined with '\n'
-  retry?: number; // set only for an all-digit `retry:` value
+  retry?: number; // only on the event whose block had an all-digit `retry:` value
 }
 ```
 
@@ -109,7 +109,7 @@ Importing these named exports still runs the module's side effects (prototype pa
 
 ## Termination Detection
 
-`TerminateDetector` is `(event: ServerSentEvent) => boolean`. It runs on the raw event **before** `JSON.parse`; when it returns `true`, that event is dropped and the stream closes normally. Without a detector, a non-JSON sentinel such as `data: [DONE]` errors the stream with a `SyntaxError`. This package exports no ready-made detector; `DoneDetector` (`event.data === '[DONE]'`) lives in `@ahoo-wang/fetcher-openai`.
+`TerminateDetector` is `(event: ServerSentEvent) => boolean`. It runs on the raw event **before** `JSON.parse`; when it returns `true`, that event is dropped and the stream closes normally. If the input ends before any event matches, the stream errors with `EventStreamIncompleteError`. Without a detector, a non-JSON sentinel such as `data: [DONE]` errors the stream with a `SyntaxError`. This package exports no ready-made detector; `DoneDetector` (`event.data === '[DONE]'`) lives in `@ahoo-wang/fetcher-openai`.
 
 ```typescript
 import { type TerminateDetector } from '@ahoo-wang/fetcher-eventstream';
@@ -163,7 +163,7 @@ export class LlmClient {
 
 ## ReadableStreamAsyncIterable
 
-Exported class (`new ReadableStreamAsyncIterable(stream)`) that locks the stream's reader and implements `next()`, `return()` (cancels the stream, e.g. on `break`) and `releaseLock()`. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator]` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
+Exported class (`new ReadableStreamAsyncIterable(stream)`) that locks the stream's reader and implements `next()` (done once released), `return()` (cancels the stream and releases, e.g. on `break`), `throw(error)` (cancels with `error` as the reason, releases, rethrows) and `releaseLock()`. Do not call `releaseLock()` before `break`: a released iterator can no longer cancel the connection. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator]` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
 
 ## Other Exports
 

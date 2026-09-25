@@ -11,25 +11,25 @@ description: 'SSE 解析管线 — @ahoo-wang/fetcher-eventstream 5.0.0'
 
 ## 转换阶段 {#pipeline}
 
-`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
+`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
 
-| API                              | 输入 → 输出                            | 配置                           |
-| -------------------------------- | -------------------------------------- | ------------------------------ |
-| `TextLineTransformer`            | 字符串 chunk → 去除换行符的字符串      | 无构造参数，保存未完成行状态。 |
-| `TextLineTransformStream`        | 上述转换器的 TransformStream 包装      | 无参数。                       |
-| `ServerSentEventTransformer`     | 行 → `ServerSentEvent`                 | 无参数，保留事件状态。         |
-| `ServerSentEventTransformStream` | 上述转换器的 TransformStream 包装      | 无参数。                       |
-| `ServerSentEventStream`          | `ReadableStream<ServerSentEvent>` 别名 | 单消费者流，不是事件总线。     |
+| API                              | 输入 → 输出                            | 配置                                               |
+| -------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| `TextLineTransformer`            | 字符串 chunk → 去除换行符的字符串      | 可选 `emitUnterminated = true`，保存未完成行状态。 |
+| `TextLineTransformStream`        | 上述转换器的 TransformStream 包装      | 可选 `emitUnterminated = true`。                   |
+| `ServerSentEventTransformer`     | 行 → `ServerSentEvent`                 | 无参数，保留事件状态。                             |
+| `ServerSentEventTransformStream` | 上述转换器的 TransformStream 包装      | 无参数。                                           |
+| `ServerSentEventStream`          | `ReadableStream<ServerSentEvent>` 别名 | 单消费者流，不是事件总线。                         |
 
-行解析支持 LF、CR、CRLF，包含 CR/LF 跨 chunk 的情况。结束时刷新非空未完成行。网络 chunk 不必与行/事件边界重合，UTF-8 解码先处理跨字节分块。
+行解析支持 LF、CR、CRLF，包含 CR/LF 跨 chunk 的情况。结束时，最后一个行终止符之后的文本作为最后一行输出，除非 `emitUnterminated` 为 `false`；SSE 转换器传 `false`，因此连接中断截断的最后一行被丢弃而不解析。不含行终止符的 chunk 只追加到缓冲区，所以无论如何分块，长行的开销都是线性的。网络 chunk 不必与行/事件边界重合，UTF-8 解码先处理跨字节分块。
 
 ## 事件字段与边界 {#fields}
 
 `ServerSentEvent` 必填 `event: string`、`data: string`，可选 `id?: string`、`retry?: number`。`ServerSentEventFields` 暴露静态常量 `ID = 'id'`、`EVENT = 'event'`、`DATA = 'data'`、`RETRY = 'retry'`。
 
-空行只在至少出现一个 data 字段时投递事件，多条 data 以 `\n` 连接。冒号开头的注释和未知字段被忽略。只在首个冒号分隔字段/值，并最多移除值开头一个空格；无冒号行的值为空。每个事件名称默认 `'message'`，输出 id 默认 `''`；id/retry 跨事件保留直到更新。含 NUL 的 id 被忽略，retry 只接受 ASCII 数字。
+空行只在至少出现一个 data 字段时投递事件，多条 data 以 `\n` 连接。冒号开头的注释和未知字段被忽略。只在首个冒号分隔字段/值，并最多移除值开头一个空格；无冒号行的值为空。每个事件名称默认 `'message'`，输出 id 默认 `''`；id（最后事件 ID）跨事件保留直到更新，retry 在每次投递后重置，只出现在设置它的那个事件块上。含 NUL 的 id 被忽略，retry 只接受 ASCII 数字。
 
-正常 EOF 时，即使没有末尾空行，也会投递待完成的 data 事件。只有 id/retry 的帧只更新状态，不投递事件。retry 仅为元数据，解析器不会安排重连。类型化数据和协议结束标记见 [JSON 解码](./json-and-results.md)。
+EOF 时，所有行都已到达、只缺结尾空行的事件仍会投递——这是对 WHATWG 解析器（会丢弃它）的有意偏离；中途被截断的行不会到达解析器。只有 id/retry 的帧只更新状态，不投递事件。retry 仅为元数据，解析器不会安排重连。类型化数据和协议结束标记见 [JSON 解码](./json-and-results.md)。
 
 ## 完整示例 {#example}
 
@@ -44,7 +44,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }
@@ -67,8 +67,8 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |
-| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L178) |
-| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23)                 |
-| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                 |
+| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187) |
+| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                 |
+| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                 |
 
 [包索引](./index.md)

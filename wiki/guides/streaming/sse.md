@@ -99,7 +99,7 @@ Start the existing application's development server and open the page. The finit
 
 ## Results, errors, and cleanup
 
-The entry's catch handles both initial HTTP acquisition and later JSON/stream-read failures. For example, malformed JSON in a data frame should display Error. After success, failure, or cancellation, finally aborts this attempt's controller, removes the button/pagehide listeners registered with its signal, and disables the completed Stop button. Leaving the page also aborts. Do not await an entire long-lived stream at module scope: a static importer would wait for that module to finish evaluating.
+The entry's catch handles both initial HTTP acquisition and later JSON/stream-read failures. For example, malformed JSON in a data frame should display Error, as should a stream the server closes before `[DONE]` (`EventStreamIncompleteError`). After success, failure, or cancellation, finally aborts this attempt's controller, removes the button/pagehide listeners registered with its signal, and disables the completed Stop button. Leaving the page also aborts. Do not await an entire long-lived stream at module scope: a static importer would wait for that module to finish evaluating.
 
 If a stream stalls, check that the server sends a blank line after every event. Do not call eventStream again on a consumed body. An in-memory Response containing Hello/DONE checks parsing but does not prove network cancellation; a cancellation check must have the controlled transport observe the supplied signal and end a pending read. There is no automatic reconnection, deduplication, or general retry.
 

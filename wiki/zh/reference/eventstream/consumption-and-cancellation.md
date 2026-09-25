@@ -11,17 +11,17 @@ ReadableStream 同时只能有一个活动 reader。将流交给 UI 或其他转
 
 `isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream)`。原生迭代器不会被修改，保留平台语义。
 
-| `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------- |
-| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                       |
-| `locked`                              | 包装器所有权标记，初始 true。                                                   |
-| `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出。   |
-| `return()`                            | 取消 reader，debug 记录取消失败，释放锁并返回 done；for-await 中 break 调用它。 |
-| `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。    |
-| `throw(error)`                        | 记录并释放锁，返回 done，不重新抛错，也不取消。                                 |
-| `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                  |
+| `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                                      |
+| `locked`                              | 包装器所有权标记，初始 true。                                                                  |
+| `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出；释放后返回 done。 |
+| `return()`                            | 取消流使源停止产出，释放锁并返回 done；已释放时不做任何事。for-await 中 break 调用它。         |
+| `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。                   |
+| `throw(error)`                        | 以 `error` 为原因取消流，释放锁并重新抛出 `error`，与异步生成器一致。                          |
+| `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                                 |
 
-主动提前终止使用 `return()`；单独释放锁会保留活动源。消费响应正文后，释放锁或取消都不会使正文可重复使用。手动获取 reader 时，应在提前退出时取消，并在 finally 释放。网络控制器和只覆盖响应头的超时边界见 [Fetcher 取消](../fetcher/errors-and-cancellation.md)。
+主动提前终止使用 `return()`；单独释放锁会保留活动源；不要在 `break` 之前调用 `releaseLock()`，已释放的迭代器无法再取消连接。消费响应正文后，释放锁或取消都不会使正文可重复使用。手动获取 reader 时，应在提前退出时取消，并在 finally 释放。网络控制器和只覆盖响应头的超时边界见 [Fetcher 取消](../fetcher/errors-and-cancellation.md)。
 
 ## SafeTransformer {#transformers}
 
@@ -75,7 +75,7 @@ void transform;
 
 | 符号                                                                                        | 实现                                                                                                                                            |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54) |
+| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51) |
 | <a id="isreadablestreamasynciterablesupported"></a>`isReadableStreamAsyncIterableSupported` | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                         |
 | <a id="transformerphase"></a>`TransformerPhase`                                             | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                         |
 | <a id="safetransformer"></a>`SafeTransformer`                                               | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                         |

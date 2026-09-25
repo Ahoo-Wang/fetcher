@@ -70,6 +70,11 @@ export interface ChatRequest {
    */
   stream?: boolean;
   /**
+   * Streaming options. `include_usage: true` adds a final chunk carrying
+   * `usage` before `data: [DONE]`.
+   */
+  stream_options?: { include_usage?: boolean };
+  /**
    * 使用什么采样温度，介于 0 和 2 之间。较高的值（如 0.8）将使输出更加随机，而较低的值（如 0.2）将使输出更加集中和确定。
    * 我们通常建议改变这个或`top_p`但不是两者。
    */
@@ -129,9 +134,7 @@ export interface ChatTool {
  * model to call that function.
  */
 export type ChatToolChoice =
-  | 'none'
-  | 'auto'
-  | { type: 'function'; function: { name: string } };
+  'none' | 'auto' | { type: 'function'; function: { name: string } };
 
 export interface Message {
   content?: string;
@@ -145,7 +148,11 @@ export interface ChatResponse {
   created: number;
   id: string;
   object: string;
-  usage: Usage;
+  /**
+   * Token usage. Absent on streamed chunks, except the last one when the
+   * request sets `stream_options: { include_usage: true }`.
+   */
+  usage?: Usage;
 
   [property: string]: any;
 }

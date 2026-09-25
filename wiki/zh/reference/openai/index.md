@@ -36,7 +36,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## 选择入口
 
-需要 SDK 创建 Bearer 认证 Fetcher 时用 `OpenAI`；复用应用代理或既有传输策略时用 `ChatClient({ fetcher })`。`stream: false`（或省略）返回一个 JSON 响应，字面量 `stream: true` 返回 SSE 事件。需要逐次调用取消时，使用底层 Fetcher 配合 `CompletionStreamResultExtractor`。
+需要 SDK 创建 Bearer 认证 Fetcher 时用 `OpenAI`；复用应用代理或既有传输策略时用 `ChatClient({ fetcher })`。`stream: false`（或省略）返回一个 JSON 响应，字面量 `stream: true` 返回 SSE 事件。需要逐次调用取消时，把 `AbortSignal` 作为 `completions` 的第二个参数传入，或使用底层 Fetcher 配合 `CompletionStreamResultExtractor`。
 
 ## 专题
 

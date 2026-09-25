@@ -982,7 +982,7 @@ Start the existing application's development server and open the page. The finit
 
 ## Results, errors, and cleanup
 
-The entry's catch handles both initial HTTP acquisition and later JSON/stream-read failures. For example, malformed JSON in a data frame should display Error. After success, failure, or cancellation, finally aborts this attempt's controller, removes the button/pagehide listeners registered with its signal, and disables the completed Stop button. Leaving the page also aborts. Do not await an entire long-lived stream at module scope: a static importer would wait for that module to finish evaluating.
+The entry's catch handles both initial HTTP acquisition and later JSON/stream-read failures. For example, malformed JSON in a data frame should display Error, as should a stream the server closes before `[DONE]` (`EventStreamIncompleteError`). After success, failure, or cancellation, finally aborts this attempt's controller, removes the button/pagehide listeners registered with its signal, and disables the completed Stop button. Leaving the page also aborts. Do not await an entire long-lived stream at module scope: a static importer would wait for that module to finish evaluating.
 
 If a stream stalls, check that the server sends a blank line after every event. Do not call eventStream again on a consumed body. An in-memory Response containing Hello/DONE checks parsing but does not prove network cancellation; a cancellation check must have the controlled transport observe the supplied signal and end a pending read. There is no automatic reconnection, deduplication, or general retry.
 
@@ -1071,9 +1071,9 @@ The reader lock is released after success or failure. If the consumer fails befo
 
 ## 4. Check the protocol locally
 
-Mock fetch with a `Response` whose content type is `text/event-stream` and body is `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`. Assert that `onText` receives `Hello`. Also test malformed JSON and an aborted request. Restore fetch after the isolated test. This checks the client without spending provider quota.
+Mock fetch with a `Response` whose content type is `text/event-stream` and body is `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`. Assert that `onText` receives `Hello`. Also test malformed JSON, a body that ends before `[DONE]`, and an aborted request. Restore fetch after the isolated test. This checks the client without spending provider quota.
 
-Network/status errors reject the initial request; malformed SSE/JSON or transport failure can reject a later read. Handle both. Avoid automatically replaying a partially displayed answer: retry starts a new completion.
+Network/status errors reject the initial request; malformed SSE/JSON, transport failure, or a stream that ends before `[DONE]` (`EventStreamIncompleteError`) can reject a later read. Handle both. Avoid automatically replaying a partially displayed answer: retry starts a new completion.
 
 ## When you do not need caller-owned cancellation
 
@@ -1093,11 +1093,11 @@ export async function complete(baseURL: string, model: string) {
 }
 ```
 
-Pass `stream: true` for a `JsonServerSentEventStream<ChatResponse>`. The public `completions` method has no per-call signal argument, which is why the cancellable guide uses Fetcher directly.
+Pass `stream: true` for a `JsonServerSentEventStream<ChatResponse>`. The public `completions` method also takes an optional `AbortSignal` as its second argument; the cancellable recipe above uses Fetcher directly to show the reader cleanup explicitly.
 
 See [streaming contracts](../../reference/openai/streaming), [ChatClient and request types](../../reference/openai/client-and-completions), and [stream consumption](../../reference/eventstream/consumption-and-cancellation).
 
-[completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88) connects response extraction to the done detector.
+[completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75) connects response extraction to the done detector.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).
 
@@ -2310,7 +2310,7 @@ Cancellation does not roll back a write already received by the server. Before r
 
 ## Streams and authentication have specific recovery contracts
 
-SSE JSON transformation calls `JSON.parse`; unhandled transformer errors become stream errors. Read failures surface during iteration. Early return or `break` cancels the reader and releases its lock; normal completion also releases the lock. The initial exchange succeeding says nothing about the remaining stream. There is no automatic reconnect, deduplication, or exactly-once delivery guarantee. See [packages/eventstream/src/jsonServerSentEventTransformStream.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L65), [packages/eventstream/src/safeTransformer.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L58), [packages/eventstream/src/readableStreamAsyncIterable.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L105), and [SSE consumption reference](../reference/eventstream/consumption-and-cancellation.md).
+SSE JSON transformation calls `JSON.parse`; unhandled transformer errors become stream errors. Read failures surface during iteration. Early return or `break` cancels the reader and releases its lock; normal completion also releases the lock. The initial exchange succeeding says nothing about the remaining stream. There is no automatic reconnect, deduplication, or exactly-once delivery guarantee. See [packages/eventstream/src/jsonServerSentEventTransformStream.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L80), [packages/eventstream/src/safeTransformer.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L58), [packages/eventstream/src/readableStreamAsyncIterable.ts:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L102), and [SSE consumption reference](../reference/eventstream/consumption-and-cancellation.md).
 
 The core default pipeline does not provide a general retry policy. CoSec's bounded 401 refresh path checks its own authorization header and token session, refreshes, then replays the original exchange. That is an authentication protocol, not arbitrary-error retry. Request-body replayability, write idempotency, and server outcomes remain application concerns. See [packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80), [CoSec guide](../guides/integrations/cosec.md), and [token refresh reference](../reference/cosec/tokens-and-refresh.md).
 
@@ -4394,7 +4394,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }
@@ -4422,25 +4422,25 @@ Use the direct converter when the caller deliberately accepts the body as SSE ev
 
 ## Conversion stages {#pipeline}
 
-`toServerSentEventStream(response: Response): ServerSentEventStream` requires a non-null body, otherwise throws `EventStreamConvertError(response, 'Response body is null')`. It connects `response.body → TextDecoderStream('utf-8') → TextLineTransformStream → ServerSentEventTransformStream`. This direct converter does not validate status or content type. The body becomes locked by the pipeline and cannot be independently read at the same time.
+`toServerSentEventStream(response: Response): ServerSentEventStream` requires a non-null body, otherwise throws `EventStreamConvertError(response, 'Response body is null')`. It connects `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`. This direct converter does not validate status or content type. The body becomes locked by the pipeline and cannot be independently read at the same time.
 
-| API                              | Input → output                               | Configuration                                         |
-| -------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| `TextLineTransformer`            | string chunks → strings without line endings | No constructor arguments; retains partial-line state. |
-| `TextLineTransformStream`        | TransformStream wrapper of the above         | No arguments.                                         |
-| `ServerSentEventTransformer`     | Lines → `ServerSentEvent`                    | No arguments; retains event state.                    |
-| `ServerSentEventTransformStream` | TransformStream wrapper of the above         | No arguments.                                         |
-| `ServerSentEventStream`          | Alias for `ReadableStream<ServerSentEvent>`  | A one-consumer stream, not an event bus.              |
+| API                              | Input → output                               | Configuration                                                   |
+| -------------------------------- | -------------------------------------------- | --------------------------------------------------------------- |
+| `TextLineTransformer`            | string chunks → strings without line endings | Optional `emitUnterminated = true`; retains partial-line state. |
+| `TextLineTransformStream`        | TransformStream wrapper of the above         | Optional `emitUnterminated = true`.                             |
+| `ServerSentEventTransformer`     | Lines → `ServerSentEvent`                    | No arguments; retains event state.                              |
+| `ServerSentEventTransformStream` | TransformStream wrapper of the above         | No arguments.                                                   |
+| `ServerSentEventStream`          | Alias for `ReadableStream<ServerSentEvent>`  | A one-consumer stream, not an event bus.                        |
 
-Text lines support LF, CR, and CRLF, including CR/LF split across chunks. An unterminated final nonempty line is flushed. Network chunk boundaries need not match lines or events, and UTF-8 decoding handles split bytes before line parsing.
+Text lines support LF, CR, and CRLF, including CR/LF split across chunks. At EOF, text after the last line terminator is emitted as a final line unless `emitUnterminated` is `false`; the SSE converter passes `false`, so a final line cut off by a lost connection is dropped rather than parsed. A chunk without a line terminator is only appended to the buffer, so a long line costs linear time however it is chunked. Network chunk boundaries need not match lines or events, and UTF-8 decoding handles split bytes before line parsing.
 
 ## Event fields and boundaries {#fields}
 
 `ServerSentEvent` has required `event: string` and `data: string`, optional `id?: string` and `retry?: number`. `ServerSentEventFields` exposes static constants `ID = 'id'`, `EVENT = 'event'`, `DATA = 'data'`, and `RETRY = 'retry'`.
 
-Blank lines dispatch only when at least one data field has been seen. Multiple data lines join with `\n`. A comment line beginning `:` and unknown fields are ignored. Field/value split occurs at the first colon, removing at most one leading space from its value; a colonless line has an empty value. Event name defaults to `'message'` on each event. Output id defaults to `''`; id and retry persist between events until updated. IDs containing NUL are ignored, and retry accepts ASCII digits only.
+Blank lines dispatch only when at least one data field has been seen. Multiple data lines join with `\n`. A comment line beginning `:` and unknown fields are ignored. Field/value split occurs at the first colon, removing at most one leading space from its value; a colonless line has an empty value. Event name defaults to `'message'` on each event. Output id defaults to `''`; id (the last event ID) persists between events until updated, while retry is reset after each dispatch and reported only on the event whose block set it. IDs containing NUL are ignored, and retry accepts ASCII digits only.
 
-On normal EOF the parser emits a pending data event even without a final blank line. An id-only/retry-only frame updates state but emits no event. Retry is metadata only: the parser does not schedule reconnection. See [JSON decoding](./json-and-results.md) for typed data and protocol-specific terminal markers.
+At EOF the parser still dispatches an event whose lines all arrived but whose closing blank line did not — a deliberate deviation from the WHATWG parser, which drops it; a line cut off mid-way never reaches the parser. An id-only/retry-only frame updates state but emits no event. Retry is metadata only: the parser does not schedule reconnection. See [JSON decoding](./json-and-results.md) for typed data and protocol-specific terminal markers.
 
 ## Complete example {#example}
 
@@ -4455,7 +4455,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }
@@ -4478,9 +4478,9 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |
-| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L178) |
-| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23)                 |
-| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                 |
+| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187) |
+| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                 |
+| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                 |
 
 [Package index](./index.md)
 
@@ -4496,7 +4496,7 @@ Importing the root package installs Response helpers when Response exists, and i
 
 `toJsonServerSentEventStream<DATA>(stream: ServerSentEventStream, terminateDetector?): JsonServerSentEventStream<DATA>` pipes SSE objects through `JsonServerSentEventTransformStream<DATA>`. That class wraps `JsonServerSentEventTransform<DATA>`, a `SafeTransformer`. Both constructors accept optional `TerminateDetector = (event: ServerSentEvent) => boolean`.
 
-The detector runs before JSON.parse. True terminates without emitting that frame; otherwise data is parsed and event/id/retry are preserved in `JsonServerSentEvent<DATA>`. The generic does not validate JSON shape. With no detector, `[DONE]` is invalid JSON, not a built-in terminator. Invalid JSON or a throwing detector errors the stream, so the consumer's `read`/iteration rejects. Termination closes the readable side and cancels/errors upstream through Web Streams propagation; it is not a reconnect operation.
+The detector runs before JSON.parse. True terminates without emitting that frame; otherwise data is parsed and event/id/retry are preserved in `JsonServerSentEvent<DATA>`. The generic does not validate JSON shape. With no detector, `[DONE]` is invalid JSON, not a built-in terminator. Invalid JSON or a throwing detector errors the stream, so the consumer's `read`/iteration rejects. With a detector, input that ends without the terminating event (a lost connection or a server that stopped early) errors the stream with `EventStreamIncompleteError`, which extends FetcherError; without a detector the stream ends normally at EOF. Termination closes the readable side and cancels/errors upstream through Web Streams propagation; it is not a reconnect operation.
 
 ## Response extensions {#response}
 
@@ -4549,12 +4549,13 @@ console.assert(chunks.join('') === 'hello');
 | <a id="eventstreamconverterror"></a>`EventStreamConvertError`                       | [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)                               |
 | <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
 | <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
-| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)   |
-| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31)   |
-| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)   |
-| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81)   |
-| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L95)   |
-| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="eventstreamincompleteerror"></a>`EventStreamIncompleteError`                 | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
+| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
+| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
+| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
+| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
+| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
 
 [Package index](./index.md)
 
@@ -4570,17 +4571,17 @@ A ReadableStream has one active reader. Decide which layer owns reading and canc
 
 `isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream)`. Native iterators are left untouched and retain their platform semantics.
 
-| `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                           |
-| `locked`                                | Wrapper's ownership flag, initially true.                                                                                |
-| `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow.                       |
-| `return()`                              | Cancels the reader, logs cancellation failure at debug level, releases lock, returns done. Used by `break` in for-await. |
-| `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.    |
-| `throw(error)`                          | Logs and releases lock, returns done; does not rethrow or cancel.                                                        |
-| `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                               |
+| `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                       |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                                 |
+| `locked`                                | Wrapper's ownership flag, initially true.                                                                                      |
+| `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow; returns done once released. |
+| `return()`                              | Cancels the stream so its source stops, releases lock, returns done; no-op once released. Used by `break` in for-await.        |
+| `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.          |
+| `throw(error)`                          | Cancels the stream with `error` as the reason, releases lock and rethrows `error`, as an async generator would.                |
+| `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                                     |
 
-Use `return()` for intentional early termination. Releasing a lock alone leaves the source active. After consuming a response body, neither reader release nor cancellation makes the body reusable. For a manually acquired reader, cancel on early exit and release in finally. See [Fetcher cancellation](../fetcher/errors-and-cancellation.md) for the network controller and the header-only timeout boundary.
+Use `return()` for intentional early termination. Releasing a lock alone leaves the source active; do not call `releaseLock()` before `break`, since a released iterator can no longer cancel the connection. After consuming a response body, neither reader release nor cancellation makes the body reusable. For a manually acquired reader, cancel on early exit and release in finally. See [Fetcher cancellation](../fetcher/errors-and-cancellation.md) for the network controller and the header-only timeout boundary.
 
 ## SafeTransformer {#transformers}
 
@@ -4634,7 +4635,7 @@ void transform;
 
 | Symbol                                                                                      | Implementation                                                                                                                                  |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54) |
+| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51) |
 | <a id="isreadablestreamasynciterablesupported"></a>`isReadableStreamAsyncIterableSupported` | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                         |
 | <a id="transformerphase"></a>`TransformerPhase`                                             | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                         |
 | <a id="safetransformer"></a>`SafeTransformer`                                               | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                         |
@@ -4662,26 +4663,27 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `toServerSentEventStream`                | [The SSE parsing pipeline](sse-pipeline.md#toserversenteventstream)                                                      | [eventStreamConverter.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L127)                             |
 | `EventStreamResultExtractor`             | [JSON events, Response helpers, and extractors](json-and-results.md#eventstreamresultextractor)                          | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
 | `JsonEventStreamResultExtractor`         | [JSON events, Response helpers, and extractors](json-and-results.md#jsoneventstreamresultextractor)                      | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
-| `TerminateDetector`                      | [JSON events, Response helpers, and extractors](json-and-results.md#terminatedetector)                                   | [jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)   |
-| `JsonServerSentEvent`                    | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversentevent)                                 | [jsonServerSentEventTransformStream.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31)   |
-| `JsonServerSentEventTransform`           | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventtransform)                        | [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)   |
-| `JsonServerSentEventTransformStream`     | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventtransformstream)                  | [jsonServerSentEventTransformStream.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81)   |
-| `JsonServerSentEventStream`              | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventstream)                           | [jsonServerSentEventTransformStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L95)   |
-| `toJsonServerSentEventStream`            | [JSON events, Response helpers, and extractors](json-and-results.md#tojsonserversenteventstream)                         | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
-| `ReadableStreamAsyncIterable`            | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#readablestreamasynciterable)            | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54)                 |
+| `EventStreamIncompleteError`             | [JSON events, Response helpers, and extractors](json-and-results.md#eventstreamincompleteerror)                          | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
+| `TerminateDetector`                      | [JSON events, Response helpers, and extractors](json-and-results.md#terminatedetector)                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
+| `JsonServerSentEvent`                    | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversentevent)                                 | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
+| `JsonServerSentEventTransform`           | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventtransform)                        | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
+| `JsonServerSentEventTransformStream`     | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventtransformstream)                  | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| `JsonServerSentEventStream`              | [JSON events, Response helpers, and extractors](json-and-results.md#jsonserversenteventstream)                           | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
+| `toJsonServerSentEventStream`            | [JSON events, Response helpers, and extractors](json-and-results.md#tojsonserversenteventstream)                         | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
+| `ReadableStreamAsyncIterable`            | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#readablestreamasynciterable)            | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51)                 |
 | `isReadableStreamAsyncIterableSupported` | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#isreadablestreamasynciterablesupported) | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                                         |
 | `TransformerPhase`                       | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#transformerphase)                       | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                                         |
 | `SafeTransformer`                        | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#safetransformer)                        | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                                         |
 | `ServerSentEvent`                        | [The SSE parsing pipeline](sse-pipeline.md#serversentevent)                                                              | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)           |
 | `ServerSentEventFields`                  | [The SSE parsing pipeline](sse-pipeline.md#serversenteventfields)                                                        | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)           |
 | `ServerSentEventTransformer`             | [The SSE parsing pipeline](sse-pipeline.md#serversenteventtransformer)                                                   | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)           |
-| `ServerSentEventTransformStream`         | [The SSE parsing pipeline](sse-pipeline.md#serversenteventtransformstream)                                               | [serverSentEventTransformStream.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L178)         |
+| `ServerSentEventTransformStream`         | [The SSE parsing pipeline](sse-pipeline.md#serversenteventtransformstream)                                               | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187)         |
 | `StreamController`                       | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#streamcontroller)                       | [streamController.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L24)                                       |
 | `safeTerminate`                          | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#safeterminate)                          | [streamController.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L87)                                       |
 | `safeEnqueue`                            | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#safeenqueue)                            | [streamController.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L105)                                     |
 | `safeError`                              | [Consumption, cancellation, and safe transforms](consumption-and-cancellation.md#safeerror)                              | [streamController.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L125)                                     |
-| `TextLineTransformer`                    | [The SSE parsing pipeline](sse-pipeline.md#textlinetransformer)                                                          | [textLineTransformStream.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23)                         |
-| `TextLineTransformStream`                | [The SSE parsing pipeline](sse-pipeline.md#textlinetransformstream)                                                      | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
+| `TextLineTransformer`                    | [The SSE parsing pipeline](sse-pipeline.md#textlinetransformer)                                                          | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                         |
+| `TextLineTransformStream`                | [The SSE parsing pipeline](sse-pipeline.md#textlinetransformstream)                                                      | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                         |
 
 Response prototype members and the ReadableStream iterator augmentation are global additions rather than named exports; see [Response helpers](json-and-results.md#response) and [iteration](consumption-and-cancellation.md#iteration).
 
@@ -6327,7 +6329,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## Choose an entry point
 
-Use `OpenAI` when the SDK should create a Bearer-authenticated Fetcher; use `ChatClient({ fetcher })` to reuse an application proxy or an existing transport policy. Use `stream: false` (or omit it) for one JSON response and literal `stream: true` for SSE events. Use the underlying Fetcher plus `CompletionStreamResultExtractor` when per-call cancellation is required.
+Use `OpenAI` when the SDK should create a Bearer-authenticated Fetcher; use `ChatClient({ fetcher })` to reuse an application proxy or an existing transport policy. Use `stream: false` (or omit it) for one JSON response and literal `stream: true` for SSE events. For per-call cancellation pass an `AbortSignal` as the second argument of `completions`, or use the underlying Fetcher plus `CompletionStreamResultExtractor`.
 
 ## Topics
 
@@ -6350,23 +6352,23 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 
 ## Client contract
 
-| API                                      | Input/default                                                        | Return/effect                                                                     |
-| ---------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `OpenAI(options)`                        | Required `baseURL: string` and `apiKey: string`; no default endpoint | Owns readonly fetcher and chat; creates Fetcher with Authorization: Bearer apiKey |
-| `OpenAIOptions`                          | Extends BaseURLCapable, both fields required                         | Type only; keys are not validated                                                 |
-| `ChatClient(apiMetadata?)`               | Optional decorator ApiMetadata, e.g. `{ fetcher }`                   | Uses class basePath `chat`                                                        |
-| `ChatClient.completions<T>(chatRequest)` | Required ChatRequest; POST `/completions` under chat basePath        | Promise of ChatResponse or JSON SSE stream based on stream flag                   |
-| `ChatClient.beforeExecute(exchange)`     | FetchExchange; called by decorator runtime                           | void; truthy request.body.stream selects CompletionStreamResultExtractor          |
+| API                                               | Input/default                                                                       | Return/effect                                                                     |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `OpenAI(options)`                                 | Required `baseURL: string` and `apiKey: string`; no default endpoint                | Owns readonly fetcher and chat; creates Fetcher with Authorization: Bearer apiKey |
+| `OpenAIOptions`                                   | Extends BaseURLCapable, both fields required                                        | Type only; keys are not validated                                                 |
+| `ChatClient(apiMetadata?)`                        | Optional decorator ApiMetadata, e.g. `{ fetcher }`                                  | Uses class basePath `chat`                                                        |
+| `ChatClient.completions<T>(chatRequest, signal?)` | Required ChatRequest, optional AbortSignal; POST `/completions` under chat basePath | Promise of ChatResponse or JSON SSE stream based on stream flag                   |
+| `ChatClient.beforeExecute(exchange)`              | FetchExchange; called by decorator runtime                                          | void; truthy request.body.stream selects CompletionStreamResultExtractor          |
 
-`stream: true` inferred as a literal returns a stream; `false` or no stream property returns ChatResponse. A boolean or broad ChatRequest returns the response/stream union, so preserve literals or narrow your request at the call site. There is no second method argument for request options.
+`stream: true` inferred as a literal returns a stream; `false` or no stream property returns ChatResponse. A boolean or broad ChatRequest returns the response/stream union, so preserve literals or narrow your request at the call site. The optional second argument is an `AbortSignal`: aborting it cancels the request and, for a stream, the connection. There is no other per-call options argument.
 
 ## Request and result types
 
-`ChatRequest` requires model:string and messages:Message[]. Optional fields: frequency_penalty, presence_penalty, temperature, top_p, max_tokens, n and seed are numbers; logit_bias is Record&lt;string, number&gt; or null; response_format is Record&lt;string, unknown&gt;; stop is string/string[]/null; stream is boolean; user is string; tools and tool_choice are described below. These are forwarded; the SDK neither assigns provider defaults nor validates ranges or model capability.
+`ChatRequest` requires model:string and messages:Message[]. Optional fields: frequency_penalty, presence_penalty, temperature, top_p, max_tokens, n and seed are numbers; logit_bias is Record&lt;string, number&gt; or null; response_format is Record&lt;string, unknown&gt;; stop is string/string[]/null; stream is boolean; stream_options is `{ include_usage?: boolean }`; user is string; tools and tool_choice are described below. These are forwarded; the SDK neither assigns provider defaults nor validates ranges or model capability.
 
 `Message` has optional string content and role plus arbitrary properties. `ChatToolFunction` requires name, optionally description and parameters:Record&lt;string, unknown&gt;. `ChatTool` requires type:'function' and function. `ChatToolChoice` permits 'none', 'auto', or `{ type: 'function', function: { name } }`; this version does not declare a 'required' literal.
 
-`ChatResponse` requires choices:Choice[], created:number, id:string, object:string, usage:Usage. `Choice` has optional finish_reason, index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; providers may omit usage in stream chunks, so consume only fields present.
+`ChatResponse` requires choices:Choice[], created:number, id:string, object:string; usage?:Usage is optional. `Choice` has optional finish_reason, index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; streamed chunks carry no usage, except a final chunk when the request sets `stream_options: { include_usage: true }`, so consume only fields present.
 
 ## Complete request
 
@@ -6403,7 +6405,7 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L78)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
 
 <span id="chatrequest"></span>
 
@@ -6411,31 +6413,31 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chattoolfunction"></span>
 
-**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L99)
+**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L104)
 
 <span id="chattool"></span>
 
-**`ChatTool`** — [packages/openai/src/chat/types.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L116)
+**`ChatTool`** — [packages/openai/src/chat/types.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L121)
 
 <span id="chattoolchoice"></span>
 
-**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L131)
+**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
 
 <span id="message"></span>
 
-**`Message`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
+**`Message`** — [packages/openai/src/chat/types.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L139)
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:143](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L153)
+**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
+**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
 
 </doc>
 
@@ -6452,11 +6454,11 @@ Request `stream: true` to receive `JsonServerSentEventStream<ChatResponse>`. Eac
 | `DoneDetector(event: ServerSentEvent): boolean` | True only when raw event.data equals `[DONE]` exactly; no trimming/case folding           |
 | `CompletionStreamResultExtractor(exchange)`     | Requires a FetchResponse and readable body; returns requiredJsonEventStream(DoneDetector) |
 
-The terminal marker is recognized before JSON parsing and is not emitted as a ChatResponse. Other malformed JSON fails stream consumption. A successful request Promise means a stream was obtained; errors can still occur later while reading. The extractor does not assemble choices, execute tool calls, estimate usage, or reconnect.
+The terminal marker is recognized before JSON parsing and is not emitted as a ChatResponse. Other malformed JSON fails stream consumption. A stream that ends before `data: [DONE]` (a lost connection or a server that stopped early) errors during iteration with `EventStreamIncompleteError` from `@ahoo-wang/fetcher-eventstream`, so a partial answer is not mistaken for a complete one. A successful request Promise means a stream was obtained; errors can still occur later while reading. The extractor does not assemble choices, execute tool calls, estimate usage, or reconnect.
 
 ## Complete streaming function
 
-ChatClient does not accept a per-call signal parameter. Use the underlying Fetcher request API with CompletionStreamResultExtractor when you need a per-request signal. An AbortController can stop the pending request; cancel the acquired reader when finishing early, and always release its lock.
+`chat.completions(request, signal)` takes a per-call signal. Without ChatClient, use the underlying Fetcher request API with CompletionStreamResultExtractor, as below. An AbortController can stop the pending request; cancel the acquired reader when finishing early, and always release its lock.
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -6515,7 +6517,7 @@ The example expects an authenticated same-application proxy or a server-side con
 
 <span id="completionstreamresultextractor"></span>
 
-**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88)
+**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75)
 
 </doc>
 
@@ -18811,7 +18813,7 @@ void consumeEvents('/events', controller.signal, value => {
 
 ## 结果、错误与清理
 
-入口的 catch 同时处理最初 HTTP 获取失败和之后的 JSON／流读取失败；例如把某个 data 改为非法 JSON，应显示 Error。finally 在成功、失败或取消后终止本次控制器，清理用其 signal 注册的按钮与 pagehide 监听器，并禁用已结束的 Stop 按钮。页面离开也会主动 abort。不要在模块顶层 await 整段长流，否则静态导入它的入口会等待模块求值结束。
+入口的 catch 同时处理最初 HTTP 获取失败和之后的 JSON／流读取失败；例如把某个 data 改为非法 JSON，应显示 Error；服务端在 `[DONE]` 之前关闭流（`EventStreamIncompleteError`）也一样。finally 在成功、失败或取消后终止本次控制器，清理用其 signal 注册的按钮与 pagehide 监听器，并禁用已结束的 Stop 按钮。页面离开也会主动 abort。不要在模块顶层 await 整段长流，否则静态导入它的入口会等待模块求值结束。
 
 流停滞时检查服务端是否为每个事件发送了空行。不要对同一已消费 body 再次调用 eventStream。仅用内存 Response 检查 Hello/DONE 可以验证解析，但不能证明网络取消；取消检查需要让受控传输观察传入的 signal，并使等待中的读取结束。这里没有自动重连、去重或通用重试。
 
@@ -18900,9 +18902,9 @@ export async function streamAnswer(
 
 ## 4. 本地验证协议
 
-模拟 fetch 返回 content type 为 `text/event-stream` 的 `Response`，正文为 `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`，断言 `onText` 接收到 Hello。同时测试非法 JSON 和取消的请求。隔离测试结束后恢复 fetch。这样无需消耗供应商额度即可检查客户端。
+模拟 fetch 返回 content type 为 `text/event-stream` 的 `Response`，正文为 `data: {"choices":[{"delta":{"content":"Hello"}}]}\n\ndata: [DONE]\n\n`，断言 `onText` 接收到 Hello。同时测试非法 JSON、在 `[DONE]` 之前结束的正文和取消的请求。隔离测试结束后恢复 fetch。这样无需消耗供应商额度即可检查客户端。
 
-网络或状态错误会拒绝初始请求；非法 SSE/JSON 或传输中断可能拒绝后续读取，两者都需要处理。避免自动重放已显示部分内容的回答，重试会开始一次新的补全。
+网络或状态错误会拒绝初始请求；非法 SSE/JSON、传输中断或在 `[DONE]` 之前结束的流（`EventStreamIncompleteError`）可能拒绝后续读取，两者都需要处理。避免自动重放已显示部分内容的回答，重试会开始一次新的补全。
 
 ## 不需要调用方控制取消时
 
@@ -18922,11 +18924,11 @@ export async function complete(baseURL: string, model: string) {
 }
 ```
 
-传入 `stream: true` 将返回 `JsonServerSentEventStream<ChatResponse>`。公开的 completions 方法没有单次调用 signal 参数，因此可取消方案直接使用 Fetcher。
+传入 `stream: true` 将返回 `JsonServerSentEventStream<ChatResponse>`。公开的 completions 方法也接受可选的 `AbortSignal` 作为第二个参数；上面的可取消方案直接使用 Fetcher，是为了显式展示 reader 清理。
 
 参见[流式契约](../../reference/openai/streaming)、[ChatClient 和请求类型](../../reference/openai/client-and-completions)及[流消费](../../reference/eventstream/consumption-and-cancellation)。
 
-[completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88) 将响应提取连接到终止探测器。
+[completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75) 将响应提取连接到终止探测器。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。
 
@@ -20130,7 +20132,7 @@ Hook 行为见 [packages/react/src/core/useExecutePromise.ts:210](https://github
 
 ## 流与认证各有具体恢复契约
 
-SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，读取失败在迭代时传播。提前 return 或 `break` 会取消 reader 并释放锁；正常结束也释放锁。初始 exchange 成功不代表剩余流成功；没有自动重连、去重或 exactly-once 投递保证。见 [packages/eventstream/src/jsonServerSentEventTransformStream.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L65)、[packages/eventstream/src/safeTransformer.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L58)、[packages/eventstream/src/readableStreamAsyncIterable.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L105) 和 [SSE 消费参考](../reference/eventstream/consumption-and-cancellation.md)。
+SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，读取失败在迭代时传播。提前 return 或 `break` 会取消 reader 并释放锁；正常结束也释放锁。初始 exchange 成功不代表剩余流成功；没有自动重连、去重或 exactly-once 投递保证。见 [packages/eventstream/src/jsonServerSentEventTransformStream.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L80)、[packages/eventstream/src/safeTransformer.ts:58](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L58)、[packages/eventstream/src/readableStreamAsyncIterable.ts:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L102) 和 [SSE 消费参考](../reference/eventstream/consumption-and-cancellation.md)。
 
 核心默认管线不提供通用重试策略。CoSec 的有限次数 401 刷新路径检查自身授权头及 token 会话，刷新后重放原 exchange。这是认证协议，不是任意错误重试。请求体可重放性、写幂等与服务端结果仍由应用负责。见 [packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)、[CoSec 指南](../guides/integrations/cosec.md)和 [token 刷新参考](../reference/cosec/tokens-and-refresh.md)。
 
@@ -22206,7 +22208,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }
@@ -22234,25 +22236,25 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 
 ## 转换阶段 {#pipeline}
 
-`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
+`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
 
-| API                              | 输入 → 输出                            | 配置                           |
-| -------------------------------- | -------------------------------------- | ------------------------------ |
-| `TextLineTransformer`            | 字符串 chunk → 去除换行符的字符串      | 无构造参数，保存未完成行状态。 |
-| `TextLineTransformStream`        | 上述转换器的 TransformStream 包装      | 无参数。                       |
-| `ServerSentEventTransformer`     | 行 → `ServerSentEvent`                 | 无参数，保留事件状态。         |
-| `ServerSentEventTransformStream` | 上述转换器的 TransformStream 包装      | 无参数。                       |
-| `ServerSentEventStream`          | `ReadableStream<ServerSentEvent>` 别名 | 单消费者流，不是事件总线。     |
+| API                              | 输入 → 输出                            | 配置                                               |
+| -------------------------------- | -------------------------------------- | -------------------------------------------------- |
+| `TextLineTransformer`            | 字符串 chunk → 去除换行符的字符串      | 可选 `emitUnterminated = true`，保存未完成行状态。 |
+| `TextLineTransformStream`        | 上述转换器的 TransformStream 包装      | 可选 `emitUnterminated = true`。                   |
+| `ServerSentEventTransformer`     | 行 → `ServerSentEvent`                 | 无参数，保留事件状态。                             |
+| `ServerSentEventTransformStream` | 上述转换器的 TransformStream 包装      | 无参数。                                           |
+| `ServerSentEventStream`          | `ReadableStream<ServerSentEvent>` 别名 | 单消费者流，不是事件总线。                         |
 
-行解析支持 LF、CR、CRLF，包含 CR/LF 跨 chunk 的情况。结束时刷新非空未完成行。网络 chunk 不必与行/事件边界重合，UTF-8 解码先处理跨字节分块。
+行解析支持 LF、CR、CRLF，包含 CR/LF 跨 chunk 的情况。结束时，最后一个行终止符之后的文本作为最后一行输出，除非 `emitUnterminated` 为 `false`；SSE 转换器传 `false`，因此连接中断截断的最后一行被丢弃而不解析。不含行终止符的 chunk 只追加到缓冲区，所以无论如何分块，长行的开销都是线性的。网络 chunk 不必与行/事件边界重合，UTF-8 解码先处理跨字节分块。
 
 ## 事件字段与边界 {#fields}
 
 `ServerSentEvent` 必填 `event: string`、`data: string`，可选 `id?: string`、`retry?: number`。`ServerSentEventFields` 暴露静态常量 `ID = 'id'`、`EVENT = 'event'`、`DATA = 'data'`、`RETRY = 'retry'`。
 
-空行只在至少出现一个 data 字段时投递事件，多条 data 以 `\n` 连接。冒号开头的注释和未知字段被忽略。只在首个冒号分隔字段/值，并最多移除值开头一个空格；无冒号行的值为空。每个事件名称默认 `'message'`，输出 id 默认 `''`；id/retry 跨事件保留直到更新。含 NUL 的 id 被忽略，retry 只接受 ASCII 数字。
+空行只在至少出现一个 data 字段时投递事件，多条 data 以 `\n` 连接。冒号开头的注释和未知字段被忽略。只在首个冒号分隔字段/值，并最多移除值开头一个空格；无冒号行的值为空。每个事件名称默认 `'message'`，输出 id 默认 `''`；id（最后事件 ID）跨事件保留直到更新，retry 在每次投递后重置，只出现在设置它的那个事件块上。含 NUL 的 id 被忽略，retry 只接受 ASCII 数字。
 
-正常 EOF 时，即使没有末尾空行，也会投递待完成的 data 事件。只有 id/retry 的帧只更新状态，不投递事件。retry 仅为元数据，解析器不会安排重连。类型化数据和协议结束标记见 [JSON 解码](./json-and-results.md)。
+EOF 时，所有行都已到达、只缺结尾空行的事件仍会投递——这是对 WHATWG 解析器（会丢弃它）的有意偏离；中途被截断的行不会到达解析器。只有 id/retry 的帧只更新状态，不投递事件。retry 仅为元数据，解析器不会安排重连。类型化数据和协议结束标记见 [JSON 解码](./json-and-results.md)。
 
 ## 完整示例 {#example}
 
@@ -22267,7 +22269,7 @@ const response = new Response(
         'id: 1\r',
         '\ndata: hel',
         'lo\r\n\r\n',
-        'data: tail',
+        'data: tail\n',
       ]) {
         controller.enqueue(encoder.encode(chunk));
       }
@@ -22290,9 +22292,9 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |
-| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L178) |
-| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23)                 |
-| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                 |
+| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187) |
+| <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                 |
+| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                 |
 
 [包索引](./index.md)
 
@@ -22308,7 +22310,7 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 
 `toJsonServerSentEventStream<DATA>(stream: ServerSentEventStream, terminateDetector?): JsonServerSentEventStream<DATA>` 使用 `JsonServerSentEventTransformStream<DATA>` 转换 SSE 对象。它包装继承 `SafeTransformer` 的 `JsonServerSentEventTransform<DATA>`，两者构造参数都是可选 `TerminateDetector = (event: ServerSentEvent) => boolean`。
 
-检测器在 JSON.parse 前执行，返回 true 时终止且不输出该帧；否则解析 data，并把 event/id/retry 保留在 `JsonServerSentEvent<DATA>` 中。泛型不校验 JSON 结构。不提供检测器时，`[DONE]` 是无效 JSON，不是内置结束标记。JSON 无效或检测器抛错会使流失败，消费者 read/迭代拒绝。终止关闭可读侧，并通过 Web Streams 传播取消/错误到上游，不会重连。
+检测器在 JSON.parse 前执行，返回 true 时终止且不输出该帧；否则解析 data，并把 event/id/retry 保留在 `JsonServerSentEvent<DATA>` 中。泛型不校验 JSON 结构。不提供检测器时，`[DONE]` 是无效 JSON，不是内置结束标记。JSON 无效或检测器抛错会使流失败，消费者 read/迭代拒绝。有检测器时，输入在结束事件之前结束（连接中断或服务端提前停止）会以继承 FetcherError 的 `EventStreamIncompleteError` 使流失败；没有检测器时流在 EOF 正常结束。终止关闭可读侧，并通过 Web Streams 传播取消/错误到上游，不会重连。
 
 ## Response 扩展 {#response}
 
@@ -22361,12 +22363,13 @@ console.assert(chunks.join('') === 'hello');
 | <a id="eventstreamconverterror"></a>`EventStreamConvertError`                       | [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)                               |
 | <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
 | <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
-| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)   |
-| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31)   |
-| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)   |
-| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81)   |
-| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L95)   |
-| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="eventstreamincompleteerror"></a>`EventStreamIncompleteError`                 | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
+| <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
+| <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
+| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
+| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
+| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
 
 [包索引](./index.md)
 
@@ -22382,17 +22385,17 @@ ReadableStream 同时只能有一个活动 reader。将流交给 UI 或其他转
 
 `isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream)`。原生迭代器不会被修改，保留平台语义。
 
-| `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------- |
-| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                       |
-| `locked`                              | 包装器所有权标记，初始 true。                                                   |
-| `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出。   |
-| `return()`                            | 取消 reader，debug 记录取消失败，释放锁并返回 done；for-await 中 break 调用它。 |
-| `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。    |
-| `throw(error)`                        | 记录并释放锁，返回 done，不重新抛错，也不取消。                                 |
-| `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                  |
+| `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                                      |
+| `locked`                              | 包装器所有权标记，初始 true。                                                                  |
+| `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出；释放后返回 done。 |
+| `return()`                            | 取消流使源停止产出，释放锁并返回 done；已释放时不做任何事。for-await 中 break 调用它。         |
+| `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。                   |
+| `throw(error)`                        | 以 `error` 为原因取消流，释放锁并重新抛出 `error`，与异步生成器一致。                          |
+| `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                                 |
 
-主动提前终止使用 `return()`；单独释放锁会保留活动源。消费响应正文后，释放锁或取消都不会使正文可重复使用。手动获取 reader 时，应在提前退出时取消，并在 finally 释放。网络控制器和只覆盖响应头的超时边界见 [Fetcher 取消](../fetcher/errors-and-cancellation.md)。
+主动提前终止使用 `return()`；单独释放锁会保留活动源；不要在 `break` 之前调用 `releaseLock()`，已释放的迭代器无法再取消连接。消费响应正文后，释放锁或取消都不会使正文可重复使用。手动获取 reader 时，应在提前退出时取消，并在 finally 释放。网络控制器和只覆盖响应头的超时边界见 [Fetcher 取消](../fetcher/errors-and-cancellation.md)。
 
 ## SafeTransformer {#transformers}
 
@@ -22446,7 +22449,7 @@ void transform;
 
 | 符号                                                                                        | 实现                                                                                                                                            |
 | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54) |
+| <a id="readablestreamasynciterable"></a>`ReadableStreamAsyncIterable`                       | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51) |
 | <a id="isreadablestreamasynciterablesupported"></a>`isReadableStreamAsyncIterableSupported` | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                         |
 | <a id="transformerphase"></a>`TransformerPhase`                                             | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                         |
 | <a id="safetransformer"></a>`SafeTransformer`                                               | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                         |
@@ -22474,26 +22477,27 @@ void transform;
 | `toServerSentEventStream`                | [SSE 解析管线](sse-pipeline.md#toserversenteventstream)                                          | [eventStreamConverter.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L127)                             |
 | `EventStreamResultExtractor`             | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#eventstreamresultextractor)           | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
 | `JsonEventStreamResultExtractor`         | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsoneventstreamresultextractor)       | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
-| `TerminateDetector`                      | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#terminatedetector)                    | [jsonServerSentEventTransformStream.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L24)   |
-| `JsonServerSentEvent`                    | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversentevent)                  | [jsonServerSentEventTransformStream.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L31)   |
-| `JsonServerSentEventTransform`           | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventtransform)         | [jsonServerSentEventTransformStream.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L47)   |
-| `JsonServerSentEventTransformStream`     | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventtransformstream)   | [jsonServerSentEventTransformStream.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L81)   |
-| `JsonServerSentEventStream`              | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventstream)            | [jsonServerSentEventTransformStream.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L95)   |
-| `toJsonServerSentEventStream`            | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#tojsonserversenteventstream)          | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
-| `ReadableStreamAsyncIterable`            | [消费、取消与安全转换器](consumption-and-cancellation.md#readablestreamasynciterable)            | [readableStreamAsyncIterable.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L54)                 |
+| `EventStreamIncompleteError`             | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#eventstreamincompleteerror)           | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
+| `TerminateDetector`                      | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#terminatedetector)                    | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
+| `JsonServerSentEvent`                    | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversentevent)                  | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
+| `JsonServerSentEventTransform`           | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventtransform)         | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
+| `JsonServerSentEventTransformStream`     | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventtransformstream)   | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
+| `JsonServerSentEventStream`              | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#jsonserversenteventstream)            | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
+| `toJsonServerSentEventStream`            | [JSON 事件、Response 辅助方法与提取器](json-and-results.md#tojsonserversenteventstream)          | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
+| `ReadableStreamAsyncIterable`            | [消费、取消与安全转换器](consumption-and-cancellation.md#readablestreamasynciterable)            | [readableStreamAsyncIterable.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreamAsyncIterable.ts#L51)                 |
 | `isReadableStreamAsyncIterableSupported` | [消费、取消与安全转换器](consumption-and-cancellation.md#isreadablestreamasynciterablesupported) | [readableStreams.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/readableStreams.ts#L37)                                         |
 | `TransformerPhase`                       | [消费、取消与安全转换器](consumption-and-cancellation.md#transformerphase)                       | [safeTransformer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L19)                                         |
 | `SafeTransformer`                        | [消费、取消与安全转换器](consumption-and-cancellation.md#safetransformer)                        | [safeTransformer.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/safeTransformer.ts#L44)                                         |
 | `ServerSentEvent`                        | [SSE 解析管线](sse-pipeline.md#serversentevent)                                                  | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)           |
 | `ServerSentEventFields`                  | [SSE 解析管线](sse-pipeline.md#serversenteventfields)                                            | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)           |
 | `ServerSentEventTransformer`             | [SSE 解析管线](sse-pipeline.md#serversenteventtransformer)                                       | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)           |
-| `ServerSentEventTransformStream`         | [SSE 解析管线](sse-pipeline.md#serversenteventtransformstream)                                   | [serverSentEventTransformStream.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L178)         |
+| `ServerSentEventTransformStream`         | [SSE 解析管线](sse-pipeline.md#serversenteventtransformstream)                                   | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187)         |
 | `StreamController`                       | [消费、取消与安全转换器](consumption-and-cancellation.md#streamcontroller)                       | [streamController.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L24)                                       |
 | `safeTerminate`                          | [消费、取消与安全转换器](consumption-and-cancellation.md#safeterminate)                          | [streamController.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L87)                                       |
 | `safeEnqueue`                            | [消费、取消与安全转换器](consumption-and-cancellation.md#safeenqueue)                            | [streamController.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L105)                                     |
 | `safeError`                              | [消费、取消与安全转换器](consumption-and-cancellation.md#safeerror)                              | [streamController.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/streamController.ts#L125)                                     |
-| `TextLineTransformer`                    | [SSE 解析管线](sse-pipeline.md#textlinetransformer)                                              | [textLineTransformStream.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L23)                         |
-| `TextLineTransformStream`                | [SSE 解析管线](sse-pipeline.md#textlinetransformstream)                                          | [textLineTransformStream.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L71)                         |
+| `TextLineTransformer`                    | [SSE 解析管线](sse-pipeline.md#textlinetransformer)                                              | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                         |
+| `TextLineTransformStream`                | [SSE 解析管线](sse-pipeline.md#textlinetransformstream)                                          | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                         |
 
 Response 原型成员和 ReadableStream 迭代器是全局扩展，不是具名导出，见 [Response 辅助方法](json-and-results.md#response)及[迭代](consumption-and-cancellation.md#iteration)。
 
@@ -24139,7 +24143,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## 选择入口
 
-需要 SDK 创建 Bearer 认证 Fetcher 时用 `OpenAI`；复用应用代理或既有传输策略时用 `ChatClient({ fetcher })`。`stream: false`（或省略）返回一个 JSON 响应，字面量 `stream: true` 返回 SSE 事件。需要逐次调用取消时，使用底层 Fetcher 配合 `CompletionStreamResultExtractor`。
+需要 SDK 创建 Bearer 认证 Fetcher 时用 `OpenAI`；复用应用代理或既有传输策略时用 `ChatClient({ fetcher })`。`stream: false`（或省略）返回一个 JSON 响应，字面量 `stream: true` 返回 SSE 事件。需要逐次调用取消时，把 `AbortSignal` 作为 `completions` 的第二个参数传入，或使用底层 Fetcher 配合 `CompletionStreamResultExtractor`。
 
 ## 专题
 
@@ -24162,23 +24166,23 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## 客户端契约
 
-| API                                      | 输入/默认值                                               | 返回/效果                                                                     |
-| ---------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `OpenAI(options)`                        | 必填 `baseURL: string`、`apiKey: string`，无默认端点      | 持有 readonly fetcher 和 chat；创建带 Authorization: Bearer apiKey 的 Fetcher |
-| `OpenAIOptions`                          | 继承 BaseURLCapable，两字段必填                           | 仅为类型，不校验 key                                                          |
-| `ChatClient(apiMetadata?)`               | 可选装饰器 ApiMetadata，如 `{ fetcher }`                  | 类 basePath 为 `chat`                                                         |
-| `ChatClient.completions<T>(chatRequest)` | 必填 ChatRequest；向 chat basePath 下 `/completions` POST | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                    |
-| `ChatClient.beforeExecute(exchange)`     | FetchExchange，由装饰器运行时调用                         | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor        |
+| API                                               | 输入/默认值                                                                 | 返回/效果                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                        | 持有 readonly fetcher 和 chat；创建带 Authorization: Bearer apiKey 的 Fetcher |
+| `OpenAIOptions`                                   | 继承 BaseURLCapable，两字段必填                                             | 仅为类型，不校验 key                                                          |
+| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                    | 类 basePath 为 `chat`                                                         |
+| `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                    |
+| `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                           | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor        |
 
-字面量 `stream: true` 返回流；`false` 或无 stream 属性返回 ChatResponse。boolean 或宽类型 ChatRequest 返回响应/流联合，因此调用处应保留字面量或收窄请求。方法没有用于请求选项的第二个参数。
+字面量 `stream: true` 返回流；`false` 或无 stream 属性返回 ChatResponse。boolean 或宽类型 ChatRequest 返回响应/流联合，因此调用处应保留字面量或收窄请求。可选的第二个参数是 `AbortSignal`：中止它会取消请求，流式时还会取消连接。除此之外没有单次调用的选项参数。
 
 ## 请求与结果类型
 
-`ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
+`ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；stream_options 为 `{ include_usage?: boolean }`；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
 
 `Message` 有可选 string content、role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
 
-`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string、usage:Usage。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；供应商流 chunk 可能省略 usage，应只消费实际存在的字段。
+`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage 可选。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage，只有请求设置 `stream_options: { include_usage: true }` 时最后一个 chunk 才带，应只消费实际存在的字段。
 
 ## 完整请求
 
@@ -24215,7 +24219,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L78)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
 
 <span id="chatrequest"></span>
 
@@ -24223,31 +24227,31 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chattoolfunction"></span>
 
-**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L99)
+**`ChatToolFunction`** — [packages/openai/src/chat/types.ts:104](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L104)
 
 <span id="chattool"></span>
 
-**`ChatTool`** — [packages/openai/src/chat/types.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L116)
+**`ChatTool`** — [packages/openai/src/chat/types.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L121)
 
 <span id="chattoolchoice"></span>
 
-**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L131)
+**`ChatToolChoice`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
 
 <span id="message"></span>
 
-**`Message`** — [packages/openai/src/chat/types.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L136)
+**`Message`** — [packages/openai/src/chat/types.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L139)
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:143](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L143)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L153)
+**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
+**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
 
 </doc>
 
@@ -24264,11 +24268,11 @@ export async function answer(options: OpenAIOptions, model: string) {
 | `DoneDetector(event: ServerSentEvent): boolean` | 原始 event.data 精确等于 `[DONE]` 才为 true，不 trim、不忽略大小写         |
 | `CompletionStreamResultExtractor(exchange)`     | 要求 FetchResponse 和可读 body，返回 requiredJsonEventStream(DoneDetector) |
 
-终止标记在 JSON 解析前识别，不作为 ChatResponse 发出。其他无效 JSON 会使流消费失败。请求 Promise 成功只表示拿到了流，读取时仍可能失败。提取器不拼接 choices、不执行工具调用、不估计 usage，也不重连。
+终止标记在 JSON 解析前识别，不作为 ChatResponse 发出。其他无效 JSON 会使流消费失败。在 `data: [DONE]` 之前结束的流（连接中断或服务端提前停止）会在迭代时以 `@ahoo-wang/fetcher-eventstream` 的 `EventStreamIncompleteError` 失败，不会把不完整的回答当成完整回答。请求 Promise 成功只表示拿到了流，读取时仍可能失败。提取器不拼接 choices、不执行工具调用、不估计 usage，也不重连。
 
 ## 完整流式函数
 
-ChatClient 不接受单次调用 signal 参数。需要单次请求 signal 时，使用底层 Fetcher 请求 API 并指定 CompletionStreamResultExtractor。AbortController 可终止未完成的请求；提前结束时取消已获得的 reader，并始终释放锁。
+`chat.completions(request, signal)` 接受单次调用 signal。不使用 ChatClient 时，按下例使用底层 Fetcher 请求 API 并指定 CompletionStreamResultExtractor。AbortController 可终止未完成的请求；提前结束时取消已获得的 reader，并始终释放锁。
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -24327,7 +24331,7 @@ export async function readAnswer(
 
 <span id="completionstreamresultextractor"></span>
 
-**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L88)
+**`CompletionStreamResultExtractor`** — [packages/openai/src/chat/completionStreamResultExtractor.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/completionStreamResultExtractor.ts#L75)
 
 </doc>
 
