@@ -395,11 +395,14 @@ const apiHooks = createExecuteApiHooks({ api: new UserApi() });
 ```
 
 Every promise-returning method becomes a `use<Method>` hook. Hook options are the
-`useExecutePromise` options plus `onBeforeExecute(abortController, params)`.
-The generated `execute` calls `method(...params)` without the AbortController, so
-`abort()` only discards the state update; to cancel the HTTP request, push the
-controller into `params` in `onBeforeExecute` (decorator methods detect an
-`AbortController` argument).
+`useExecutePromise` options plus `onBeforeExecute(abortController, params)` and
+`appendAbortController` (default `false`). By default `execute` calls
+`method(...params)` without the AbortController, so `abort()` only discards the
+state update. With `appendAbortController: true` it calls
+`method(...params, abortController)`: decorator methods detect an
+`AbortController` argument, so replacing or unmounting cancels the HTTP request.
+Keep it off for methods with optional trailing parameters (the controller would
+fill that slot); `onBeforeExecute` can place it in a specific slot instead.
 
 ### createQueryApiHooks
 

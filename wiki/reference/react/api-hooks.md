@@ -15,7 +15,7 @@ The two factories turn an existing service object's asynchronous methods into st
 | `methodNameToHookName(name)`          | Prefixes `use` and uppercases the first character; empty name throws.                                                                                                                  |
 | `collectMethods(obj, onAccessor?)`    | Returns a Map of bound methods, excluding constructor and Object.prototype. Optional accessor visitor can defer getter evaluation.                                                     |
 
-Execute hooks do not inject a controller into arbitrary method arguments. If a method supports cancellation, use `onBeforeExecute` to assign the controller into the matching parameter slot, or use the query factory's standard signature. Query factories forward attributes and controller automatically. Both return data through result state, not the execute promise.
+Execute hooks pass the controller only when a hook sets `appendAbortController: true`: the method is then called as `method(...params, abortController)`, and a `@api` method picks the controller up wherever it lands, so replacing or unmounting an execution cancels its request. Leave it off for methods with optional trailing parameters, where the controller would take a parameter's place; `onBeforeExecute` can put it into a specific slot instead. Query factories forward attributes and controller automatically. Both return data through result state, not the execute promise.
 
 `APIHooks`, `QueryAPIHooks`, `HookName`, `ApiHooksMapping`, `ApiMethod`, `QueryMethod`, `FunctionParameters`, `FunctionReturnType`, `IsPromiseFunction` describe compile-time mappings. Runtime discovery checks whether a property is a function, not whether it really returns a Promise. Accessor-backed methods may be materialized on first access/enumeration and their getter can throw. Only supply a trusted service object. Cancellation, callbacks, stale-result suppression and unmount rules are the [shared executor contract](./promise-and-query-state).
 
@@ -183,7 +183,7 @@ export function createExecuteApiHooks<
 >(options: CreateExecuteApiHooksOptions<API>): APIHooks<API, E>;
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:201](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L201)
+[packages/react/src/api/createExecuteApiHooks.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L217)
 
 ### CreateExecuteApiHooksOptions {#api-CreateExecuteApiHooksOptions}
 
@@ -204,6 +204,7 @@ export interface UseApiMethodExecuteOptions<
   E = FetcherError,
 > extends UseExecutePromiseOptions<TData, E> {
   onBeforeExecute?: OnBeforeExecuteCallback<TArgs>;
+  appendAbortController?: boolean;
 }
 ```
 
@@ -229,7 +230,7 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
 };
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L78)
+[packages/react/src/api/createExecuteApiHooks.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L91)
 
 ### createQueryApiHooks {#api-createQueryApiHooks}
 

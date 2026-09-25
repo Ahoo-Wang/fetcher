@@ -65,6 +65,19 @@ export interface UseApiMethodExecuteOptions<
    * }
    */
   onBeforeExecute?: OnBeforeExecuteCallback<TArgs>;
+
+  /**
+   * Pass this execution's AbortController to the method as an extra, last
+   * argument: `method(...params, abortController)`. A `@api` method picks it
+   * up wherever it lands (an AbortController argument cancels its request),
+   * so replacing or unmounting an execution also cancels the network request
+   * instead of only discarding its result. Leave it off (the default) for a
+   * method with optional trailing parameters, where the controller would take
+   * a parameter's place.
+   *
+   * @default false
+   */
+  appendAbortController?: boolean;
 }
 
 /**
@@ -116,6 +129,7 @@ function useApiMethodExecute<
     E
   >(options);
   const onBeforeExecuteRef = useLatest(options?.onBeforeExecute);
+  const latestOptions = useLatest(options);
   const execute = useCallback(
     (...params: Parameters<TMethod>) => {
       return originalExecute(abortController => {
@@ -124,10 +138,12 @@ function useApiMethodExecute<
           onBeforeExecuteRef.current(abortController, params);
         }
         // Always call method with (potentially modified) parameters
-        return method(...params);
+        return latestOptions.current?.appendAbortController
+          ? method(...params, abortController)
+          : method(...params);
       });
     },
-    [originalExecute, method, onBeforeExecuteRef],
+    [originalExecute, method, onBeforeExecuteRef, latestOptions],
   );
 
   return {
