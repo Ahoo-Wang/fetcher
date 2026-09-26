@@ -80,7 +80,7 @@
     "@ahoo-wang/fetcher-eventbus": "workspace:^",
     "@ahoo-wang/fetcher-storage": "workspace:^",
     "@ahoo-wang/fetcher-cosec": "workspace:^",
-    "react": "^19.0.0"
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
