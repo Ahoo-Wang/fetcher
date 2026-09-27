@@ -120,7 +120,7 @@ jobs:
 
       - name: Preserve suite coverage
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: unit-coverage-node24-${{ matrix.suite }}
           path: coverage-artifact/
@@ -137,7 +137,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: unit-coverage-node24-*
           merge-multiple: true
