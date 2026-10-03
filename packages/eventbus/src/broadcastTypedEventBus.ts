@@ -128,6 +128,8 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
   private readonly delegate: TypedEventBus<EVENT>;
   private messenger: CrossTabMessenger;
+  /** Whether this bus created its messenger, and so closes it on destroy. */
+  private readonly ownsMessenger: boolean;
   public messageTransformer?: BroadcastTypedEventBusOptions<EVENT>['messageTransformer'];
 
   /**
@@ -145,6 +147,7 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
     if (!messenger) {
       throw new Error('Messenger setup failed');
     }
+    this.ownsMessenger = !options.messenger;
     this.messenger = messenger;
     this.messenger.onmessage = async (message: unknown) => {
       try {
@@ -242,15 +245,20 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   /**
    * Cleans up resources and stops cross-context communication
    *
-   * This method closes the messenger connection, preventing further
-   * cross-tab communication. Local event handling continues to work
-   * through the delegate bus: a later emit() runs local handlers and posts
-   * nothing.
+   * Stops cross-tab communication: the bus no longer posts or receives. It
+   * closes the messenger it created; a messenger passed in `options` belongs
+   * to the caller, so it is only detached and left open. Local event handling
+   * continues to work through the delegate bus: a later emit() runs local
+   * handlers and posts nothing.
    *
    * Note: This does not remove event handlers or affect local event processing.
    */
   destroy(): void {
     closedBuses.add(this);
-    this.messenger.close();
+    if (this.ownsMessenger) {
+      this.messenger.close();
+    } else {
+      this.messenger.onmessage = () => {};
+    }
   }
 }

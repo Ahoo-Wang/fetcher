@@ -154,7 +154,9 @@ describe('AuthorizationResponseInterceptor', () => {
       fetcher: mockFetcher,
     } as unknown as FetchExchange;
 
-    const refreshError = new Error('Refresh failed');
+    const refreshError = Object.assign(new Error('Refresh failed'), {
+      exchange: { response: { status: 401 } },
+    });
 
     mockTokenStorage.get = vi.fn().mockReturnValue({
       token: 'current-token',

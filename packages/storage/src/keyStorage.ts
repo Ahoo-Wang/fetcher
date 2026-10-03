@@ -84,8 +84,13 @@ export interface KeyStorageOptions<Deserialized> {
 }
 
 /**
- * A storage wrapper that manages a single value associated with a specific key
- * Provides caching and automatic cache invalidation when the storage value changes
+ * A storage wrapper that manages a single value associated with a specific key.
+ *
+ * Values are cached. The cache follows the changes its event bus carries:
+ * writes through this instance, through another instance sharing the bus, and
+ * — with a BroadcastTypedEventBus — from other tabs. A write by an instance on
+ * a different bus, or straight to the backend, is not seen until `reload()`;
+ * share a bus between instances that must agree.
  * @template Deserialized The type of the value being stored
  */
 export class KeyStorage<

@@ -65,6 +65,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `RefreshToken`                                   | [Token 与刷新](tokens-and-refresh#refreshtoken)                                                 |
 | `RefreshTokenError`                              | [Token 与刷新](tokens-and-refresh#refreshtokenerror)                                            |
 | `RefreshTokenStatusCapable`                      | [Token 与刷新](tokens-and-refresh#refreshtokenstatuscapable)                                    |
+| `RefreshUnavailableError`                        | [Token 与刷新](tokens-and-refresh#refreshunavailableerror)                                      |
 | `RequestTrust`                                   | [拦截器与资源归属](interceptors-and-attribution#requesttrust)                                   |
 | `RequestTrustCapable`                            | [拦截器与资源归属](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [拦截器与资源归属](interceptors-and-attribution#resourceattributionoptions)                     |

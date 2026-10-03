@@ -157,7 +157,7 @@ bus.on({
 await bus.emit('broadcast-message'); // Local + cross-tab
 ```
 
-Default messenger: `createCrossTabMessenger()` on channel `_broadcast_:{type}`, where `type` is the delegate's `type`. Pass a custom `messenger` option to override. If no messenger is supplied and neither backend is available, the constructor throws `Error('Messenger setup failed')`.
+Default messenger: `createCrossTabMessenger()` on channel `_broadcast_:{type}`, where `type` is the delegate's `type`. Pass a custom `messenger` option to override; a passed messenger belongs to the caller — `destroy()` detaches it (replaces its `onmessage` with a no-op) but does not close it. If no messenger is supplied and neither backend is available, the constructor throws `Error('Messenger setup failed')`.
 
 `emit()` awaits the delegate (local handlers) first, then posts. Neither backend echoes a message back to the posting context, so local handlers run exactly once per local `emit()`, and a remote message is dispatched only to the delegate (it is not re-broadcast). `on`/`off`/`handlers` all forward to the delegate.
 
@@ -280,12 +280,12 @@ if (messenger) {
 
 ## API Reference
 
-| Method        | Returns         | Description                                                                                                                     |
-| ------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `on(handler)` | `boolean`       | Register handler; returns `false` if duplicate name                                                                             |
-| `off(name)`   | `boolean`       | Remove handler by name; returns `false` if not found                                                                            |
-| `emit(event)` | `Promise<void>` | Trigger event to all handlers                                                                                                   |
-| `destroy()`   | `void`          | Serial/Parallel: removes all handlers. Broadcast: closes the messenger only — call `delegate.destroy()` too if handlers must go |
+| Method        | Returns         | Description                                                                                                                                                                                                                 |
+| ------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `on(handler)` | `boolean`       | Register handler; returns `false` if duplicate name                                                                                                                                                                         |
+| `off(name)`   | `boolean`       | Remove handler by name; returns `false` if not found                                                                                                                                                                        |
+| `emit(event)` | `Promise<void>` | Trigger event to all handlers                                                                                                                                                                                               |
+| `destroy()`   | `void`          | Serial/Parallel: removes all handlers. Broadcast: stops posting/receiving and closes the messenger it created (a passed `messenger` is only detached; close it yourself); call `delegate.destroy()` too if handlers must go |
 
 Notes:
 

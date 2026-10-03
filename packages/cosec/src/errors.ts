@@ -31,3 +31,28 @@ export class RefreshSessionChangedError extends FetcherError {
     this.name = 'RefreshSessionChangedError';
   }
 }
+
+/**
+ * The refresh could not complete — a network failure, a timeout, an abort, a
+ * 5xx — but the server did not reject the refresh token, so the session is
+ * kept and no unauthorized notification is sent. A later request refreshes
+ * again. Only a 4xx answer from the refresh endpoint (or a malformed refresh
+ * response) ends the session with {@link RefreshTokenError}.
+ */
+export class RefreshUnavailableError extends FetcherError {
+  constructor(
+    public readonly token: JwtCompositeToken,
+    cause?: Error | any,
+  ) {
+    super('Refresh token is unavailable; the session is kept.', cause);
+    this.name = 'RefreshUnavailableError';
+  }
+}
+
+/** The refresh endpoint answered, but not with a composite token. */
+export class InvalidRefreshResponseError extends Error {
+  constructor() {
+    super('The refresh response has no accessToken and refreshToken.');
+    this.name = 'InvalidRefreshResponseError';
+  }
+}

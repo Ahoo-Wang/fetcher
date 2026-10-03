@@ -25,6 +25,7 @@ import {
   ForbiddenErrorInterceptor,
   JwtTokenManager,
   RefreshTokenError,
+  RefreshUnavailableError,
   TokenStorage,
   UnauthorizedErrorInterceptor,
   type CompositeToken,
@@ -146,7 +147,9 @@ describe('401 refresh-retry bound through a real Fetcher', () => {
   it('removes the token once and surfaces RefreshTokenError when refresh fails', async () => {
     const remove = vi.spyOn(storage, 'remove');
     wire(async () => {
-      throw new Error('refresh rejected');
+      throw Object.assign(new Error('refresh rejected'), {
+        exchange: { response: { status: 401 } },
+      });
     });
     serve(() => 401);
 
@@ -259,5 +262,31 @@ describe('401 refresh-retry bound through a real Fetcher', () => {
 
     expect(response.status).toBe(200);
     expect(requested).toHaveLength(2);
+  });
+
+  it.each([
+    ['a network failure', () => new TypeError('Failed to fetch')],
+    [
+      'a 5xx from the refresh endpoint',
+      () =>
+        Object.assign(new Error('refresh unavailable'), {
+          exchange: { response: { status: 503 } },
+        }),
+    ],
+  ])('keeps the session and does not notify on %s', async (_name, failure) => {
+    const remove = vi.spyOn(storage, 'remove');
+    wire(async () => {
+      throw failure();
+    });
+    serve(() => 401);
+
+    const error = await client.get('/resource').catch(error => error);
+    expect(error).toBeInstanceOf(ExchangeError);
+    expect((error as ExchangeError).exchange.error).toBeInstanceOf(
+      RefreshUnavailableError,
+    );
+    expect(remove).not.toHaveBeenCalled();
+    expect(storage.get()).not.toBeNull();
+    expect(unauthorized).toHaveLength(0);
   });
 });

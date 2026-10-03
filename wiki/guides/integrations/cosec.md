@@ -75,7 +75,7 @@ Token parsing is not signature verification; the backend remains responsible for
 
 ## 4. Check refresh and failure behavior
 
-Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. When a refresh fails because another tab already used the one-time refresh token, the tab re-reads storage and continues with the token that tab stored; any other refresh failure can clear the current session; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
+Use in-memory token/device storage and mocked fetch in a test. Cover a valid token, an expired access token with a valid refresh token, concurrent requests, refresh failure, and 401/403 responses. Refresh concurrency is shared by a token manager, not a cross-tab distributed lock. When a refresh fails because another tab already used the one-time refresh token, the tab re-reads storage and continues with the token that tab stored; a refresh the server rejects (a 4xx from the refresh endpoint, or a response that is not a composite token) clears the current session and raises `RefreshTokenError`, while a refresh that cannot reach the server (network error, timeout, abort, 5xx) keeps the session and raises `RefreshUnavailableError` without calling `onUnauthorized`; callbacks do not turn failed requests into successful results. Catch the request rejection as well as showing a login/error screen.
 
 ## 5. Dispose the owner
 

@@ -13,7 +13,7 @@ description: '拦截器与资源归属 — Fetcher 5.0.0'
 2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
 3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，随后核心传输发送请求。
 4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。刷新后仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。
-5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError；Forbidden 处理 403。回调都不会自动恢复失败请求。
+5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError（`RefreshUnavailableError` 表示刷新未能到达服务端，会话保留，不通知）；Forbidden 处理 403。回调都不会自动恢复失败请求。
 
 request/response manager 按 order 排序，注册顺序本身不是执行契约。重跑管线可能生成新的 CoSec 请求 ID。调用者提供的 Authorization 不会替换或自动刷新。access 已过期而 refresh 不可用时仍可能附加 token，由服务端决定响应状态。
 
@@ -43,14 +43,14 @@ sequenceDiagram
 
 ## 拦截器参数与结果
 
-| 导出                                                                   | 构造选项                                                                              | intercept(exchange)                                                                                                          |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播        |
-| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                |
-| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1                                         |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                            |
-| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError 及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
-| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误成为 exchange 错误（`ExchangeError` 的 cause）               |
+| 导出                                                                   | 构造选项                                                                              | intercept(exchange)                                                                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播                                 |
+| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                                         |
+| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1                                                                  |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                                                     |
+| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError、RefreshUnavailableError 及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
+| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误成为 exchange 错误（`ExchangeError` 的 cause）                                        |
 
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 为 `Ignore-Refresh-Token`。只要属性**存在**（即使值为 false），就禁用主动/401 自动刷新。它不阻止 Authorization 注入，也不禁用普通 HTTP 状态错误。
 
@@ -293,15 +293,15 @@ cosec.deviceIdStorage.destroy();
 
 <span id="unauthorized_error_interceptor_order"></span>
 
-**`UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L24)
+**`UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L28)
 
 <span id="unauthorizederrorinterceptoroptions"></span>
 
-**`UnauthorizedErrorInterceptorOptions`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L29)
+**`UnauthorizedErrorInterceptorOptions`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L33)
 
 <span id="unauthorizederrorinterceptor"></span>
 
-**`UnauthorizedErrorInterceptor`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L69)
+**`UnauthorizedErrorInterceptor`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L73)
 
 <span id="forbidden_error_interceptor_name"></span>
 

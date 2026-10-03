@@ -42,7 +42,14 @@ Expiration alone does not schedule events or automatically refresh; status gette
 
 `new JwtTokenManager(tokenStorage, tokenRefresher)` exposes both dependencies, currentToken (token/null), and status getters (false with no token). `refresh(exchange?): Promise<void>` rejects with Error('No token found') without a token. Concurrent refreshes for the same current token on this manager share a promise. Across tabs, for a token storage on the browser's `localStorage` (the default) and where Web Locks (`navigator.locks`) exist, the refresh runs under the lock `cosec-refresh:<token storage key>`: tabs sharing that storage refresh one at a time, and a tab that waited re-reads storage first and reuses a token another tab stored for the same session instead of spending the already used refresh token; it refreshes only when storage still holds its own token (another session or a sign-out raises `RefreshSessionChangedError` without refreshing). Without Web Locks, outside a browser (a server process holds many users' storages under one key), or on a storage tabs do not share, tabs refresh independently. A same-session newer token wins over late refresh results. Sign-out or a different session prevents stale writeback and raises `RefreshSessionChangedError(cause?)`.
 
-When a refresh fails, the manager re-reads storage with `tokenStorage.reload()`: if another tab has already refreshed the same session (so a one-time refresh token failed here) and stored its token, that token is reused and the request continues. A refresh response without string `accessToken` and `refreshToken` counts as a failed refresh and is never stored. An unsuccessful refresh of the still-current session removes that session's token and raises `RefreshTokenError(token, cause?)`. `cause` is the refresh failure; when the refresh request failed because one of its error-interceptor callbacks (such as `onUnauthorized`) threw, `cause` is that request's `ExchangeError`, whose own `cause` is the callback error. The error exposes the old JwtCompositeToken; avoid logging its raw credentials. A failure of the retried business request propagates unchanged and does not remove successfully refreshed credentials. The pending promise is cleared in finally. Unauthorized notification ownership is coordinated with exchange error handlers, not a general event queue.
+When a refresh fails, the manager re-reads storage with `tokenStorage.reload()`: if another tab has already refreshed the same session (so a one-time refresh token failed here) and stored its token, that token is reused and the request continues. A refresh response without string `accessToken` and `refreshToken` is never stored. When storage still holds the token that failed to refresh, what happens next depends on whether the server rejected the refresh token:
+
+| Refresh failure                                                                                                                                                                                                     | Session       | Error raised                             | `onUnauthorized` |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------- | ---------------- |
+| The refresh endpoint answered 4xx (the error carries `exchange.response.status`, as the `ExchangeError`/`HttpStatusValidationError` the refresh client rejects with does), or the response is not a composite token | Token removed | `RefreshTokenError(token, cause?)`       | Called           |
+| Anything else: network error, timeout, abort, 5xx, an error without a response                                                                                                                                      | Token kept    | `RefreshUnavailableError(token, cause?)` | Not called       |
+
+A custom `TokenRefresher` signals a rejection the same way: reject with an error whose `exchange.response.status` is the 4xx. After `RefreshUnavailableError` the user stays signed in and a later request refreshes again. In both errors `cause` is the refresh failure; when the refresh request failed because one of its error-interceptor callbacks (such as `onUnauthorized`) threw, `cause` is that request's `ExchangeError`, whose own `cause` is the callback error. Both errors expose the old JwtCompositeToken; avoid logging its raw credentials. A failure of the retried business request propagates unchanged and does not remove successfully refreshed credentials. The pending promise is cleared in finally. Unauthorized notification ownership is coordinated with exchange error handlers, not a general event queue.
 
 `TokenRefresher.refresh(token): Promise<CompositeToken>` is the custom transport contract. `CoSecTokenRefresher({fetcher, endpoint})` requires both fields and POSTs the token object with JSON result extraction. Its concrete refresh method additionally accepts `shouldNotifyUnauthorized?: () => boolean`. It sets `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` to prevent recursive refresh; custom transports using a configured Fetcher must supply that attribute themselves.
 
@@ -127,9 +134,13 @@ try {
 
 **`RefreshSessionChangedError`** — [packages/cosec/src/errors.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/errors.ts#L28)
 
+<span id="refreshunavailableerror"></span>
+
+**`RefreshUnavailableError`** — [packages/cosec/src/errors.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/errors.ts#L42)
+
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L51)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
 
 <span id="default_cosec_token_key"></span>
 
