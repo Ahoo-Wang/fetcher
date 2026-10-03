@@ -11,478 +11,160 @@
  * limitations under the License.
  */
 
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { useFetcherQuery } from '../../src/fetcher/useFetcherQuery';
-import { FetcherError } from '@ahoo-wang/fetcher';
-import { PromiseStatus } from '../../src/core/usePromiseState';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
+import {
+  useDebouncedFetcherQuery,
+  useFetcher,
+  useFetcherQuery,
+} from '../../src';
 
-// Mock the hooks
-const mockExecute = vi.fn().mockResolvedValue(undefined);
-const mockReset = vi.fn();
-const mockAbort = vi.fn();
+const fetchMock = vi.fn<typeof fetch>();
 
-vi.mock('../../src/fetcher', () => ({
-  useFetcher: vi.fn(() => ({
-    loading: false,
-    result: null,
-    error: null,
-    status: PromiseStatus.IDLE,
-    execute: mockExecute,
-    reset: mockReset,
-    abort: mockAbort,
-  })),
-}));
+beforeEach(() => {
+  fetchMock.mockReset();
+  vi.stubGlobal('fetch', fetchMock);
+});
+afterEach(() => vi.unstubAllGlobals());
 
-// Import after mocking
-import { useFetcher } from '../../src/fetcher';
+const fetcher = new Fetcher({ baseURL: 'https://query.test' });
 
-const mockUseFetcher = vi.mocked(useFetcher);
+function respondWithJson() {
+  fetchMock.mockImplementation(async (_url, init) =>
+    Response.json({ echo: JSON.parse(String(init?.body)) }),
+  );
+}
 
 describe('useFetcherQuery', () => {
-  beforeEach(() => {
-    mockExecute.mockReset().mockResolvedValue(undefined);
-    mockReset.mockReset();
-    mockAbort.mockReset();
-    mockUseFetcher.mockClear();
+  it('posts the query as JSON and parses the JSON response', async () => {
+    respondWithJson();
+    const { result } = renderHook(() =>
+      useFetcherQuery<{ id: number }, { echo: { id: number } }>({
+        fetcher,
+        url: '/search',
+        query: { id: 1 },
+      }),
+    );
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    expect(result.current.result).toEqual({ echo: { id: 1 } });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://query.test/search');
+    expect(init?.method).toBe('POST');
+    expect(result.current.exchange?.request.url).toBe(
+      'https://query.test/search',
+    );
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('basic functionality', () => {
-    it('should initialize with correct state', () => {
-      const options = {
-        url: '/api/test',
-        initialQuery: { id: 'test' },
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      expect(result.current.loading).toBe(false);
-      expect(result.current.result).toBeNull();
-      expect(result.current.error).toBeNull();
-      expect(result.current.status).toBe('idle');
-      expect(typeof result.current.execute).toBe('function');
-      expect(typeof result.current.getQuery).toBe('function');
-      expect(typeof result.current.setQuery).toBe('function');
-      expect(typeof result.current.reset).toBe('function');
-      expect(typeof result.current.abort).toBe('function');
-    });
-
-    it('should return initial query via getQuery', () => {
-      const initialQuery = { id: 'test', filters: { active: true } };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      expect(result.current.getQuery()).toEqual(initialQuery);
-    });
-
-    it('should update query via setQuery', () => {
-      const initialQuery = { id: 'initial' };
-      const newQuery = { id: 'updated' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      act(() => {
-        result.current.setQuery(newQuery);
-      });
-
-      expect(result.current.getQuery()).toEqual(newQuery);
-    });
-
-    it('should handle different query types', () => {
-      // String query
-      const stringQuery = 'test query';
-      const { result: stringResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: stringQuery,
+  it('sends again when the query content changes', async () => {
+    respondWithJson();
+    const { result, rerender } = renderHook(
+      ({ query }) =>
+        useFetcherQuery<{ id: number }, { echo: { id: number } }>({
+          fetcher,
+          url: '/search',
+          query,
         }),
-      );
-      expect(stringResult.current.getQuery()).toBe(stringQuery);
-
-      // Array query
-      const arrayQuery = [1, 2, 3];
-      const { result: arrayResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: arrayQuery,
-        }),
-      );
-      expect(arrayResult.current.getQuery()).toEqual(arrayQuery);
-
-      // Complex object query
-      const complexQuery = {
-        user: { id: 1, name: 'John' },
-        filters: { active: true, tags: ['a', 'b'] },
-        pagination: { page: 1, limit: 10 },
-      };
-      const { result: complexResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: complexQuery,
-        }),
-      );
-      expect(complexResult.current.getQuery()).toEqual(complexQuery);
-    });
+      { initialProps: { query: { id: 1 } } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    rerender({ query: { id: 1 } });
+    rerender({ query: { id: 2 } });
+    await waitFor(() =>
+      expect(result.current.result).toEqual({ echo: { id: 2 } }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  describe('fetcher integration', () => {
-    it('should construct correct FetchRequest for execute', async () => {
-      const query = { id: 'test', data: { nested: 'value' } };
-      const url = '/api/search';
-      const options = {
-        url,
-        initialQuery: { id: 'initial' },
-      };
+  it('waits for a defined query', async () => {
+    const { result } = renderHook(() =>
+      useFetcherQuery({ fetcher, url: '/search', query: undefined }),
+    );
+    await act(async () => {});
+    expect(result.current.status).toBe('idle');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
 
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      act(() => {
-        result.current.setQuery(query);
-      });
-
-      act(() => {
-        result.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url,
-        method: 'POST',
-        body: query,
-      });
-    });
-
-    it('should handle execute with current query', async () => {
-      const initialQuery = { id: 'initial' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      act(() => {
-        result.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url: '/api/test',
-        method: 'POST',
-        body: initialQuery,
-      });
-    });
-
-    it('should pass through fetcher state correctly', () => {
-      mockUseFetcher.mockReturnValueOnce({
-        loading: true,
-        result: null,
-        error: null,
-        status: PromiseStatus.LOADING,
-        execute: mockExecute,
-        reset: mockReset,
-        abort: mockAbort,
-      });
-
-      const { result } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: { id: 'test' },
-        }),
+describe('useDebouncedFetcherQuery', () => {
+  it('sends the first query at once and the last of a burst after the delay', async () => {
+    vi.useFakeTimers();
+    try {
+      respondWithJson();
+      const { result, rerender } = renderHook(
+        ({ query }) =>
+          useDebouncedFetcherQuery<{ id: number }, unknown>({
+            fetcher,
+            url: '/search',
+            query,
+            debounce: { delay: 100 },
+          }),
+        { initialProps: { query: { id: 1 } } },
       );
-
-      expect(result.current.loading).toBe(true);
-      expect(result.current.status).toBe(PromiseStatus.LOADING);
-    });
-
-    it('should pass through fetcher result and error', () => {
-      mockUseFetcher.mockReturnValueOnce({
-        loading: false,
-        result: { data: 'success' },
-        error: null,
-        status: PromiseStatus.SUCCESS,
-        execute: mockExecute,
-        reset: mockReset,
-        abort: mockAbort,
+      await act(async () => {});
+      rerender({ query: { id: 2 } });
+      rerender({ query: { id: 3 } });
+      expect(result.current.pending).toBe(true);
+      await act(async () => {
+        vi.advanceTimersByTime(100);
       });
-
-      const { result: successResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: { id: 'test' },
-        }),
-      );
-
-      expect(successResult.current.result).toEqual({ data: 'success' });
-      expect(successResult.current.status).toBe('success');
-
-      mockUseFetcher.mockReturnValueOnce({
-        loading: false,
-        result: null,
-        error: new FetcherError('Network error'),
-        status: PromiseStatus.ERROR,
-        execute: mockExecute,
-        reset: mockReset,
-        abort: mockAbort,
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+        id: 3,
       });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
 
-      const { result: errorResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: { id: 'test' },
-        }),
-      );
-
-      expect(errorResult.current.error).toBeInstanceOf(FetcherError);
-      expect(errorResult.current.error?.message).toBe('Network error');
-      expect(errorResult.current.status).toBe('error');
+describe('useFetcher exchange', () => {
+  it('exposes the exchange of a request rejected by its status', async () => {
+    fetchMock.mockResolvedValue(new Response('missing', { status: 404 }));
+    const { result } = renderHook(() =>
+      useFetcher<string>({ fetcher, resultExtractor: ResultExtractors.Text }),
+    );
+    await act(async () => {
+      await result.current.execute({ url: '/missing' });
     });
+    expect(result.current.status).toBe('error');
+    expect(result.current.exchange?.response?.status).toBe(404);
   });
 
-  describe('autoExecute behavior', () => {
-    it('should execute on mount when autoExecute is true', async () => {
-      const initialQuery = { id: 'test' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-        autoExecute: true,
-      };
-
-      renderHook(() => useFetcherQuery(options));
-
-      await vi.waitFor(() => {
-        expect(mockExecute).toHaveBeenCalledWith({
-          url: '/api/test',
-          method: 'POST',
-          body: initialQuery,
-        });
-      });
+  it('does not change the request it is given', async () => {
+    fetchMock.mockResolvedValue(new Response('ok'));
+    const request = { url: '/a' };
+    const { result } = renderHook(() =>
+      useFetcher<string>({ fetcher, resultExtractor: ResultExtractors.Text }),
+    );
+    await act(async () => {
+      await result.current.execute(request);
     });
-
-    it('should not execute on mount when autoExecute is false', () => {
-      const options = {
-        url: '/api/test',
-        initialQuery: { id: 'test' },
-        autoExecute: false,
-      };
-
-      renderHook(() => useFetcherQuery(options));
-
-      expect(mockExecute).not.toHaveBeenCalled();
-    });
-
-    it('should execute on mount by default when autoExecute is undefined', async () => {
-      const initialQuery = { id: 'test' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-      };
-
-      renderHook(() => useFetcherQuery(options));
-
-      await vi.waitFor(() => {
-        expect(mockExecute).toHaveBeenCalledWith({
-          url: '/api/test',
-          method: 'POST',
-          body: initialQuery,
-        });
-      });
-    });
-
-    it('should execute on setQuery when autoExecute is true', async () => {
-      const initialQuery = { id: 'initial' };
-      const newQuery = { id: 'updated' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-        autoExecute: true,
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      // Wait for initial execution
-      await vi.waitFor(() => {
-        expect(mockExecute).toHaveBeenCalledTimes(1);
-      });
-
-      mockExecute.mockClear();
-
-      act(() => {
-        result.current.setQuery(newQuery);
-      });
-
-      await vi.waitFor(() => {
-        expect(mockExecute).toHaveBeenCalledWith({
-          url: '/api/test',
-          method: 'POST',
-          body: newQuery,
-        });
-      });
-    });
-
-    it('should not execute on setQuery when autoExecute is false', () => {
-      const initialQuery = { id: 'initial' };
-      const newQuery = { id: 'updated' };
-      const options = {
-        url: '/api/test',
-        initialQuery,
-        autoExecute: false,
-      };
-
-      const { result } = renderHook(() => useFetcherQuery(options));
-
-      act(() => {
-        result.current.setQuery(newQuery);
-      });
-
-      expect(mockExecute).not.toHaveBeenCalled();
-    });
+    expect(request).toEqual({ url: '/a' });
   });
 
-  describe('error handling and edge cases', () => {
-    it('should handle fetcher execute rejection', async () => {
-      const initialQuery = { id: 'test' };
-      const error = new FetcherError('Request failed');
-      mockExecute.mockRejectedValueOnce(error);
-
-      renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery,
-          autoExecute: true,
+  it('aborts the request when a newer one starts', async () => {
+    const signals: AbortSignal[] = [];
+    fetchMock.mockImplementation(
+      (_url, init) =>
+        new Promise((resolve, reject) => {
+          signals.push(init!.signal!);
+          if (signals.length === 2) resolve(new Response('second'));
+          init!.signal!.addEventListener('abort', () =>
+            reject(new DOMException('aborted', 'AbortError')),
+          );
         }),
-      );
-
-      // The hook should still call execute even if it rejects
-      await vi.waitFor(() => {
-        expect(mockExecute).toHaveBeenCalledWith({
-          url: '/api/test',
-          method: 'POST',
-          body: initialQuery,
-        });
-      });
-
-      // Verify the promise rejects as expected
-      await expect(mockExecute.mock.results[0].value).rejects.toThrow(
-        'Request failed',
-      );
+    );
+    const { result } = renderHook(() =>
+      useFetcher<string>({ fetcher, resultExtractor: ResultExtractors.Text }),
+    );
+    await act(async () => {
+      result.current.execute({ url: '/first' });
+      await result.current.execute({ url: '/second' });
     });
-
-    it('should handle malformed URLs gracefully', () => {
-      const options = {
-        url: 'invalid-url',
-        initialQuery: { id: 'test' },
-      };
-
-      expect(() => {
-        renderHook(() => useFetcherQuery(options));
-      }).not.toThrow();
-    });
-
-    it('should handle empty and null query bodies', async () => {
-      const emptyQuery = {};
-      const { result: emptyResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: emptyQuery,
-        }),
-      );
-
-      act(() => {
-        emptyResult.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url: '/api/test',
-        method: 'POST',
-        body: emptyQuery,
-      });
-
-      // Test with null (though initialQuery shouldn't be null in practice)
-      const nullQuery = null as any;
-      const { result: nullResult } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: nullQuery,
-        }),
-      );
-
-      act(() => {
-        nullResult.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url: '/api/test',
-        method: 'POST',
-        body: nullQuery,
-      });
-    });
-
-    it('should handle large query objects', () => {
-      const largeQuery = {
-        data: Array.from({ length: 1000 }, (_, i) => ({
-          id: i,
-          value: `item${i}`,
-        })),
-        metadata: { total: 1000, page: 1 },
-      };
-
-      const { result } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: largeQuery,
-        }),
-      );
-
-      expect(result.current.getQuery()).toEqual(largeQuery);
-
-      act(() => {
-        result.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url: '/api/test',
-        method: 'POST',
-        body: largeQuery,
-      });
-    });
-
-    it('should handle special characters in query data', () => {
-      const specialQuery = {
-        text: 'Hello & World <script>alert("xss")</script>',
-        symbols: '!@#$%^&*()',
-        unicode: '🚀 🌟 💻',
-      };
-
-      const { result } = renderHook(() =>
-        useFetcherQuery({
-          url: '/api/test',
-          initialQuery: specialQuery,
-        }),
-      );
-
-      act(() => {
-        result.current.execute();
-      });
-
-      expect(mockExecute).toHaveBeenCalledWith({
-        url: '/api/test',
-        method: 'POST',
-        body: specialQuery,
-      });
+    expect(signals[0].aborted).toBe(true);
+    expect(result.current).toMatchObject({
+      status: 'success',
+      result: 'second',
     });
   });
 });

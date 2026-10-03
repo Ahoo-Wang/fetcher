@@ -11,15 +11,10 @@
  * limitations under the License.
  */
 
-import type { DependencyList } from 'react';
-
-export interface DepsCapable {
-  deps?: DependencyList;
-}
-
 export interface AutoExecuteCapable {
   /**
-   * Whether to automatically execute the query on component mount. Defaults to true.
+   * Executes whenever the query is defined and its content changes.
+   * @default true
    */
   autoExecute?: boolean;
 }

@@ -71,7 +71,11 @@ describe('useFetcher', () => {
       await result.current.execute(request);
     });
 
-    expect(mockFetcher.exchange).toHaveBeenCalledWith(request, undefined);
+    expect(mockFetcher.exchange).toHaveBeenCalledWith(
+      { ...request, abortController: expect.any(AbortController) },
+      { resultExtractor: undefined, attributes: undefined },
+    );
+    expect(request).toEqual({ url: '/test' });
     expect(result.current.status).toBe(PromiseStatus.SUCCESS);
     expect(result.current.loading).toBe(false);
     expect(result.current.error).toBeUndefined();
@@ -206,7 +210,10 @@ describe('useFetcher', () => {
       await result.current.execute(request);
     });
 
-    expect(mockFetcher.exchange).toHaveBeenCalledWith(request, options);
+    expect(mockFetcher.exchange).toHaveBeenCalledWith(
+      { ...request, abortController: expect.any(AbortController) },
+      { resultExtractor: options.resultExtractor, attributes: undefined },
+    );
   });
 
   it('should handle race conditions with multiple rapid requests', async () => {
@@ -311,25 +318,20 @@ describe('useFetcher', () => {
     expect(result.current.result).toBe(mockResult);
   });
 
-  it('should handle error with propagateError option', async () => {
+  it('resolves to the error state instead of rejecting', async () => {
     const error = new Error('fetch failed');
     mockExchange.extractResult.mockRejectedValue(error);
 
-    const { result } = renderHook(() =>
-      useFetcher<string>({ propagateError: true }),
-    );
+    const { result } = renderHook(() => useFetcher<string>());
 
-    const request = { url: '/test' };
+    let settled;
+    await act(async () => {
+      settled = await result.current.execute({ url: '/test' });
+    });
 
-    // When propagateError is true, the error should be thrown and state should remain idle
-    await expect(
-      act(async () => {
-        await result.current.execute(request);
-      }),
-    ).rejects.toThrow('fetch failed');
-
-    expect(result.current.status).toBe(PromiseStatus.IDLE);
-    expect(result.current.error).toBeUndefined();
+    expect(settled).toMatchObject({ status: PromiseStatus.ERROR, error });
+    expect(result.current.status).toBe(PromiseStatus.ERROR);
+    expect(result.current.error).toBe(error);
   });
 
   it('should reset state and exchange correctly', async () => {

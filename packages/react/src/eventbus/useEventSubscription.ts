@@ -11,7 +11,8 @@
  * limitations under the License.
  */
 
-import { useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useLatest } from '../core/useLatest.js';
 import type { EventHandler, TypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
 /**
@@ -94,30 +95,37 @@ export function useEventSubscription<EVENT = unknown>(
   options: UseEventSubscriptionOptions<EVENT>,
 ): UseEventSubscriptionReturn {
   const { bus, handler } = options;
-  const subscribe = useCallback(() => {
-    return bus.on(handler);
-  }, [bus, handler]);
+  const { name, order, once } = handler;
+  // Subscribed under the handler's name, calling the latest `handle`: an
+  // inline handler does not resubscribe on every render.
+  const latestHandler = useLatest(handler);
+  const subscription = useMemo<EventHandler<EVENT>>(
+    () => ({
+      name,
+      order,
+      once,
+      handle: event => latestHandler.current.handle(event),
+    }),
+    [name, order, once, latestHandler],
+  );
 
-  const unsubscribe = useCallback(() => {
-    return bus.off(handler.name);
-  }, [bus, handler]);
+  const subscribe = useCallback(
+    () => bus.on(subscription),
+    [bus, subscription],
+  );
+
+  const unsubscribe = useCallback(() => bus.off(name), [bus, name]);
 
   useEffect(() => {
-    const success = bus.on(handler);
-    if (!success) {
-      console.warn(
-        `Failed to subscribe to event bus with handler: ${handler.name}`,
-      );
+    if (!bus.on(subscription)) {
+      console.warn(`Failed to subscribe to event bus with handler: ${name}`);
       // The name belongs to another subscription: leave it on unmount.
       return;
     }
     return () => {
-      bus.off(handler.name);
+      bus.off(name);
     };
-  }, [bus, handler]);
+  }, [bus, subscription, name]);
 
-  return {
-    subscribe,
-    unsubscribe,
-  };
+  return { subscribe, unsubscribe };
 }

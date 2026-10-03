@@ -9,7 +9,7 @@ This component uses a stable `Fetcher` instance and the real `useFetcher` hook. 
 
 <<< @/../stories/docs/ReactRequests.tsx
 
-`execute()` resolves to `void`; read data from `result`. `reset()` only clears state, while `abort()` also invalidates and aborts the active request. See the [Fetcher hook reference](../reference/react/fetcher-hooks.md) and the [React integration task guide](../skills/react-and-integrations.md).
+`execute()` resolves to the state the request ended in and never rejects; the component renders from hook state instead. `abort()` cancels the active request and returns to idle; `reset()` does the same and also clears a settled result. See the [Fetcher hook reference](../reference/react/fetcher-hooks.md) and the [React integration task guide](../skills/react-and-integrations.md).
 
 ## Run the verified fixture
 
@@ -30,16 +30,15 @@ The consumer setup below assumes an existing React + TypeScript Vite application
 Install the React package and its declared peer package graph explicitly:
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^5.0.0 \
-  @ahoo-wang/fetcher-react@^5.1.3 \
-  @ahoo-wang/fetcher-eventstream@^5.0.0 \
-  @ahoo-wang/fetcher-eventbus@^5.0.0 \
-  @ahoo-wang/fetcher-storage@^5.0.0 \
-  @ahoo-wang/fetcher-cosec@^5.0.0 \
+pnpm add @ahoo-wang/fetcher@^6.0.0 \
+  @ahoo-wang/fetcher-react@^6.0.0 \
+  @ahoo-wang/fetcher-eventbus@^6.0.0 \
+  @ahoo-wang/fetcher-storage@^6.0.0 \
+  @ahoo-wang/fetcher-cosec@^6.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-Since 5.1.3, `@ahoo-wang/fetcher-wow` is an optional peer: this example does not need it. The Wow query hooks it enables belong to the 5.x line only; from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
+These are the hooks of the 6.0 line (React ^19.0.0 peer). The Wow query hooks belong to the 5.x line only (`@ahoo-wang/fetcher-react@^5.1.3`); from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
 
 This section connects an existing Vite application to an existing API; it does not install or create a backend. Copy the component above to `src/ReactRequests.tsx`. Its default base URL is `/api`; point that path at a backend with these demo routes, or pass another `baseURL`:
 

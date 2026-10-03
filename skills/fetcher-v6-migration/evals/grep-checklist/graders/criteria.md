@@ -9,6 +9,7 @@ PASS only if the answer does all of these:
 
 1. Its grep commands cover the removed packages (`fetcher-wow`, `fetcher-generator`, `fetcher-viewer`), the removed Wow query hooks and the data-monitor hooks.
 2. It says what a hit means: stay on 5.x, or move to the Wow packages once they are published.
+3. It also covers the `@ahoo-wang/fetcher-react` API that 6.0's redesign removed or changed (at least `propagateError` and `initialQuery`/`setQuery` on query hooks), saying those hits are rewritten rather than reasons to stay on 5.x.
 
 FAIL if the answer does any of these:
 

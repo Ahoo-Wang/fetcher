@@ -8,7 +8,7 @@
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-按导入的集成安装对应 peer 包：EventStream、EventBus、Storage 或 CoSec。
+按导入的集成安装对应 peer 包：EventBus、Storage 或 CoSec。
 
 > **Wow 查询 Hook 已迁出。** `useSingleQuery`、`useListQuery`、`usePagedQuery`、
 > `useCountQuery`、`useListStreamQuery` 等 Wow Hook 已迁往
@@ -23,39 +23,70 @@ pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 
 ## 示例
 
+查询放在你自己的状态里；内容变化时 Hook 执行它，并取消被替换的请求。
+
 ```tsx
-import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { useState } from 'react';
+import { useQuery } from '@ahoo-wang/fetcher-react';
 
-interface User {
-  id: string;
-  name: string;
-}
-
-export function UserProfile({ id }: { id: string }) {
-  const { loading, result, error, execute } = useFetcher<User>({
-    resultExtractor: ResultExtractors.Json,
+export function UserSearch() {
+  const [query, setQuery] = useState({ keyword: '' });
+  const { loading, result, error } = useQuery({
+    query,
+    execute: (query, abortController) =>
+      api.searchUsers(query, abortController),
   });
 
   return (
     <section>
-      <button
-        disabled={loading}
-        onClick={() => void execute({ url: `/api/users/${id}` })}
-      >
-        加载用户
-      </button>
-      {error && <p role="alert">无法加载用户</p>}
-      {result && <p>{result.name}</p>}
+      <input
+        value={query.keyword}
+        onChange={e => setQuery({ keyword: e.target.value })}
+      />
+      {loading && <p>搜索中…</p>}
+      {error && <p role="alert">搜索失败</p>}
+      {result?.map(user => (
+        <p key={user.id}>{user.name}</p>
+      ))}
     </section>
+  );
+}
+```
+
+`execute` 从不 reject：它 resolve 为本次请求结束时的状态；被新请求、`abort()`、
+`reset()` 或卸载取消时为 `idle`。
+
+```tsx
+import { ResultExtractors } from '@ahoo-wang/fetcher';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+export function SaveButton({ user }: { user: User }) {
+  const { loading, execute } = useFetcher<User>({
+    resultExtractor: ResultExtractors.Json,
+  });
+
+  const save = async () => {
+    const { status, error } = await execute({
+      url: `/api/users/${user.id}`,
+      method: 'PUT',
+      body: user,
+    });
+    if (status === 'success') toast('已保存');
+    else if (status === 'error') toast(error.message);
+  };
+
+  return (
+    <button disabled={loading} onClick={() => void save()}>
+      保存
+    </button>
   );
 }
 ```
 
 ## 按任务选择 Hook
 
-- 异步核心：Promise 状态、执行、查询状态、防抖与最新引用。
-- Fetcher：请求执行、JSON 查询、手动或防抖刷新。
+- 异步核心：Promise 状态、可取消的执行、受控查询、防抖值与防抖回调、最新引用。
+- Fetcher：请求执行、JSON 查询、防抖请求与防抖查询。
 - API 对象：从返回 Promise 的方法派生 execute/query Hooks。
 - 状态：类型化 KeyStorage 与事件总线订阅。
 - CoSec：安全 Provider、用户状态与路由守卫。
@@ -68,12 +99,10 @@ export function UserProfile({ id }: { id: string }) {
 
 [English](./README.md) · [许可证](../../LICENSE)
 
-### 轻量核心入口
+### 子路径入口
 
-通用 Hook 可通过 ESM 子路径 `@ahoo-wang/fetcher-react/core` 导入，包括 `useExecutePromise`、`useQuery` 和 `useDebouncedCallback`。仅使用核心 Hook 时无需加载 HTTP、安全、存储和事件集成模块；原根入口的 ESM/UMD 导出不变。
-
-Fetcher Hook（`useFetcher`、`useFetcherQuery` 及其防抖版本）也可通过 `@ahoo-wang/fetcher-react/fetcher` 导入，它的类型和模块都不加载安全、存储与事件集成——基于这些 Hook 的集成（例如 `@ahoo-wang/wow-react`）从这里导入。
-
-`useExecutePromise.abort()` 会先使当前请求失效，再执行取消回调。即使数据源忽略 AbortSignal，迟到的成功或失败也不会发布；异步 onAbort 回调不会颠倒新请求的调用顺序。
-
-根 ESM 入口与 `/core` 共用核心模块和 FullscreenContext，Provider 与 Hook 可以跨这两个 ESM 入口组合。`pnpm test:package` 验证构建产物互操作，并包含在 build 流程中。`abort()` 先摘除旧 controller 再通知同步监听器，监听器启动的新请求仍可取消。
+核心 Hook（`useExecutePromise`、`useQuery`、`useDebouncedQuery` 等）也可从 ESM
+子路径 `@ahoo-wang/fetcher-react/core` 导入，Fetcher Hook（`useFetcher`、
+`useFetcherQuery` 及其防抖版本）也可从 `@ahoo-wang/fetcher-react/fetcher` 导入。
+两者都不加载安全、存储与事件总线集成。根入口与它们共用模块，不同入口的 Hook 可以
+混用；`pnpm test:package` 在构建产物上验证这一点，并包含在 `build` 中。

@@ -147,13 +147,13 @@
 - [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 5.0.0
 - [cosec public symbols](/reference/cosec/symbols) — Complete root exports with behavior contracts and source locations.
 - [React reference](/reference/react/) — React entry selection, installation and behavior contracts
-- [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 5.0.0
-- [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 5.0.0
-- [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 5.0.0
-- [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 5.0.0
-- [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0
-- [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0
-- [Refs, request IDs and fullscreen](/reference/react/utilities) — Refs, request IDs and fullscreen — @ahoo-wang/fetcher-react
+- [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0
+- [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 6.0.0
+- [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 6.0.0
+- [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 6.0.0
+- [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 6.0.0
+- [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 6.0.0
+- [Latest and stable values](/reference/react/utilities) — Latest and stable values — @ahoo-wang/fetcher-react 6.0.0
 - [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react root, /core and /fetcher entries
 - [Wow reference](/reference/wow/) — Wow entry selection, installation and behavior contracts
 - [Client configuration and metadata](/reference/wow/configuration) — Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0

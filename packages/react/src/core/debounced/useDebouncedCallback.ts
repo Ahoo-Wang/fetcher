@@ -10,202 +10,85 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+
+import { useCallback, useEffect, useRef } from 'react';
 import { useLatest } from '../useLatest.js';
 
-/**
- * Options for configuring the debounced callback behavior.
- */
 export interface UseDebouncedCallbackOptions {
-  /** The delay in milliseconds before the callback is invoked. Must be a positive number. */
+  /** Milliseconds to wait after the last call. */
   delay: number;
-  /** Whether to invoke the callback immediately on the leading edge of the timeout. Defaults to false. */
+  /** Invoke on the first call of a burst. @default false */
   leading?: boolean;
-  /** Whether to invoke the callback on the trailing edge of the timeout. Defaults to true. */
+  /** Invoke with the last arguments once the burst ends. @default true */
   trailing?: boolean;
 }
 
-/**
- * Return type of the useDebouncedCallback hook.
- * @template T - The type of the original callback function.
- */
 export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
-  /** Function to execute the debounced callback with the provided arguments. */
+  /** Schedules the callback; the arguments of the last call win. */
   readonly run: (...args: Parameters<T>) => void;
-  /** Function to cancel any pending debounced execution. */
+  /** Drops the scheduled call, if any. */
   readonly cancel: () => void;
-  /** Function to check if a debounced execution is currently pending. */
+  /** Whether a trailing call is scheduled. */
   readonly isPending: () => boolean;
 }
 
 /**
- * A React hook that provides a debounced version of a callback function.
- * The callback will be invoked after a specified delay, with options for leading and trailing edge execution.
- * This is useful for optimizing performance in scenarios like search input handling or window resizing.
- *
- * @template T - The type of the callback function.
- * @param callback - The function to debounce. It can accept any number of arguments.
- * @param options - Configuration object for debouncing behavior.
- * @param options.delay - The delay in milliseconds before the callback is invoked. Must be a positive number.
- * @param options.leading - If true, the callback is invoked immediately on the first call, then debounced. Defaults to false.
- * @param options.trailing - If true, the callback is invoked after the delay on the last call. Defaults to true.
- * @returns An object containing:
- *   - `run`: Function to execute the debounced callback with arguments.
- *   - `cancel`: Function to cancel any pending debounced execution.
- *   - `isPending`: Function that returns true if a debounced execution is currently pending.
+ * Debounces `callback`. The latest callback and options are used; the
+ * returned functions are stable, and unmounting cancels the scheduled call.
  *
  * @example
- * ```typescript
- * const { run, cancel } = useDebouncedCallback(
- *   (query: string) => {
- *     console.log('Searching for:', query);
- *     // Perform search API call
- *   },
- *   { delay: 300 }
- * );
- *
- * // Call the debounced function
- * run('search term');
- *
- * // Cancel if needed
- * cancel();
- * ```
- *
- * @example With leading edge execution:
- * ```typescript
- * const { run } = useDebouncedCallback(
- *   () => console.log('Immediate and debounced'),
- *   { delay: 500, leading: true, trailing: true }
- * );
- *
- * run(); // Logs immediately, then again after 500ms if called again
- * ```
- *
- * @throws {Error} Throws an error if both `leading` and `trailing` options are set to false, as at least one must be true for the debounce to function.
- * @throws Exceptions from the callback function itself should be handled by the caller.
+ * const { run } = useDebouncedCallback(search, { delay: 300 });
+ * <input onChange={e => run(e.target.value)} />
  */
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   options: UseDebouncedCallbackOptions,
 ): UseDebouncedCallbackReturn<T> {
-  const {
-    run,
-    cancel: cancelInternal,
-    isPending,
-  } = useDebouncedCallbackInternal(callback, options);
-  const cancel = useCallback(() => cancelInternal(), [cancelInternal]);
-  return useMemo(() => ({ run, cancel, isPending }), [run, cancel, isPending]);
-}
-
-/** @internal Automatic query cancellation can also reset the leading window. */
-export function useDebouncedCallbackInternal<T extends (...args: any[]) => any>(
-  callback: T,
-  options: UseDebouncedCallbackOptions,
-): Omit<UseDebouncedCallbackReturn<T>, 'cancel'> & {
-  readonly cancel: (resetLeading?: boolean) => void;
-} {
   if (options.leading === false && options.trailing === false) {
     throw new Error(
       'useDebouncedCallback: at least one of leading or trailing must be true',
     );
   }
+  const latest = useLatest({ callback, options });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastInvokeRef = useRef<number | undefined>(undefined);
 
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-  const lastArgsRef = useRef<Parameters<T> | null>(null);
-  const lastInvokeTimeRef = useRef<number | null>(null);
-
-  const latestCallback = useLatest(callback);
-  const latestOptions = useLatest(options);
-
-  const cleanTimeout = useCallback(() => {
-    if (timeoutRef.current !== undefined) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
+  const cancel = useCallback(() => {
+    clearTimeout(timerRef.current);
+    timerRef.current = undefined;
   }, []);
-
-  const shouldInvoke = useCallback(
-    (time: number) => {
-      if (!lastInvokeTimeRef.current) {
-        return true;
-      }
-      const timeSinceLastInvoke = time - lastInvokeTimeRef.current;
-      return timeSinceLastInvoke >= latestOptions.current.delay;
-    },
-    [latestOptions],
-  );
-
-  const invokeCallback = useCallback(
-    (time: number, args: Parameters<T>) => {
-      lastInvokeTimeRef.current = time;
-      latestCallback.current(...args);
-    },
-    [latestCallback],
-  );
-
-  const scheduleTrailing = useCallback(() => {
-    timeoutRef.current = setTimeout(() => {
-      if (lastArgsRef.current) {
-        const trailingTime = Date.now();
-        invokeCallback(trailingTime, lastArgsRef.current);
-      }
-      timeoutRef.current = undefined;
-    }, latestOptions.current.delay);
-  }, [latestOptions, invokeCallback]);
 
   const run = useCallback(
     (...args: Parameters<T>) => {
-      cleanTimeout();
-      const { leading = false, trailing = true } = latestOptions.current;
-      lastArgsRef.current = args;
-      if (trailing && !leading) {
-        scheduleTrailing();
+      cancel();
+      const {
+        delay,
+        leading = false,
+        trailing = true,
+      } = latest.current.options;
+      const now = Date.now();
+      if (
+        leading &&
+        (lastInvokeRef.current === undefined ||
+          now - lastInvokeRef.current >= delay)
+      ) {
+        lastInvokeRef.current = now;
+        latest.current.callback(...args);
         return;
       }
-
-      const currentTime = Date.now();
-      const shouldCallLeading = leading && shouldInvoke(currentTime);
-      if (shouldCallLeading) {
-        invokeCallback(currentTime, args);
-        return;
-      }
-      if (trailing) {
-        scheduleTrailing();
-      }
+      if (!trailing) return;
+      timerRef.current = setTimeout(() => {
+        timerRef.current = undefined;
+        lastInvokeRef.current = Date.now();
+        latest.current.callback(...args);
+      }, delay);
     },
-    [
-      latestOptions,
-      cleanTimeout,
-      shouldInvoke,
-      invokeCallback,
-      scheduleTrailing,
-    ],
+    [cancel, latest],
   );
-  const cancel = useCallback(
-    (resetLeading = false) => {
-      cleanTimeout();
-      lastArgsRef.current = null;
-      if (resetLeading) lastInvokeTimeRef.current = null;
-    },
-    [cleanTimeout],
-  );
-  const isPending = useCallback(() => {
-    return timeoutRef.current !== undefined;
-  }, []);
-  useEffect(() => {
-    return () => {
-      cancel(true);
-    };
-  }, [cancel]);
 
-  return useMemo(
-    () => ({
-      run,
-      cancel,
-      isPending,
-    }),
-    [run, cancel, isPending],
-  );
+  const isPending = useCallback(() => timerRef.current !== undefined, []);
+
+  useEffect(() => cancel, [cancel]);
+
+  return { run, cancel, isPending };
 }

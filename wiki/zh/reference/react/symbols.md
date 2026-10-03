@@ -18,17 +18,11 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `CreateExecuteApiHooksOptions`      | —          | [API Hook 工厂](./api-hooks#api-CreateExecuteApiHooksOptions)                |
 | `CreateQueryApiHooksOptions`        | —          | [API Hook 工厂](./api-hooks#api-CreateQueryApiHooksOptions)                  |
 | `DebounceCapable`                   | `/core`    | [防抖执行](./debounce#api-DebounceCapable)                                   |
-| `FullscreenContext`                 | `/core`    | [ref、请求 ID 与全屏](./utilities#api-FullscreenContext)                     |
-| `FullscreenContextValue`            | `/core`    | [ref、请求 ID 与全屏](./utilities#api-FullscreenContextValue)                |
-| `FullscreenProvider`                | `/core`    | [ref、请求 ID 与全屏](./utilities#api-FullscreenProvider)                    |
-| `FullscreenProviderProps`           | `/core`    | [ref、请求 ID 与全屏](./utilities#api-FullscreenProviderProps)               |
 | `FunctionParameters`                | —          | [API Hook 工厂](./api-hooks#api-FunctionParameters)                          |
 | `FunctionReturnType`                | —          | [API Hook 工厂](./api-hooks#api-FunctionReturnType)                          |
 | `HookName`                          | —          | [API Hook 工厂](./api-hooks#api-HookName)                                    |
 | `IsPromiseFunction`                 | —          | [API Hook 工厂](./api-hooks#api-IsPromiseFunction)                           |
-| `OnBeforeExecuteCallback`           | —          | [API Hook 工厂](./api-hooks#api-OnBeforeExecuteCallback)                     |
 | `PromiseState`                      | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-PromiseState)             |
-| `PromiseStateCallbacks`             | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-PromiseStateCallbacks)    |
 | `PromiseStatus`                     | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-PromiseStatus)            |
 | `PromiseSupplier`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-PromiseSupplier)          |
 | `QueryAPIHooks`                     | —          | [API Hook 工厂](./api-hooks#api-QueryAPIHooks)                               |
@@ -43,6 +37,7 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `SecurityContextValue`              | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityContextValue)                     |
 | `SecurityProvider`                  | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityProvider)                         |
 | `UseApiMethodExecuteOptions`        | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodExecuteOptions)                  |
+| `UseApiMethodExecuteReturn`         | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodExecuteReturn)                   |
 | `UseApiMethodQueryOptions`          | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodQueryOptions)                    |
 | `UseDebouncedCallbackOptions`       | `/core`    | [防抖执行](./debounce#api-UseDebouncedCallbackOptions)                       |
 | `UseDebouncedCallbackReturn`        | `/core`    | [防抖执行](./debounce#api-UseDebouncedCallbackReturn)                        |
@@ -54,6 +49,7 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `UseDebouncedFetcherReturn`         | `/fetcher` | [防抖执行](./debounce#api-UseDebouncedFetcherReturn)                         |
 | `UseDebouncedQueryOptions`          | `/core`    | [防抖执行](./debounce#api-UseDebouncedQueryOptions)                          |
 | `UseDebouncedQueryReturn`           | `/core`    | [防抖执行](./debounce#api-UseDebouncedQueryReturn)                           |
+| `UseDebouncedValueReturn`           | `/core`    | [防抖执行](./debounce#api-UseDebouncedValueReturn)                           |
 | `UseEventSubscriptionOptions`       | —          | [存储与事件订阅](./storage-and-events#api-UseEventSubscriptionOptions)       |
 | `UseEventSubscriptionReturn`        | —          | [存储与事件订阅](./storage-and-events#api-UseEventSubscriptionReturn)        |
 | `UseExecutePromiseOptions`          | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseExecutePromiseOptions) |
@@ -62,49 +58,31 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `UseFetcherQueryOptions`            | `/fetcher` | [Fetcher 请求 Hook](./fetcher-hooks#api-UseFetcherQueryOptions)              |
 | `UseFetcherQueryReturn`             | `/fetcher` | [Fetcher 请求 Hook](./fetcher-hooks#api-UseFetcherQueryReturn)               |
 | `UseFetcherReturn`                  | `/fetcher` | [Fetcher 请求 Hook](./fetcher-hooks#api-UseFetcherReturn)                    |
-| `UseFullscreenOptions`              | `/core`    | [ref、请求 ID 与全屏](./utilities#api-UseFullscreenOptions)                  |
-| `UseFullscreenReturn`               | `/core`    | [ref、请求 ID 与全屏](./utilities#api-UseFullscreenReturn)                   |
 | `UsePromiseStateOptions`            | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UsePromiseStateOptions)   |
 | `UsePromiseStateReturn`             | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UsePromiseStateReturn)    |
 | `UseQueryOptions`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryOptions)          |
 | `UseQueryReturn`                    | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryReturn)           |
-| `UseQueryStateOptions`              | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryStateOptions)     |
-| `UseQueryStateReturn`               | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryStateReturn)      |
-| `UseRefsReturn`                     | `/core`    | [ref、请求 ID 与全屏](./utilities#api-UseRefsReturn)                         |
-| `UseRequestIdReturn`                | `/core`    | [ref、请求 ID 与全屏](./utilities#api-UseRequestIdReturn)                    |
 | `UseSecurityOptions`                | —          | [安全 Hook 与路由守卫](./cosec#api-UseSecurityOptions)                       |
 | `UseSecurityReturn`                 | —          | [安全 Hook 与路由守卫](./cosec#api-UseSecurityReturn)                        |
-| `addFullscreenChangeListener`       | `/core`    | [ref、请求 ID 与全屏](./utilities#api-addFullscreenChangeListener)           |
 | `collectMethods`                    | —          | [API Hook 工厂](./api-hooks#api-collectMethods)                              |
 | `createExecuteApiHooks`             | —          | [API Hook 工厂](./api-hooks#api-createExecuteApiHooks)                       |
 | `createQueryApiHooks`               | —          | [API Hook 工厂](./api-hooks#api-createQueryApiHooks)                         |
-| `enterFullscreen`                   | `/core`    | [ref、请求 ID 与全屏](./utilities#api-enterFullscreen)                       |
-| `exitFullscreen`                    | `/core`    | [ref、请求 ID 与全屏](./utilities#api-exitFullscreen)                        |
-| `getFullscreenElement`              | `/core`    | [ref、请求 ID 与全屏](./utilities#api-getFullscreenElement)                  |
-| `isFullscreen`                      | `/core`    | [ref、请求 ID 与全屏](./utilities#api-isFullscreen)                          |
-| `isValidateQuery`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-isValidateQuery)          |
 | `methodNameToHookName`              | —          | [API Hook 工厂](./api-hooks#api-methodNameToHookName)                        |
-| `removeFullscreenChangeListener`    | `/core`    | [ref、请求 ID 与全屏](./utilities#api-removeFullscreenChangeListener)        |
 | `useDebouncedCallback`              | `/core`    | [防抖执行](./debounce#api-useDebouncedCallback)                              |
 | `useDebouncedExecutePromise`        | `/core`    | [防抖执行](./debounce#api-useDebouncedExecutePromise)                        |
 | `useDebouncedFetcher`               | `/fetcher` | [防抖执行](./debounce#api-useDebouncedFetcher)                               |
 | `useDebouncedFetcherQuery`          | `/fetcher` | [防抖执行](./debounce#api-useDebouncedFetcherQuery)                          |
 | `useDebouncedQuery`                 | `/core`    | [防抖执行](./debounce#api-useDebouncedQuery)                                 |
+| `useDebouncedValue`                 | `/core`    | [防抖执行](./debounce#api-useDebouncedValue)                                 |
 | `useEventSubscription`              | —          | [存储与事件订阅](./storage-and-events#api-useEventSubscription)              |
 | `useExecutePromise`                 | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-useExecutePromise)        |
 | `useFetcher`                        | `/fetcher` | [Fetcher 请求 Hook](./fetcher-hooks#api-useFetcher)                          |
 | `useFetcherQuery`                   | `/fetcher` | [Fetcher 请求 Hook](./fetcher-hooks#api-useFetcherQuery)                     |
-| `useForceUpdate`                    | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useForceUpdate)                        |
-| `useFullscreen`                     | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useFullscreen)                         |
-| `useFullscreenContext`              | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useFullscreenContext)                  |
 | `useImmerKeyStorage`                | —          | [存储与事件订阅](./storage-and-events#api-useImmerKeyStorage)                |
 | `useKeyStorage`                     | —          | [存储与事件订阅](./storage-and-events#api-useKeyStorage)                     |
-| `useLatest`                         | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useLatest)                             |
-| `useMounted`                        | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useMounted)                            |
+| `useLatest`                         | `/core`    | [最新值与稳定值](./utilities#api-useLatest)                                  |
 | `usePromiseState`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-usePromiseState)          |
 | `useQuery`                          | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-useQuery)                 |
-| `useQueryState`                     | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-useQueryState)            |
-| `useRefs`                           | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useRefs)                               |
-| `useRequestId`                      | `/core`    | [ref、请求 ID 与全屏](./utilities#api-useRequestId)                          |
 | `useSecurity`                       | —          | [安全 Hook 与路由守卫](./cosec#api-useSecurity)                              |
 | `useSecurityContext`                | —          | [安全 Hook 与路由守卫](./cosec#api-useSecurityContext)                       |
+| `useStableValue`                    | `/core`    | [最新值与稳定值](./utilities#api-useStableValue)                             |

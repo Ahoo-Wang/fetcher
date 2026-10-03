@@ -1,22 +1,22 @@
 ---
 title: 'Storage and event subscriptions'
-description: 'Storage and event subscriptions — @ahoo-wang/fetcher-react 5.0.0'
+description: 'Storage and event subscriptions — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
 # Storage and event subscriptions
 
 These hooks adapt shared external resources to a component. Keep `KeyStorage` and bus instances stable, and let their creator own destruction. Component unmount unsubscribes listeners; it does not destroy shared storage or the bus.
 
-| API                                          | Input / return / default                                                                                                                                    |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                           |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                             |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                      |
-| `useEventSubscription({ bus, handler })`     | Automatically calls `bus.on(handler)`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
+| API                                          | Input / return / default                                                                                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                   |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                     |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                              |
+| `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
 
 Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
-Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning; cleanup then leaves the name alone, so the other subscriber's handler stays registered. Stabilize handler identity to avoid unnecessary unsubscribe/resubscribe. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
+Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning; cleanup then leaves the name alone, so the other subscriber's handler stays registered. The hook subscribes once per `bus` and handler `name`/`order`/`once`, and each event calls the latest `handle`, so an inline handler object does not resubscribe on every render; changing the bus, name, order or once does. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
 
 ## Complete example
 
@@ -100,7 +100,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L93)
+[packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 
@@ -111,7 +111,7 @@ export interface UseEventSubscriptionOptions<EVENT> {
 }
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L21)
+[packages/react/src/eventbus/useEventSubscription.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L22)
 
 ### UseEventSubscriptionReturn {#api-UseEventSubscriptionReturn}
 
@@ -122,8 +122,8 @@ export interface UseEventSubscriptionReturn {
 }
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L35)
+[packages/react/src/eventbus/useEventSubscription.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L36)
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Security hooks and route guards](./cosec) · [Refs, request IDs and fullscreen](./utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Security hooks and route guards](./cosec) · [Latest and stable values](./utilities)

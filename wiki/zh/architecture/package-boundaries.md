@@ -19,7 +19,7 @@ flowchart LR
   storage --> eventbus
   cosec --> fetcher & eventbus & storage
   openai --> fetcher & eventstream & decorator
-  react --> fetcher & eventstream & eventbus & storage & cosec
+  react --> fetcher & eventbus & storage & cosec
   openapi
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
@@ -31,7 +31,7 @@ flowchart LR
 | eventbus / eventstream | 事件分发 / SSE 处理；各自以核心包为 peer                                                            | [packages/eventbus/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L52), [packages/eventstream/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L53) |
 | storage / cosec        | 存储事件 / 认证协议；需要额外管理状态生命周期                                                       | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56), [packages/cosec/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L54)               |
 | openai                 | 基于核心、装饰器与流的服务专用运行客户端                                                            | [packages/openai/package.json:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L59)                                                                                                                                   |
-| react                  | 请求与集成 Hook；React/ReactDOM peer，直接依赖 `dequal` 与 `immer`；提供 `/core`、`/fetcher` 子路径 | [packages/react/package.json:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L64)                                                                                                                                     |
+| react                  | 请求与集成 Hook；React/ReactDOM peer，直接依赖 `dequal` 与 `immer`；提供 `/core`、`/fetcher` 子路径 | [packages/react/package.json:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L74)                                                                                                                                     |
 | openapi                | OpenAPI 3 类型词汇；既不发送请求，也不验证输入                                                      | [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)                                                                                                                                 |
 
 ## 安装不等于执行
@@ -47,7 +47,7 @@ OpenAPI 类型本身既不发送请求，也不验证输入。作为开发依赖
 | 5.x 包                                        | 从 6.0 起                                                                       | 阅读                                                                                                                                                 |
 | --------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@ahoo-wang/fetcher-wow`                      | Wow 仓库 [`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) | 5.x：[Wow 指南](../guides/integrations/wow.md)、[Wow 参考](../reference/wow/index.md)；6.0 起：[wow.ahoo.me](https://wow.ahoo.me)                    |
-| `@ahoo-wang/fetcher-react` 中的 Wow 查询 Hook | Wow 仓库，基于 `@ahoo-wang/fetcher-react/fetcher` 构建                          | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                   |
+| `@ahoo-wang/fetcher-react` 中的 Wow 查询 Hook | Wow 仓库中的 `@ahoo-wang/wow-react`                                             | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                   |
 | `@ahoo-wang/fetcher-generator`                | Wow 仓库                                                                        | 5.x：[生成客户端](../guides/services/generated-client.md)、[生成器参考](../reference/generator/index.md)；6.0 起：[wow.ahoo.me](https://wow.ahoo.me) |
 | `@ahoo-wang/fetcher-viewer`、数据监控 Hook    | 冻结在 5.x；由 Wow 仓库的 `@ahoo-wang/wow-view-engine` 接替（尚未发布）         | 5.x：[Viewer 指南](../guides/viewer/index.md)、[Viewer 参考](../reference/viewer/index.md)                                                           |
 

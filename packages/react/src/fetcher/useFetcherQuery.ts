@@ -11,183 +11,57 @@
  * limitations under the License.
  */
 
-import type { UseFetcherOptions, UseFetcherReturn } from './index.js';
-import { useFetcher } from './index.js';
-import type { FetcherError, FetchRequest } from '@ahoo-wang/fetcher';
+import type { FetcherError } from '@ahoo-wang/fetcher';
 import { JsonResultExtractor } from '@ahoo-wang/fetcher';
-import type { QueryOptions, UseQueryStateReturn } from '../core/index.js';
-import { isValidateQuery, useLatest } from '../core/index.js';
-import { useCancellableQueryState } from '../core/useQueryState.js';
-import { useCallback, useMemo } from 'react';
+import type { PromiseState, QueryOptions } from '../core/index.js';
+import { useLatest } from '../core/index.js';
+import {
+  initialQueryStatus,
+  useQueryTrigger,
+} from '../core/useQueryTrigger.js';
 import type { AutoExecuteCapable } from '../types.js';
+import type { UseFetcherOptions, UseFetcherReturn } from './useFetcher.js';
+import { useFetcher } from './useFetcher.js';
 
-/**
- * Configuration options for the useFetcherQuery hook
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value
- */
 export interface UseFetcherQueryOptions<Q, R, E = FetcherError>
   extends UseFetcherOptions<R, E>, QueryOptions<Q>, AutoExecuteCapable {
-  /** The URL endpoint to send the POST request to */
+  /** The endpoint; each query is sent to it as a `POST` JSON body. */
   url: string;
 }
 
-/**
- * Return type of the useFetcherQuery hook
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value
- */
-export interface UseFetcherQueryReturn<Q, R, E = FetcherError>
-  extends UseFetcherReturn<R, E>, UseQueryStateReturn<Q> {
-  /** Function to execute the query with current parameters */
-  execute: () => Promise<void>;
+export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
+  UseFetcherReturn<R, E>,
+  'execute'
+> {
+  /** Sends the current query now; `idle` when the query is `undefined`. */
+  execute: () => Promise<PromiseState<R, E>>;
 }
 
 /**
- * A React hook for managing query-based HTTP requests with automatic execution
- *
- * This hook combines the fetcher functionality with query state management to provide
- * a convenient way to make POST requests where query parameters are sent as the request body.
- * It supports automatic execution on mount and when query parameters change.
- *
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value (defaults to FetcherError)
- * @param options - Configuration options for the hook
- * @returns An object containing fetcher state, query management functions, and execution controls
- *
- * @example
- * ```typescript
- * import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
- *
- * interface SearchQuery {
- *   keyword: string;
- *   limit: number;
- *   filters?: { category?: string };
- * }
- *
- * interface SearchResult {
- *   items: Array<{ id: string; title: string }>;
- *   total: number;
- * }
- *
- * function SearchComponent() {
- *   const {
- *     loading,
- *     result,
- *     error,
- *     execute,
- *     setQuery,
- *     getQuery,
- *   } = useFetcherQuery<SearchQuery, SearchResult>({
- *     url: '/api/search',
- *     initialQuery: { keyword: '', limit: 10 },
- *     autoExecute: false, // Don't execute on mount
- *   });
- *
- *   const handleSearch = (keyword: string) => {
- *     setQuery({ keyword, limit: 10 }); // This will auto-execute if autoExecute was true
- *   };
- *
- *   const handleManualSearch = () => {
- *     execute(); // Manual execution with current query
- *   };
- *
- *   if (loading) return <div>Searching...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *
- *   return (
- *     <div>
- *       <input
- *         type="text"
- *         onChange={(e) => handleSearch(e.target.value)}
- *         placeholder="Search..."
- *       />
- *       <button onClick={handleManualSearch}>Search</button>
- *       {result && (
- *         <div>
- *           Found {result.total} items:
- *           {result.items.map(item => (
- *             <div key={item.id}>{item.title}</div>
- *           ))}
- *         </div>
- *       )}
- *     </div>
- *   );
- * }
- * ```
- *
- * @throws This hook may throw exceptions related to network requests, which should be
- * handled by the caller. The execute function may throw FetcherError or other network-related errors.
- * Invalid URL or malformed request options may also cause exceptions.
+ * A controlled query sent as `POST url` with the query as JSON body, parsed
+ * as JSON unless `resultExtractor` says otherwise. Executes whenever the
+ * query's content changes.
  */
 export function useFetcherQuery<Q, R, E = FetcherError>(
   options: UseFetcherQueryOptions<Q, R, E>,
-): UseFetcherQueryReturn<Q, R, E> {
-  const useFetcherQueryOptions = {
+): UseFetcherQueryReturn<R, E> {
+  const { query, autoExecute = true } = options;
+  const { execute: send, ...state } = useFetcher<R, E>({
     resultExtractor: JsonResultExtractor,
     ...options,
-  };
-  const latestOptionsRef = useLatest(useFetcherQueryOptions);
-  const {
-    loading,
-    result,
-    error,
-    status,
-    execute: fetcherExecute,
-    reset,
-    abort,
-  } = useFetcher<R, E>(useFetcherQueryOptions);
-  const execute = useCallback(
-    (query: Q) => {
-      const fetcherRequest: FetchRequest = {
-        url: latestOptionsRef.current.url,
-        method: 'POST',
-        body: query as Record<string, any>,
-      };
-      return fetcherExecute(fetcherRequest);
-    },
-    [fetcherExecute, latestOptionsRef],
-  );
-
-  const { getQuery, setQuery } = useCancellableQueryState({
-    initialQuery: useFetcherQueryOptions.initialQuery,
-    query: useFetcherQueryOptions.query,
-    autoExecute: useFetcherQueryOptions.autoExecute,
-    execute,
+    initialStatus: initialQueryStatus(
+      query,
+      autoExecute,
+      options.initialStatus,
+    ),
   });
-
-  const executeWrapper = useCallback(async () => {
-    const query = getQuery();
-    if (isValidateQuery(query)) {
-      return await execute(query);
-    }
-  }, [execute, getQuery]);
-
-  return useMemo(
-    () => ({
-      loading,
-      result,
-      error,
-      status,
-      execute: executeWrapper,
-      reset,
-      abort,
-      getQuery,
-      setQuery,
+  const latestOptions = useLatest(options);
+  const execute = useQueryTrigger(query, autoExecute, (query: Q) =>
+    send({
+      url: latestOptions.current.url,
+      method: 'POST',
+      body: query as Record<string, any>,
     }),
-    [
-      loading,
-      result,
-      error,
-      status,
-      executeWrapper,
-      reset,
-      abort,
-      getQuery,
-      setQuery,
-    ],
   );
+  return { ...state, execute };
 }

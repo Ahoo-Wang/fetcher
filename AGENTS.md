@@ -28,10 +28,9 @@ the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)
 (`@ahoo-wang/wow-*`); the deprecated viewer stays on the `5.x` branch, which
 also carries fetcher 5.x fixes. Dependencies run one way, Wow → fetcher: no
 package here may depend on `@ahoo-wang/wow-*` (`.github/scripts/dependency-direction.mjs`,
-run in Engineering Quality). `@ahoo-wang/wow-react` imports only
-`@ahoo-wang/fetcher-react/core` and `/fetcher`, so keep those subpaths free of
-other integrations. `downstream-wow.yml` runs Wow's TypeScript tests against
-changes to the core packages Wow consumes; it is advisory.
+run in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests
+against changes to the core packages Wow consumes (`fetcher`, `decorator`,
+`eventstream`, `openapi`); it is advisory.
 
 ## Commands and Verification
 

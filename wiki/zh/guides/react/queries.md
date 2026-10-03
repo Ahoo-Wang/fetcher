@@ -14,6 +14,7 @@ description: 将查询作为 POST JSON 发送，并展示当前组件拥有的�
 保存以下内容为 `src/UserSearch.tsx`，按相同 React 入口方式挂载 `<UserSearch />`：
 
 ```tsx
+import { useState } from 'react';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
 
@@ -21,18 +22,19 @@ const api = new Fetcher({ baseURL: '/api' });
 type User = { id: string; name: string };
 
 export function UserSearch() {
+  const [query, setQuery] = useState({ name: '' });
   const search = useFetcherQuery<{ name: string }, User[]>({
     fetcher: api,
     url: '/users/search',
-    initialQuery: { name: '' },
-    autoExecute: true,
+    query,
   });
   return (
     <section>
       <label>
         Name
         <input
-          onChange={event => search.setQuery({ name: event.target.value })}
+          value={query.name}
+          onChange={event => setQuery({ name: event.target.value })}
         />
       </label>
       <button onClick={search.abort}>Cancel</button>
@@ -48,13 +50,13 @@ export function UserSearch() {
 }
 ```
 
-`useFetcherQuery` 将查询对象作为 POST body，默认提取 JSON。它不是将查询追加到 URL 的 GET Hook。需要其他传输或服务方法时，用 `useQuery` 提供自己的执行器，并把执行器第三个 `AbortController` 参数传给实际操作。
+`useFetcherQuery` 将查询对象作为 POST body，默认提取 JSON。它不是将查询追加到 URL 的 GET Hook。需要其他传输或服务方法时，用 `useQuery` 提供自己的执行器，并把执行器第二个 `AbortController` 参数传给实际操作。
 
 ## 验证查询变化
 
 挂载时空名称查询加载全部用户。输入 Ada 后检查网络请求：方法 POST、URL `/api/users/search`、body `{ "name": "Ada" }`。输出应包含 Ada。延迟第一个响应再修改名称，只有最新执行可以发布结果。
 
-`initialQuery` 提供初值。这个非受控输入方案使用 `setQuery`；若由父组件控制查询，使用受控 `query` 属性。`autoExecute` 默认 true，这里显式写出。需要“应用”按钮时设为 false，先调用 `setQuery(next)`，再调用 `execute()` 执行当前查询。初始化时 `query` 和 `initialQuery` 均未定义，才没有查询可执行。将已定义的 `query` 属性改为 `undefined` 会保留保存的查询，还可能再次触发旧查询，并不会暂停执行。暂停自动执行应设置 `autoExecute: false`；取消已经运行的操作需要另外调用 `abort()`。查询检查仅排除 `undefined`，发送前仍要验证业务字段。
+查询是受控的：它保存在你的 `useState`（或 URL、父组件状态）中，内容变化时 Hook 重新执行。内容按深比较，因此每次渲染重建相等对象不会重新发送。`autoExecute` 默认 true。需要“应用”按钮时设置 `autoExecute: false`，更新查询后调用 `execute()` 发送当前查询。必需输入缺失时传入 `query: undefined`：定义之前不会发送。`undefined` 和 `autoExecute: false` 都不会取消已经运行的操作；需要时调用 `abort()`。`undefined` 是唯一的“未就绪”值；传入查询前仍要验证业务字段。
 
 ## 失败与生命周期
 

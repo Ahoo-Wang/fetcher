@@ -1,7 +1,7 @@
 {
   "name": "@ahoo-wang/fetcher-react",
   "version": "5.1.3",
-  "description": "React integration for Fetcher HTTP client. Provides React Hooks and components for seamless data fetching with automatic re-rendering and loading states.",
+  "description": "React integration for Fetcher HTTP client. React hooks that turn cancellable requests into component state, plus security, storage and event-bus bindings.",
   "keywords": [
     "fetch",
     "http",
@@ -13,11 +13,11 @@
   ],
   "author": "Ahoo-Wang",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/master/packages/fetcher-react",
+  "homepage": "https://github.com/Ahoo-Wang/fetcher/tree/main/packages/react",
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahoo-Wang/fetcher.git",
-    "directory": "packages/fetcher-react"
+    "directory": "packages/react"
   },
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
@@ -80,7 +80,7 @@
     "@ahoo-wang/fetcher-eventbus": "workspace:^",
     "@ahoo-wang/fetcher-storage": "workspace:^",
     "@ahoo-wang/fetcher-cosec": "workspace:^",
-    "react": "^19.3.0"
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

@@ -11,6 +11,20 @@
  * limitations under the License.
  */
 
-export * from './useFullscreen.js';
-export * from './FullscreenContext.js';
-export * from './utils.js';
+import { useState } from 'react';
+import { dequal } from 'dequal';
+
+/**
+ * Returns `value`, but keeps the previous reference while the content is
+ * deeply equal, so an inline object can drive an effect without re-running
+ * it on every render.
+ */
+export function useStableValue<T>(value: T): T {
+  const [stable, setStable] = useState(value);
+  if (stable !== value && !dequal(stable, value)) {
+    // Adjusting state from the previous render: React re-renders at once.
+    setStable(() => value);
+    return value;
+  }
+  return stable;
+}

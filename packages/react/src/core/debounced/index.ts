@@ -11,10 +11,7 @@
  * limitations under the License.
  */
 
-export { useDebouncedCallback } from './useDebouncedCallback.js';
-export type {
-  UseDebouncedCallbackOptions,
-  UseDebouncedCallbackReturn,
-} from './useDebouncedCallback.js';
+export * from './useDebouncedCallback.js';
+export * from './useDebouncedValue.js';
 export * from './useDebouncedExecutePromise.js';
 export * from './useDebouncedQuery.js';

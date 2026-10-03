@@ -1,208 +1,59 @@
 ---
-title: 'Refs, request IDs and fullscreen'
-description: 'Refs, request IDs and fullscreen — @ahoo-wang/fetcher-react'
+title: 'Latest and stable values'
+description: 'Latest and stable values — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
-# Refs, request IDs and fullscreen
+# Latest and stable values
 
-## Utilities
+Two small hooks underlie the request hooks and are exported for your own effects and callbacks. Neither triggers a render by itself.
 
-| API                | Return and lifecycle                                                                                                                                                 |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| useLatest(value)   | RefObject updated after each render commits (insertion effect); read in render it holds the last committed value. No rerender notification.                          |
-| useMounted()       | Stable function reporting effect-mounted state; false before mount/after cleanup.                                                                                    |
-| useForceUpdate()   | Callback forcing a render with a reducer increment.                                                                                                                  |
-| useRequestId()     | Counter initially 0; generate/invalidate increment, current reads, isLatest compares, reset sets 0. No cancellation by itself.                                       |
-| useRefs&lt;T&gt;() | Map-like register/get/set/delete/has/clear/size/iteration. register returns a ref callback; null removes a key. Clears on unmount, mutations do not trigger renders. |
+| API                     | Return and lifecycle                                                                                                                                                                                                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useLatest(value)`      | `RefObject` updated after each render commits (insertion effect), so a discarded concurrent render never leaves its value behind. Read it in callbacks and effects; read in render it holds the last committed value. |
+| `useStableValue(value)` | Returns `value`, but keeps the previous reference while the content is deeply equal (`dequal`). An inline object can drive an effect's dependencies without re-running it on every render.                            |
 
-## Fullscreen
+`useStableValue` is how query hooks decide that a query changed: `{ page: 1 }` written inline in every render stays one value until its content differs. It compares content only; it does not clone, freeze or validate. For values that should follow input after a quiet period, use [`useDebouncedValue`](./debounce#api-useDebouncedValue); to debounce calls, use [`useDebouncedCallback`](./debounce#api-useDebouncedCallback).
 
-`useFullscreen({ target? } = {})` returns fullscreen/getTarget/enter/exit/toggle. Target priority is a dynamically supplied element, target.current, then document.documentElement. Null resets the dynamic override; undefined keeps it. The override is also dropped when fullscreen ends, so the configured target applies again. `FullscreenProvider` creates a wrapper div when target is absent; `useFullscreenContext()` returns undefined outside it. The hook tracks document fullscreen-change events and removes listeners on cleanup; it does not automatically exit fullscreen on unmount. DOM utilities require a browser and native fullscreen permission/user activation. Unsupported entry/exit APIs throw; enter/exit/toggle return rejecting Promise&lt;void&gt;. Manual addFullscreenChangeListener must be paired with removeFullscreenChangeListener using the same callback.
+## Removed in 6.0 {#removed-in-6-0}
+
+| Removed                                             | Instead                                                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Fullscreen hooks, provider, context and DOM helpers | No replacement in this package; call the Fullscreen API directly or use a hook library.              |
+| `useRefs`, `useForceUpdate`, `useMounted`           | No replacement; write the few lines you need or use a hook library.                                  |
+| `useRequestId`                                      | Request identity is the `AbortController` owned by [`useExecutePromise`](./promise-and-query-state). |
 
 ## Complete example
 
 ```tsx
-import {
-  FullscreenProvider,
-  useFullscreenContext,
-} from '@ahoo-wang/fetcher-react';
-function Toggle() {
-  const fullscreen = useFullscreenContext();
-  return (
-    <button
-      onClick={() => {
-        void fullscreen?.toggle().catch(console.error);
-      }}
-    >
-      Toggle fullscreen
-    </button>
-  );
-}
-export function Presentation() {
-  return (
-    <FullscreenProvider>
-      <Toggle />
-      <p>Content</p>
-    </FullscreenProvider>
-  );
+import { useEffect } from 'react';
+import { useLatest, useStableValue } from '@ahoo-wang/fetcher-react';
+
+export function Ticker({
+  filter,
+  onTick,
+}: {
+  filter: { tag: string };
+  onTick: (tag: string, ticks: number) => void;
+}) {
+  const latestOnTick = useLatest(onTick);
+  const stableFilter = useStableValue(filter);
+  useEffect(() => {
+    // Restarts when the filter's content changes, not on every new object,
+    // and always calls the latest onTick without listing it as a dependency.
+    let ticks = 0;
+    const timer = setInterval(() => {
+      ticks += 1;
+      latestOnTick.current(stableFilter.tag, ticks);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [stableFilter, latestOnTick]);
+  return <p>Watching {stableFilter.tag}</p>;
 }
 ```
 
 ## Public signatures and types
 
 These signatures follow declarations reachable from the current root entry. `?` marks optional input; generics/interfaces only constrain compile-time types. Locate inherited and related types through the [symbol index](./symbols). Runtime defaults and failure behavior are described above.
-
-### useFullscreen {#api-useFullscreen}
-
-```ts
-export function useFullscreen(
-  options?: UseFullscreenOptions,
-): UseFullscreenReturn;
-```
-
-Implementation defaults: `options = {}`.
-
-[packages/react/src/core/fullscreen/useFullscreen.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L60)
-
-### UseFullscreenOptions {#api-UseFullscreenOptions}
-
-```ts
-export interface UseFullscreenOptions {
-  target?: RefObject<HTMLElement | null>;
-}
-```
-
-[packages/react/src/core/fullscreen/useFullscreen.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L24)
-
-### UseFullscreenReturn {#api-UseFullscreenReturn}
-
-```ts
-export interface UseFullscreenReturn {
-  fullscreen: boolean;
-  getTarget: () => HTMLElement;
-  toggle: (target?: HTMLElement | null) => Promise<void>;
-  enter: (target?: HTMLElement | null) => Promise<void>;
-  exit: () => Promise<void>;
-}
-```
-
-[packages/react/src/core/fullscreen/useFullscreen.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/useFullscreen.ts#L31)
-
-### FullscreenProvider {#api-FullscreenProvider}
-
-```ts
-export function FullscreenProvider(
-  props: FullscreenProviderProps,
-): import('react').JSX.Element;
-```
-
-[packages/react/src/core/fullscreen/FullscreenContext.tsx:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L32)
-
-### useFullscreenContext {#api-useFullscreenContext}
-
-```ts
-export function useFullscreenContext(): FullscreenContextValue | undefined;
-```
-
-[packages/react/src/core/fullscreen/FullscreenContext.tsx:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L44)
-
-### FullscreenContextValue {#api-FullscreenContextValue}
-
-```ts
-export type FullscreenContextValue = UseFullscreenReturn;
-```
-
-[packages/react/src/core/fullscreen/FullscreenContext.tsx:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L22)
-
-### FullscreenContext {#api-FullscreenContext}
-
-```ts
-declare const FullscreenContext: import('react').Context<
-  UseFullscreenReturn | undefined
->;
-```
-
-[packages/react/src/core/fullscreen/FullscreenContext.tsx:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L24)
-
-### FullscreenProviderProps {#api-FullscreenProviderProps}
-
-```ts
-export interface FullscreenProviderProps extends UseFullscreenOptions {
-  children: ReactNode;
-}
-```
-
-[packages/react/src/core/fullscreen/FullscreenContext.tsx:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/FullscreenContext.tsx#L28)
-
-### getFullscreenElement {#api-getFullscreenElement}
-
-```ts
-export function getFullscreenElement(): HTMLElement | null;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L18)
-
-### isFullscreen {#api-isFullscreen}
-
-```ts
-export function isFullscreen(): boolean;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L27)
-
-### enterFullscreen {#api-enterFullscreen}
-
-```ts
-export function enterFullscreen(element: HTMLElement): Promise<void>;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L36)
-
-### exitFullscreen {#api-exitFullscreen}
-
-```ts
-export function exitFullscreen(): Promise<void>;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L59)
-
-### addFullscreenChangeListener {#api-addFullscreenChangeListener}
-
-```ts
-export function addFullscreenChangeListener(callback: () => void): void;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L82)
-
-### removeFullscreenChangeListener {#api-removeFullscreenChangeListener}
-
-```ts
-export function removeFullscreenChangeListener(callback: () => void): void;
-```
-
-[packages/react/src/core/fullscreen/utils.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/fullscreen/utils.ts#L93)
-
-### useRequestId {#api-useRequestId}
-
-```ts
-export function useRequestId(): UseRequestIdReturn;
-```
-
-[packages/react/src/core/useRequestId.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRequestId.ts#L71)
-
-### UseRequestIdReturn {#api-UseRequestIdReturn}
-
-```ts
-export interface UseRequestIdReturn {
-  generate: () => number;
-  current: () => number;
-  isLatest: (requestId: number) => boolean;
-  invalidate: () => void;
-  reset: () => void;
-}
-```
-
-[packages/react/src/core/useRequestId.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRequestId.ts#L19)
 
 ### useLatest {#api-useLatest}
 
@@ -212,48 +63,13 @@ export function useLatest<T>(value: T): RefObject<T>;
 
 [packages/react/src/core/useLatest.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useLatest.ts#L47)
 
-### useMounted {#api-useMounted}
+### useStableValue {#api-useStableValue}
 
 ```ts
-export function useMounted(): () => boolean;
+export function useStableValue<T>(value: T): T;
 ```
 
-[packages/react/src/core/useMounted.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useMounted.ts#L40)
-
-### useRefs {#api-useRefs}
-
-```ts
-export function useRefs<T>(): UseRefsReturn<T>;
-```
-
-[packages/react/src/core/useRefs.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRefs.ts#L53)
-
-### UseRefsReturn {#api-UseRefsReturn}
-
-```ts
-export interface UseRefsReturn<T> extends Iterable<[Key, T]> {
-  register: (key: Key) => (instance: T | null) => void;
-  get: (key: Key) => T | undefined;
-  set: (key: Key, value: T) => void;
-  delete: (key: Key) => boolean;
-  has: (key: Key) => boolean;
-  clear: () => void;
-  readonly size: number;
-  keys: () => IterableIterator<Key>;
-  values: () => IterableIterator<T>;
-  entries: () => IterableIterator<[Key, T]>;
-}
-```
-
-[packages/react/src/core/useRefs.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useRefs.ts#L21)
-
-### useForceUpdate {#api-useForceUpdate}
-
-```ts
-export function useForceUpdate(): () => void;
-```
-
-[packages/react/src/core/useForceUpdate.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useForceUpdate.ts#L45)
+[packages/react/src/core/useStableValue.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useStableValue.ts#L22)
 
 ## Related topics
 

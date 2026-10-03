@@ -11,163 +11,67 @@
  * limitations under the License.
  */
 
-import type {
-  UseExecutePromiseReturn,
-  UseExecutePromiseOptions,
-  PromiseSupplier,
-  QueryOptions,
-} from './index.js';
-import { useExecutePromise, useLatest, isValidateQuery } from './index.js';
-import { useCallback, useMemo } from 'react';
-import type { AttributesCapable, FetcherError } from '@ahoo-wang/fetcher';
-import type { UseQueryStateReturn } from './useQueryState.js';
-import { useCancellableQueryState } from './useQueryState.js';
+import type { FetcherError } from '@ahoo-wang/fetcher';
 import type { AutoExecuteCapable } from '../types.js';
+import type {
+  UseExecutePromiseOptions,
+  UseExecutePromiseReturn,
+} from './useExecutePromise.js';
+import { useExecutePromise } from './useExecutePromise.js';
+import type { PromiseState } from './usePromiseState.js';
+import { useLatest } from './useLatest.js';
+import { initialQueryStatus, useQueryTrigger } from './useQueryTrigger.js';
 
-/**
- * Configuration options for the useQuery hook
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value
- */
+export interface QueryOptions<Q> {
+  /**
+   * The query. Its content (compared deeply) drives execution; `undefined`
+   * means not ready, and nothing executes.
+   */
+  query?: Q;
+}
+
 export interface UseQueryOptions<Q, R, E = FetcherError>
-  extends
-    UseExecutePromiseOptions<R, E>,
-    QueryOptions<Q>,
-    AttributesCapable,
-    AutoExecuteCapable {
-  /** Function to execute the query with given parameters and optional attributes */
-  execute: (
-    query: Q,
-    attributes?: Record<string, any>,
-    abortController?: AbortController,
-  ) => Promise<R>;
+  extends UseExecutePromiseOptions<R, E>, QueryOptions<Q>, AutoExecuteCapable {
+  /** Runs one query; it should stop when the controller aborts. */
+  execute: (query: Q, abortController: AbortController) => Promise<R>;
+}
+
+export interface UseQueryReturn<R, E = FetcherError> extends Omit<
+  UseExecutePromiseReturn<R, E>,
+  'execute'
+> {
+  /** Runs the current query now; `idle` when the query is `undefined`. */
+  execute: () => Promise<PromiseState<R, E>>;
 }
 
 /**
- * Return type of the useQuery hook
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value
- */
-export interface UseQueryReturn<Q, R, E = FetcherError>
-  extends UseExecutePromiseReturn<R, E>, UseQueryStateReturn<Q> {
-  /** Function to execute the query with current parameters */
-  execute: () => Promise<void>;
-}
-
-/**
- * A React hook for managing query-based asynchronous operations
- * @template Q - The type of the query parameters
- * @template R - The type of the result value
- * @template E - The type of the error value
- * @param options - Configuration options for the query
- * @returns An object containing the query state and control functions
+ * A controlled query: keep the query in your own state and pass it in; the
+ * hook executes whenever its content changes.
  *
  * @example
- * ```typescript
- * import { useQuery } from '@ahoo-wang/fetcher-react';
- *
- * interface UserQuery {
- *   id: string;
- * }
- *
- * interface User {
- *   id: string;
- *   name: string;
- * }
- *
- * function UserComponent() {
- *   const { loading, result, error, execute, setQuery } = useQuery<UserQuery, User>({
- *     initialQuery: { id: '1' },
- *     execute: async (query) => {
- *       const response = await fetch(`/api/users/${query.id}`);
- *       return response.json();
- *     },
- *     autoExecute: true,
- *   });
- *
- *   const handleUserChange = (userId: string) => {
- *     setQuery({ id: userId }); // Automatically executes if autoExecute is true
- *   };
- *
- *   if (loading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *   return (
- *     <div>
- *       <button onClick={() => handleUserChange('2')}>Load User 2</button>
- *       {result && <p>User: {result.name}</p>}
- *     </div>
- *   );
- * }
- * ```
+ * const [query, setQuery] = useState({ keyword: '' });
+ * const { result, loading } = useQuery({
+ *   query,
+ *   execute: (query, abortController) => api.search(query, abortController),
+ * });
  */
 export function useQuery<Q, R, E = FetcherError>(
   options: UseQueryOptions<Q, R, E>,
-): UseQueryReturn<Q, R, E> {
-  const latestOptionsRef = useLatest(options);
-  const {
-    loading,
-    result,
-    error,
-    status,
-    execute: promiseExecutor,
-    reset,
-    abort,
-  } = useExecutePromise<R, E>(options);
-
-  const execute = useCallback(
-    (query: Q) => {
-      const queryExecutor: PromiseSupplier<R> = async (
-        abortController: AbortController,
-      ): Promise<R> => {
-        return latestOptionsRef.current.execute(
-          query,
-          latestOptionsRef.current.attributes,
-          abortController,
-        );
-      };
-      return promiseExecutor(queryExecutor);
-    },
-    [promiseExecutor, latestOptionsRef],
-  );
-
-  const { getQuery, setQuery } = useCancellableQueryState({
-    initialQuery: options.initialQuery,
-    query: options.query,
-    autoExecute: options.autoExecute,
-    execute,
+): UseQueryReturn<R, E> {
+  const { query, autoExecute = true } = options;
+  const { execute: executePromise, ...state } = useExecutePromise<R, E>({
+    ...options,
+    initialStatus: initialQueryStatus(
+      query,
+      autoExecute,
+      options.initialStatus,
+    ),
   });
-
-  const executeWrapper = useCallback(async () => {
-    const query = getQuery();
-    if (isValidateQuery(query)) {
-      return await execute(query);
-    }
-  }, [execute, getQuery]);
-
-  return useMemo(
-    () => ({
-      loading,
-      result,
-      error,
-      status,
-      execute: executeWrapper,
-      reset,
-      abort,
-      getQuery,
-      setQuery,
-    }),
-    [
-      loading,
-      result,
-      error,
-      status,
-      executeWrapper,
-      reset,
-      abort,
-      getQuery,
-      setQuery,
-    ],
+  const latestOptions = useLatest(options);
+  const execute = useQueryTrigger(query, autoExecute, (query: Q) =>
+    executePromise(abortController =>
+      latestOptions.current.execute(query, abortController),
+    ),
   );
+  return { ...state, execute };
 }

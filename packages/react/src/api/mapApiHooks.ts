@@ -11,82 +11,17 @@
  * limitations under the License.
  */
 
-import { collectMethods, methodNameToHookName } from './apiHooks.js';
 import type { ApiMethod } from './apiHooks.js';
+import { collectMethods, methodNameToHookName } from './apiHooks.js';
 
-/** Maps API methods to hooks, resolving accessors on access or enumeration. */
+/** One hook per method of `api`, named by `methodNameToHookName`. */
 export function mapApiHooks<Method extends ApiMethod, Hook>(
-  api: Record<string, unknown>,
+  api: object,
   createHook: (method: Method) => Hook,
 ): Record<string, Hook> {
   const hooks: Record<string, Hook> = {};
-  const mappedMethods = new Set<string>();
-  // ponytail: O(methods * accessors); add a per-method callback only
-  // if profiling large APIs shows a bottleneck.
-  const mapMethods = (methods: ReadonlyMap<string, Method>) => {
-    methods.forEach((method, name) => {
-      if (mappedMethods.has(name)) return;
-      mappedMethods.add(name);
-      Object.defineProperty(hooks, methodNameToHookName(name), {
-        value: createHook(method),
-        writable: true,
-        enumerable: true,
-        configurable: true,
-      });
-    });
-  };
-  const methods = collectMethods<Method>(api, (name, get, priorMethods) => {
-    mapMethods(priorMethods);
-    const hookName = methodNameToHookName(name);
-    const previous = Object.getOwnPropertyDescriptor(hooks, hookName);
-    Object.defineProperty(hooks, hookName, {
-      configurable: true,
-      get() {
-        const method = get();
-        if (typeof method !== 'function') {
-          if (previous?.get) return previous.get();
-          if (previous) {
-            hooks[hookName] = previous.value;
-            return previous.value;
-          }
-          delete hooks[hookName];
-          return undefined;
-        }
-        const hook = createHook(method.bind(api) as Method);
-        hooks[hookName] = hook;
-        return hook;
-      },
-      set(hook: Hook) {
-        Object.defineProperty(hooks, hookName, {
-          value: hook,
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
-      },
-    });
+  collectMethods<Method>(api).forEach((method, name) => {
+    hooks[methodNameToHookName(name)] = createHook(method);
   });
-  mapMethods(methods);
-  return new Proxy(hooks, {
-    has(target, key) {
-      if (Reflect.getOwnPropertyDescriptor(target, key)?.get) {
-        Reflect.get(target, key);
-      }
-      return Reflect.has(target, key);
-    },
-    getOwnPropertyDescriptor(target, key) {
-      if (Reflect.getOwnPropertyDescriptor(target, key)?.get) {
-        Reflect.get(target, key);
-      }
-      return Reflect.getOwnPropertyDescriptor(target, key);
-    },
-    ownKeys(target) {
-      for (const key of Reflect.ownKeys(target)) {
-        if (Reflect.getOwnPropertyDescriptor(target, key)?.get) {
-          Reflect.get(target, key);
-        }
-      }
-      return Reflect.ownKeys(target);
-    },
-  });
+  return hooks;
 }

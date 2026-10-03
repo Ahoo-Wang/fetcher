@@ -11,155 +11,119 @@
  * limitations under the License.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useDebouncedQuery } from '../../../src';
+import { act, renderHook } from '@testing-library/react';
+import { useDebouncedQuery, useDebouncedValue } from '../../../src';
 
-// Mock the dependencies
-vi.mock('../../../src/core/useQuery', () => ({
-  useQuery: vi.fn(),
-}));
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
 
-vi.mock('../../../src/core/debounced/useDebouncedCallback', () => ({
-  useDebouncedCallbackInternal: vi.fn(),
-}));
+describe('useDebouncedValue', () => {
+  it('follows the value once it stops changing', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedValue(value, { delay: 100 }),
+      { initialProps: { value: 'a' } },
+    );
+    expect(result.current).toMatchObject({ value: 'a', pending: false });
+    rerender({ value: 'b' });
+    act(() => vi.advanceTimersByTime(50));
+    rerender({ value: 'c' });
+    expect(result.current).toMatchObject({ value: 'a', pending: true });
+    act(() => vi.advanceTimersByTime(99));
+    expect(result.current.value).toBe('a');
+    act(() => vi.advanceTimersByTime(1));
+    expect(result.current).toMatchObject({ value: 'c', pending: false });
+  });
 
-import { useQuery } from '../../../src/core/useQuery';
-import { useDebouncedCallbackInternal as useDebouncedCallback } from '../../../src/core/debounced/useDebouncedCallback';
+  it('ignores a change back to the current value', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedValue(value, { delay: 100 }),
+      { initialProps: { value: { a: 1 } } },
+    );
+    const first = result.current.value;
+    rerender({ value: { a: 2 } });
+    rerender({ value: { a: 1 } });
+    expect(result.current.pending).toBe(false);
+    act(() => vi.advanceTimersByTime(100));
+    expect(result.current.value).toBe(first);
+  });
+
+  it('applies the latest value at once on flush', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedValue(value, { delay: 100 }),
+      { initialProps: { value: 'a' } },
+    );
+    rerender({ value: 'b' });
+    act(() => result.current.flush());
+    expect(result.current).toMatchObject({ value: 'b', pending: false });
+  });
+
+  it('applies the first change of a burst at once with leading', () => {
+    const { result, rerender } = renderHook(
+      ({ value }) => useDebouncedValue(value, { delay: 100, leading: true }),
+      { initialProps: { value: 'a' } },
+    );
+    rerender({ value: 'b' });
+    expect(result.current.value).toBe('b');
+    rerender({ value: 'c' });
+    expect(result.current.value).toBe('b');
+    act(() => vi.advanceTimersByTime(100));
+    expect(result.current.value).toBe('c');
+  });
+});
 
 describe('useDebouncedQuery', () => {
-  const mockResult = { id: 1, name: 'Test Item' };
-  const initialQuery = { id: '1', filter: 'active' };
-
-  const mockExecute = vi.fn().mockResolvedValue(mockResult);
-  const mockReset = vi.fn();
-  const mockGetQuery = vi.fn().mockReturnValue(initialQuery);
-  const mockSetQuery = vi.fn();
-
-  const mockQueryReturn = {
-    loading: false,
-    result: null,
-    error: null,
-    status: 'idle',
-    execute: mockExecute,
-    reset: mockReset,
-    abort: vi.fn(), // abort function from useExecutePromise
-    getQuery: mockGetQuery,
-    setQuery: mockSetQuery,
-  };
-
-  const mockDebouncedReturn = {
-    run: vi.fn(),
-    cancel: vi.fn(),
-    isPending: vi.fn().mockReturnValue(false),
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (useQuery as any).mockReturnValue(mockQueryReturn);
-    (useDebouncedCallback as any).mockReturnValue(mockDebouncedReturn);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('should return correct interface combining query and debounced functionality', () => {
-    const options = {
-      initialQuery,
-      execute: mockExecute,
-      debounce: { delay: 300 },
-    };
-
-    const { result } = renderHook(() => useDebouncedQuery(options));
-
-    expect(result.current).toHaveProperty('loading', false);
-    expect(result.current).toHaveProperty('result', null);
-    expect(result.current).toHaveProperty('error', null);
-    expect(result.current).toHaveProperty('status', 'idle');
-    expect(result.current).toHaveProperty('reset', mockReset);
-    expect(result.current).toHaveProperty('abort', expect.any(Function)); // abort function from useExecutePromise
-    expect(result.current).toHaveProperty('getQuery', mockGetQuery);
-    expect(result.current).toHaveProperty('setQuery', expect.any(Function)); // setQuery function from useQueryState
-    expect(result.current).toHaveProperty('run', expect.any(Function));
-    expect(result.current).toHaveProperty('cancel', expect.any(Function));
-    act(() => result.current.cancel());
-    expect(mockDebouncedReturn.cancel).toHaveBeenCalledExactlyOnceWith();
-    expect(result.current).toHaveProperty(
-      'isPending',
-      mockDebouncedReturn.isPending,
+  it('executes the first query at once and later ones after the delay', async () => {
+    const execute = vi.fn(async (query: { keyword: string }) => query.keyword);
+    const { result, rerender } = renderHook(
+      ({ query }) =>
+        useDebouncedQuery({ query, execute, debounce: { delay: 100 } }),
+      { initialProps: { query: { keyword: 'a' } } },
     );
-    expect(result.current).not.toHaveProperty('execute'); // execute should be omitted
-  });
+    await act(async () => {});
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(result.current.result).toBe('a');
 
-  it('should pass options to useQuery and debounce config to useDebouncedCallback', () => {
-    const options = {
-      initialQuery,
-      execute: mockExecute,
-      debounce: { delay: 300, leading: true },
-    };
-
-    renderHook(() => useDebouncedQuery(options));
-
-    // useQuery is called with options including autoExecute: false (default)
-    expect(useQuery).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ...options,
-        autoExecute: false, // default value is false when not specified
-      }),
-    );
-    expect(useDebouncedCallback).toHaveBeenCalledWith(
-      expect.any(Function),
-      options.debounce,
-    );
-    vi.mocked(useDebouncedCallback).mock.lastCall![0]();
-    expect(mockExecute).toHaveBeenCalledExactlyOnceWith();
-  });
-
-  it('should expose debounced run method for executing queries', () => {
-    const options = {
-      initialQuery,
-      execute: mockExecute,
-      debounce: { delay: 300 },
-    };
-
-    const { result } = renderHook(() => useDebouncedQuery(options));
-
-    act(() => {
-      result.current.run();
+    rerender({ query: { keyword: 'ab' } });
+    rerender({ query: { keyword: 'abc' } });
+    expect(result.current.pending).toBe(true);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
     });
-
-    expect(mockDebouncedReturn.run).toHaveBeenCalled();
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenLastCalledWith(
+      { keyword: 'abc' },
+      expect.any(AbortController),
+    );
+    expect(result.current).toMatchObject({ result: 'abc', pending: false });
   });
 
-  it('should expose cancel method to cancel pending debounced queries', () => {
-    const options = {
-      initialQuery,
-      execute: mockExecute,
-      debounce: { delay: 300 },
-    };
-
-    const { result } = renderHook(() => useDebouncedQuery(options));
-
-    act(() => {
-      result.current.cancel();
+  it('sends the waiting query at once on flush', async () => {
+    const execute = vi.fn(async (query: { keyword: string }) => query.keyword);
+    const { result, rerender } = renderHook(
+      ({ query }) =>
+        useDebouncedQuery({ query, execute, debounce: { delay: 100 } }),
+      { initialProps: { query: { keyword: 'a' } } },
+    );
+    await act(async () => {});
+    rerender({ query: { keyword: 'b' } });
+    await act(async () => {
+      result.current.flush();
     });
-
-    expect(mockDebouncedReturn.cancel).toHaveBeenCalled();
+    expect(result.current.result).toBe('b');
+    expect(execute).toHaveBeenCalledTimes(2);
   });
 
-  it('should expose isPending to check if debounced query is pending', () => {
-    mockDebouncedReturn.isPending.mockReturnValue(true);
-
-    const options = {
-      initialQuery,
-      execute: mockExecute,
-      debounce: { delay: 300 },
-    };
-
-    const { result } = renderHook(() => useDebouncedQuery(options));
-
-    expect(result.current.isPending()).toBe(true);
-    expect(mockDebouncedReturn.isPending).toHaveBeenCalled();
+  it('cancels the waiting query on unmount', async () => {
+    const execute = vi.fn(async () => 'ok');
+    const { rerender, unmount } = renderHook(
+      ({ query }) =>
+        useDebouncedQuery({ query, execute, debounce: { delay: 100 } }),
+      { initialProps: { query: 'a' } },
+    );
+    await act(async () => {});
+    rerender({ query: 'b' });
+    unmount();
+    vi.advanceTimersByTime(100);
+    expect(execute).toHaveBeenCalledTimes(1);
   });
 });

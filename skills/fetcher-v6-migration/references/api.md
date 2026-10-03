@@ -8,6 +8,7 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 - [Version facts](#version-facts)
 - [Package mapping](#package-mapping)
 - [Removed exports of `@ahoo-wang/fetcher-react`](#removed-exports-of-ahoo-wangfetcher-react)
+- [The `@ahoo-wang/fetcher-react` redesign](#the-ahoo-wangfetcher-react-redesign)
 - [Subpaths of `@ahoo-wang/fetcher-react`](#subpaths-of-ahoo-wangfetcher-react)
 - [Detection checklist](#detection-checklist)
 - [Rewrites](#rewrites)
@@ -22,13 +23,17 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   version it prints — never a guessed one.
 - fetcher 6.0.0 is released after that Wow release. Confirm with
   `npm view @ahoo-wang/fetcher dist-tags`.
-- The Wow packages declare fetcher peers `^5.1.3 || ^6` (`wow-react` on
-  `fetcher-react`) and `^5.1.0 || ^6` (the rest), so they can be adopted on
-  5.1.3 before upgrading fetcher.
+- The Wow packages declare fetcher peers `^5.1.0 || ^6` (confirm with
+  `npm view @ahoo-wang/wow-client peerDependencies`), so they can be adopted on
+  5.1.3 before upgrading fetcher. `@ahoo-wang/wow-react` does **not** depend on
+  `@ahoo-wang/fetcher-react`: it has its own request state, and its hooks keep
+  their own API (the fetcher-react redesign does not apply to them).
 - 6.0 makes no breaking API change to `@ahoo-wang/fetcher`,
   `fetcher-decorator`, `fetcher-eventbus`, `fetcher-eventstream`,
   `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` or `fetcher-cosec`;
-  the only removals are in `fetcher-react` and the packages that left. These
+  the breaking changes are the packages that left and `fetcher-react`, which
+  lost exports and was redesigned around cancellation (see
+  [the redesign](#the-ahoo-wangfetcher-react-redesign)). These
   packages do receive corrections — see **Changed** (e.g. `@ahoo-wang/fetcher`
   omits `undefined`/`null` query values, repeats array query parameters,
   keeps the timeout when a `signal` is passed, sends no default `Content-Type`
@@ -50,8 +55,7 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   closes the event bus the storage created, while a bus passed in `eventBus`
   stays open; in `fetcher-react`, `RouteGuard` calls `onUnauthorized` in an
   effect after commit, `useKeyStorage` (and so `useSecurity` and
-  `SecurityProvider`) renders the default during SSR and hydration,
-  `useQueryState` no longer re-runs when only `execute` changes, and
+  `SecurityProvider`) renders the default during SSR and hydration, and
   `useLatest` updates its ref after commit) and **Fixed** in the 6.0 release
   notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
   longer re-running the error phase (#1249), or a tab reusing the token another
@@ -62,7 +66,7 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 | 5.x package                      | 6.x replacement (Wow repository, not on npm yet)                                                         |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths |
-| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), built on `fetcher-react/core` and `fetcher-react/fetcher`             |
+| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                   |
 | `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10   |
 | `@ahoo-wang/fetcher-viewer`      | None in 6.x. Stays on 5.x; `@ahoo-wang/wow-view-engine` supersedes it once declared stable (unpublished) |
 | Data-monitor hooks               | None. Remove them or stay on 5.x                                                                         |
@@ -75,7 +79,7 @@ npm and are meant to be deprecated with a pointer to their replacement.
 
 6.0 drops `export * from './wow/index.js'` and
 `export * from './dataMonitor/index.js'` from the root entry, and the optional
-`@ahoo-wang/fetcher-wow` peer.
+`@ahoo-wang/fetcher-wow` peer. The redesign removes more; see the next section.
 
 | Removed export                                                                | Replacement                        |
 | ----------------------------------------------------------------------------- | ---------------------------------- |
@@ -98,13 +102,126 @@ The data-monitor hooks polled a total every 30 seconds in each tab and existed
 only for the viewer's "data monitor" toggle. A server-side subscription in the
 Wow view engine is planned instead; there is nothing to port them to today.
 
+## The `@ahoo-wang/fetcher-react` redesign
+
+A request is identified by its `AbortController`. Only the current execution
+may write state; a newer execution, `abort()`, `reset()` and unmounting all
+abort it. State is one value, `{ status, loading, result, error }`. `execute`
+never rejects: it resolves to the state this execution ended in (`idle` when it
+was cancelled). Queries are controlled: the query lives in the caller's state
+and is passed as `query`; the hook executes when its content (compared deeply)
+changes, and `undefined` means not ready. The 6.x API is in
+`$fetcher-react-hooks`.
+
+### Removed or changed
+
+| Removed or changed in 6.0                                                                                                                           | What to do                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `useFullscreen`, `FullscreenProvider`, `FullscreenContext`, `useFullscreenContext`, the fullscreen utilities (`enterFullscreen`, `isFullscreen`, …) | No replacement; write your own or use a library such as ahooks                          |
+| `useRefs`, `useForceUpdate`, `useMounted`, `useRequestId`                                                                                           | No replacement; write your own or use a library such as ahooks                          |
+| `useQueryState`, `useCancellableQueryState`, `isValidateQuery`, `UseQueryStateOptions`, `UseQueryStateReturn`                                       | Pass a controlled `query`                                                               |
+| `propagateError` option                                                                                                                             | Read the state `execute` resolves to                                                    |
+| `initialQuery`, `setQuery`, `getQuery` on `useQuery`, `useFetcherQuery`, the query API hooks and the debounced query hooks                          | Keep the query in your own `useState` and pass it as `query`                            |
+| `run`, `cancel`, `isPending`, `setQuery` on `useDebouncedQuery` / `useDebouncedFetcherQuery`                                                        | `pending`, `flush()`, `execute()`                                                       |
+| `onBeforeExecute` on execute and query API hooks; the `OnBeforeExecuteCallback` type                                                                | Prepare the arguments before calling `execute`                                          |
+| `UseApiMethodExecuteOptions<TArgs, TData, E>`                                                                                                       | `UseApiMethodExecuteOptions<TData, E>` (first type parameter removed)                   |
+| `UseDebouncedQueryReturn<Q, R, E>`, `UseDebouncedFetcherQueryReturn<Q, R, E>`                                                                       | `<R, E>` (no query type parameter)                                                      |
+| `useQuery`'s `execute` option `(query, attributes, abortController)`                                                                                | `(query, abortController)`; generated query hooks still pass `attributes`               |
+| `usePromiseState`'s `onSuccess` / `onError` options, `PromiseStateCallbacks`; setters that called them                                              | Setters are synchronous and call nothing; use `useExecutePromise`'s callbacks           |
+| `DepsCapable` type                                                                                                                                  | Remove the reference; nothing replaces it                                               |
+| API factories turning getter-provided functions into hooks                                                                                          | Expose the method as a method or own property; getters are never run                    |
+| `PromiseStatus` enum                                                                                                                                | Now a const object plus literal type; `PromiseStatus.SUCCESS` and `'success'` both work |
+
+New in 6.0: `useDebouncedValue(value, { delay })` → `{ value, pending, flush }`,
+and `useStableValue(value)`. `react` peer is `^19.0.0`.
+
+### Migration diffs
+
+A query with `initialQuery`/`setQuery`:
+
+```diff
+-const { result, setQuery } = useQuery({
+-  initialQuery: { keyword: '' },
+-  execute: (query, attributes, abortController) => api.search(query, abortController),
+-});
++const [query, setQuery] = useState({ keyword: '' });
++const { result } = useQuery({
++  query,
++  execute: (query, abortController) => api.search(query, abortController),
++});
+```
+
+`propagateError` and `try/catch`:
+
+```diff
+-try {
+-  await execute(supplier); // propagateError: true
+-  navigate('/done');
+-} catch (error) {
+-  toast(error.message);
+-}
++const { status, error } = await execute(supplier);
++if (status === 'success') navigate('/done');
++else if (status === 'error') toast(error.message);
+```
+
+A debounced query:
+
+```diff
+-const { setQuery, run } = useDebouncedQuery({ initialQuery, execute, debounce: { delay: 300 } });
++const [query, setQuery] = useState(initialQuery);
++const { result, pending, flush } = useDebouncedQuery({ query, execute, debounce: { delay: 300 } });
+```
+
+The same pattern applies to `useFetcherQuery`, `useDebouncedFetcherQuery` and
+the hooks of `createQueryApiHooks` (`useSearch({ query, attributes })`). A call
+of `run()` that forced a debounced query becomes `flush()` (apply the waiting
+query now) or `execute()` (re-run the applied one). A debounced query that
+relied on the old default of not auto-executing needs `autoExecute: false` or
+`query: undefined` until it is ready. To wait for input, pass
+`query: ready ? query : undefined`.
+
+`onBeforeExecute` on generated hooks:
+
+```diff
+-const { execute } = useUpdateUser({
+-  onBeforeExecute: (abortController, params) => { params[0] = normalize(params[0]); },
+-});
+-execute(form);
++const { execute } = useUpdateUser();
++execute(normalize(form));
+```
+
+### Behavior changes (compile, but behave differently)
+
+- `reset()` cancels the execution in flight first. It used to only set `idle`,
+  and the request could write its result back later.
+- `onAbort` is called synchronously and no longer delays the next execution.
+- `useFetcher` no longer writes `request.abortController`; the caller's
+  request object is not modified. Cancel through `abort()`/`reset()`, or pass
+  `request.signal`, which still applies.
+- On failure, `useFetcher`'s `exchange` is the failed request's exchange (from
+  the `ExchangeError`, so `exchange.response.status` of a 404 is readable), not
+  `undefined`.
+- A query that executes on mount renders `loading` on its first render (it
+  rendered `idle`), unless `initialStatus` is given.
+- `useEventSubscription` subscribes once per `bus` and handler `name`, `order`
+  and `once`, and calls the latest `handle`; it no longer resubscribes when
+  only the handler object's identity changes.
+- With the old `propagateError: true`, automatic and debounced executions
+  produced unhandled promise rejections; `execute` no longer rejects.
+
+**Upgrade check**: run `tsc`; then search for `propagateError`, `reset(`,
+`request.abortController`, and tests that assert `idle` on the first render of
+an auto-executing query (checklist step 9 below).
+
 ## Subpaths of `@ahoo-wang/fetcher-react`
 
-| Entry                              | Formats  | Holds                                                                                                                                                                                                                                                       |
-| ---------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-react`         | ESM, UMD | everything below plus CoSec (`SecurityProvider`, `RouteGuard`, …), storage (`useKeyStorage`, `useImmerKeyStorage`), `useEventSubscription`, `createExecuteApiHooks`, `createQueryApiHooks`                                                                  |
-| `@ahoo-wang/fetcher-react/core`    | ESM      | `usePromiseState`, `useExecutePromise`, `useQuery`, `useQueryState`, `useDebouncedCallback`, `useDebouncedExecutePromise`, `useDebouncedQuery`, fullscreen helpers, `useMounted`, `useLatest`, `useRefs`, `useRequestId`, `useForceUpdate`, `PromiseStatus` |
-| `@ahoo-wang/fetcher-react/fetcher` | ESM      | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their option/return types (added in 5.1.3)                                                                                                                           |
+| Entry                              | Formats  | Holds                                                                                                                                                                                              |
+| ---------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-react`         | ESM, UMD | everything below plus CoSec (`SecurityProvider`, `RouteGuard`, …), storage (`useKeyStorage`, `useImmerKeyStorage`), `useEventSubscription`, `createExecuteApiHooks`, `createQueryApiHooks`         |
+| `@ahoo-wang/fetcher-react/core`    | ESM      | `PromiseStatus`, `usePromiseState`, `useExecutePromise`, `useQuery`, `useLatest`, `useStableValue`, `useDebouncedCallback`, `useDebouncedValue`, `useDebouncedExecutePromise`, `useDebouncedQuery` |
+| `@ahoo-wang/fetcher-react/fetcher` | ESM      | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their option/return types (added in 5.1.3)                                                                  |
 
 `/core` exists since 5.x. Neither subpath loads security, storage or event-bus
 integration, so importing from them keeps those peers out of the bundle. No
@@ -198,9 +315,26 @@ bus is redundant (drop it); keep it for a bus you passed in `eventBus`.
 For projects on `@ahoo-wang/fetcher-react`:
 
 ```sh
-# 9. React hooks whose timing changed
-grep -rnE 'onUnauthorized=|useLatest\(|use(Cancellable)?QueryState\(|useKeyStorage\(|useSecurity\(|<SecurityProvider' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+# 9. Hook API removed or changed by the redesign (tsc reports most of these)
+grep -rnE '\b(useFullscreen(Context)?|FullscreenProvider|FullscreenContext|useRefs|useForceUpdate|useMounted|useRequestId|use(Cancellable)?QueryState|isValidateQuery|OnBeforeExecuteCallback|PromiseStateCallbacks|DepsCapable)\b|\b(propagateError|initialQuery|onBeforeExecute|getQuery)\b' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+grep -rnE '\bsetQuery\b|\bisPending\(|\breset\(|abortController\s*[:=]|request\.abortController' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+
+# 10. Tests that assert idle on the first render of an auto-executing query
+grep -rnE "status\)\.toBe\(('idle'|PromiseStatus\.IDLE)\)" --include='*.test.ts' --include='*.test.tsx' . | grep -v node_modules
+
+# 11. React hooks whose timing changed
+grep -rnE 'onUnauthorized=|useLatest\(|useKeyStorage\(|useSecurity\(|<SecurityProvider|useEventSubscription\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
 ```
+
+Rewrite every hit of step 9 with [the redesign](#the-ahoo-wangfetcher-react-redesign)
+table and diffs. In step 9's second command, `setQuery` is fine when it is your
+own `useState` setter, and `isPending()` stays on `useDebouncedCallback`,
+`useDebouncedExecutePromise` and `useDebouncedFetcher`; check each `reset()`
+caller that expected the request to finish anyway, and each request whose
+`abortController` you set for `useFetcher` (cancel with `abort()` or pass
+`signal`). Hooks imported from `@ahoo-wang/wow-react` keep their own API —
+leave their `setQuery` alone. Step 10's hits fail now: the first render of an
+auto-executing query is `loading`.
 
 `RouteGuard`'s `onUnauthorized` now runs once after commit each time the user
 becomes (or starts out) unauthenticated, not on every render; a `navigate()`
@@ -208,10 +342,10 @@ there is now safe, and code that relied on a call per render must not.
 `useKeyStorage`, `useSecurity` and `SecurityProvider` render the default (the
 anonymous user) on the server and during hydration, then the stored value; an
 SSR page that expected the stored value in the first client render sees it one
-render later. `useQueryState` calls the latest `execute` but no longer re-runs
-when only `execute` changes; change the query or toggle `autoExecute` to run
-again. `useLatest(value).current` read during render now holds the last
+render later. `useLatest(value).current` read during render now holds the last
 committed value, not the one being rendered; read the value itself there.
+`useEventSubscription` no longer resubscribes when only the handler object
+changes; a handler whose `name`, `order` or `once` changes still resubscribes.
 
 ## Rewrites
 
@@ -226,6 +360,9 @@ pnpm add -D @ahoo-wang/wow-generator@<wow-version>
 # then, once fetcher 6.0.0 is on npm, every @ahoo-wang/fetcher* package you use:
 pnpm add @ahoo-wang/fetcher@^6 @ahoo-wang/fetcher-react@^6
 ```
+
+After `@ahoo-wang/fetcher-react@^6`, rewrite the hook calls (see
+[the redesign](#the-ahoo-wangfetcher-react-redesign)) until `tsc` passes.
 
 ```diff
 -import { SnapshotQueryClient } from '@ahoo-wang/fetcher-wow';
