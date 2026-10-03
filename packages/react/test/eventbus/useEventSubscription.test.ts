@@ -49,7 +49,12 @@ describe('useEventSubscription', () => {
       }),
     );
 
-    expect(mockBus.on).toHaveBeenCalledWith(mockHandler);
+    expect(mockBus.on).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: mockHandler.name,
+        order: mockHandler.order,
+      }),
+    );
     expect(mockBus.off).not.toHaveBeenCalled();
 
     act(() => {
@@ -129,14 +134,24 @@ describe('useEventSubscription', () => {
       { initialProps: { handler: mockHandler } },
     );
 
-    expect(mockBus.on).toHaveBeenCalledWith(mockHandler);
+    expect(mockBus.on).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: mockHandler.name,
+        order: mockHandler.order,
+      }),
+    );
 
     act(() => {
       rerender({ handler: newHandler });
     });
 
     expect(mockBus.off).toHaveBeenCalledWith('testHandler');
-    expect(mockBus.on).toHaveBeenCalledWith(newHandler);
+    expect(mockBus.on).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: newHandler.name,
+        order: newHandler.order,
+      }),
+    );
   });
 
   it('should resubscribe when bus changes', () => {
@@ -161,14 +176,24 @@ describe('useEventSubscription', () => {
       { initialProps: { bus: mockBus } },
     );
 
-    expect(mockBus.on).toHaveBeenCalledWith(mockHandler);
+    expect(mockBus.on).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: mockHandler.name,
+        order: mockHandler.order,
+      }),
+    );
 
     act(() => {
       rerender({ bus: newBus });
     });
 
     expect(mockBus.off).toHaveBeenCalledWith('testHandler');
-    expect(newBus.on).toHaveBeenCalledWith(mockHandler);
+    expect(newBus.on).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: mockHandler.name,
+        order: mockHandler.order,
+      }),
+    );
   });
 
   it('should handle subscription failure with warning', () => {
@@ -208,6 +233,26 @@ describe('useEventSubscription', () => {
 
     // Should not throw, just return false
     expect(mockBus.off).toHaveBeenCalledWith('testHandler');
+  });
+  it('keeps one subscription for an inline handler and calls the latest handle', () => {
+    mockBus.on.mockReturnValue(true);
+    mockBus.off.mockReturnValue(true);
+    const first = vi.fn();
+    const second = vi.fn();
+    const { rerender } = renderHook(
+      ({ handle }) =>
+        useEventSubscription({
+          bus: mockBus,
+          handler: { name: 'inline', order: 0, handle },
+        }),
+      { initialProps: { handle: first } },
+    );
+    rerender({ handle: second });
+    expect(mockBus.on).toHaveBeenCalledTimes(1);
+    expect(mockBus.off).not.toHaveBeenCalled();
+    mockBus.on.mock.calls[0][0].handle('event');
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledExactlyOnceWith('event');
   });
 });
 

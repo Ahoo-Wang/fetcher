@@ -54,24 +54,17 @@ assert.equal(
   fileURLToPath(new URL(manifest.exports['.'].require.default, packageRoot)),
 );
 assert.match(manifest.exports['.'].require.types, /\.d\.cts$/);
-assert.equal(typeof require(manifest.name).useFullscreenContext, 'function');
+assert.equal(typeof require(manifest.name).useQuery, 'function');
 
-for (const [provider, consumer] of [
-  [root, core],
-  [core, root],
-]) {
-  let fullscreen;
-  function Consumer() {
-    fullscreen = consumer.useFullscreenContext();
-    return null;
-  }
-  renderToStaticMarkup(
-    createElement(provider.FullscreenProvider, null, createElement(Consumer)),
-  );
-  assert.ok(fullscreen, 'Fullscreen context must cross public ESM entrypoints');
-  assert.equal(typeof fullscreen.toggle, 'function');
+// The root and `/core` entries share one module instance, so values that
+// identify state (hooks, the status constants) are the same object.
+for (const name of Object.keys(core)) {
+  assert.equal(root[name], core[name], `${name} differs between entries`);
 }
-assert.equal(root.FullscreenContext, core.FullscreenContext);
+assert.equal(
+  renderToStaticMarkup(createElement(() => core.usePromiseState().status)),
+  'idle',
+);
 
 const coreModules = new Set([import.meta.resolve(manifest.name + '/core')]);
 let usesCompiler = false;
@@ -95,8 +88,7 @@ for (const file of coreModules) {
   }
 }
 assert.ok(usesCompiler, 'Core hooks must retain React Compiler output');
-// The fetcher hooks are what @ahoo-wang/wow-react (Wow repository) builds
-// on; reaching them must not load any other integration.
+// Reaching the fetcher hooks must not load any other integration.
 const fetcherModules = new Set([
   import.meta.resolve(manifest.name + '/fetcher'),
 ]);
@@ -122,8 +114,8 @@ for (const file of fetcherModules) {
 // node16 from ES modules and from CommonJS (`require` gets `.d.cts`).
 const typeProbe = mkdtempSync(new URL('.package-types-', packageRoot));
 try {
-  const consumer = `import { ${Object.keys(core).join(', ')} } from '${manifest.name}';\nimport type { UseFullscreenOptions, UseDebouncedCallbackOptions } from '${manifest.name}';\nimport { useFetcher } from '${manifest.name}';\ndeclare const query: ReturnType<typeof useFetcher>;\nquery.result; query.loading; query.error;\n// @ts-expect-error a hook is not a number unless its types degraded to any\nexport const probe: number = useFetcher;\n`;
-  const subpaths = `import { FullscreenProvider } from '${manifest.name}/core';\nimport { useFetcher } from '${manifest.name}/fetcher';\n// @ts-expect-error a component is not a number unless its types degraded to any\nexport const provider: number = FullscreenProvider;\n// @ts-expect-error a hook is not a number unless its types degraded to any\nexport const hook: number = useFetcher;\n`;
+  const consumer = `import { ${Object.keys(core).join(', ')} } from '${manifest.name}';\nimport type { UseQueryOptions, UseDebouncedCallbackOptions } from '${manifest.name}';\nimport { useFetcher } from '${manifest.name}';\ndeclare const query: ReturnType<typeof useFetcher>;\nquery.result; query.loading; query.error;\n// @ts-expect-error a hook is not a number unless its types degraded to any\nexport const probe: number = useFetcher;\n`;
+  const subpaths = `import { useQuery } from '${manifest.name}/core';\nimport { useFetcher } from '${manifest.name}/fetcher';\n// @ts-expect-error a hook is not a number unless its types degraded to any\nexport const query: number = useQuery;\n// @ts-expect-error a hook is not a number unless its types degraded to any\nexport const hook: number = useFetcher;\n`;
   const probes = [
     [ts.ModuleKind.ESNext, ts.ModuleResolutionKind.Bundler, 'consumer.ts'],
     [ts.ModuleKind.Node16, ts.ModuleResolutionKind.Node16, 'consumer.mts'],
@@ -161,7 +153,7 @@ try {
   rmSync(typeProbe, { recursive: true, force: true });
 }
 console.log(
-  `Public ESM contexts share state; ${coreModules.size} core runtime modules and all export targets verified.`,
+  `Public ESM entries share one core; ${coreModules.size} core runtime modules and all export targets verified.`,
 );
 // Root integrations keep BroadcastChannels open; this one-shot probe owns its process.
 process.exit(0);

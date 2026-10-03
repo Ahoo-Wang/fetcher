@@ -1,28 +1,32 @@
 ---
 title: 'API hook factories'
-description: 'API hook factories — @ahoo-wang/fetcher-react 5.0.0'
+description: 'API hook factories — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
 # API hook factories
 
 The two factories turn an existing service object's asynchronous methods into stable hook names: `getUser` becomes `useGetUser`. Create the hook collection outside rendering. Both preserve the service's `this` binding and inspect own methods and its prototype chain, with the nearest property winning.
 
-| Factory / utility                     | Contract                                                                                                                                                                               |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createExecuteApiHooks({ api })`      | Each hook takes executor options and returns state plus `execute(...originalParameters): Promise<void>`. No automatic invocation.                                                      |
-| `createQueryApiHooks({ api })`        | Each hook takes query options and executes `(query, attributes?, abortController?)`; automatic execution defaults to true when query is defined.                                       |
-| `onBeforeExecute(controller, params)` | Synchronous callback before service invocation; execute factories receive the parameter tuple, query factories receive the query value. A thrown error enters executor error handling. |
-| `methodNameToHookName(name)`          | Prefixes `use` and uppercases the first character; empty name throws.                                                                                                                  |
-| `collectMethods(obj, onAccessor?)`    | Returns a Map of bound methods, excluding constructor and Object.prototype. Optional accessor visitor can defer getter evaluation.                                                     |
+| Factory / utility                | Contract                                                                                                                                                                                |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createExecuteApiHooks({ api })` | Each hook takes executor options and returns state plus `execute(...originalParameters): Promise<PromiseState>`. No automatic invocation.                                               |
+| `createQueryApiHooks({ api })`   | Each hook takes [controlled-query](./promise-and-query-state#controlled-queries) options (`query`, `attributes`, `autoExecute`) and calls `method(query, attributes, abortController)`. |
+| `methodNameToHookName(name)`     | Prefixes `use` and uppercases the first character; empty name throws.                                                                                                                   |
+| `collectMethods(obj)`            | Returns a Map of bound methods: own and prototype-chain function properties, nearest wins. Skips `constructor`, `Object.prototype` and accessors, so collecting never runs a getter.    |
 
-Execute hooks pass the controller only when a hook sets `appendAbortController: true`: the method is then called as `method(...params, abortController)`, and a `@api` method picks the controller up wherever it lands, so replacing or unmounting an execution cancels its request. Leave it off for methods with optional trailing parameters, where the controller would take a parameter's place; `onBeforeExecute` can put it into a specific slot instead. Query factories forward attributes and controller automatically. Both return data through result state, not the execute promise.
+Execute hooks pass the controller only when a hook sets `appendAbortController: true`: the method is then called as `method(...params, abortController)`, and a `@api` method picks the controller up wherever it lands, so replacing, aborting or unmounting an execution cancels its request. Leave it off for methods with optional trailing parameters, where the controller would take a parameter's place; wrap such a method in your own service method instead. Query factories forward attributes and controller automatically. Both `execute` functions resolve to the final state and never reject.
 
-`APIHooks`, `QueryAPIHooks`, `HookName`, `ApiHooksMapping`, `ApiMethod`, `QueryMethod`, `FunctionParameters`, `FunctionReturnType`, `IsPromiseFunction` describe compile-time mappings. Runtime discovery checks whether a property is a function, not whether it really returns a Promise. Accessor-backed methods may be materialized on first access/enumeration and their getter can throw. Only supply a trusted service object. Cancellation, callbacks, stale-result suppression and unmount rules are the [shared executor contract](./promise-and-query-state).
+`APIHooks`, `QueryAPIHooks`, `UseApiMethodExecuteReturn`, `HookName`, `ApiHooksMapping`, `ApiMethod`, `QueryMethod`, `FunctionParameters`, `FunctionReturnType`, `IsPromiseFunction` describe compile-time mappings. Runtime discovery checks whether a property is a function, not whether it really returns a Promise. Functions provided by getters are not turned into hooks. Only supply a trusted service object. Cancellation, callbacks, stale-result suppression and unmount rules are the [shared executor contract](./promise-and-query-state).
+
+::: info Changed in 6.0
+`onBeforeExecute` and the `OnBeforeExecuteCallback` type were removed; `UseApiMethodExecuteOptions` lost its first type parameter (`TArgs`). Query hooks take `query` from your state instead of `initialQuery`/`setQuery`/`getQuery`. `collectMethods` takes one argument, and getter-provided functions no longer become hooks.
+:::
 
 ## Complete example
 
 ```tsx
 import { createExecuteApiHooks } from '@ahoo-wang/fetcher-react';
+
 const hooks = createExecuteApiHooks({
   api: {
     async double(value: number) {
@@ -30,13 +34,15 @@ const hooks = createExecuteApiHooks({
     },
   },
 });
+
 export function Calculator() {
   const { execute, result, error } = hooks.useDouble();
   return (
     <section>
       <button
-        onClick={() => {
-          void execute(21);
+        onClick={async () => {
+          const state = await execute(21);
+          if (state.status === 'success') console.log(state.result);
         }}
       >
         Calculate
@@ -58,22 +64,17 @@ These signatures follow declarations reachable from the current root entry. `?` 
 export function methodNameToHookName(methodName: string): string;
 ```
 
-[packages/react/src/api/apiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L28)
+[packages/react/src/api/apiHooks.ts:15](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L15)
 
 ### collectMethods {#api-collectMethods}
 
 ```ts
 export function collectMethods<T extends (...args: any[]) => Promise<any>>(
-  obj: Record<string, any>,
-  onAccessor?: (
-    name: string,
-    get: () => unknown,
-    methods: ReadonlyMap<string, T>,
-  ) => void,
+  obj: object,
 ): Map<string, T>;
 ```
 
-[packages/react/src/api/apiHooks.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L44)
+[packages/react/src/api/apiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L28)
 
 ### CreateApiHooksOptions {#api-CreateApiHooksOptions}
 
@@ -83,7 +84,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 }
 ```
 
-[packages/react/src/api/apiHooks.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L95)
+[packages/react/src/api/apiHooks.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L50)
 
 ### HookName {#api-HookName}
 
@@ -91,7 +92,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 export type HookName<K extends string> = `use${Capitalize<K>}`;
 ```
 
-[packages/react/src/api/apiHooks.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L106)
+[packages/react/src/api/apiHooks.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L54)
 
 ### IsPromiseFunction {#api-IsPromiseFunction}
 
@@ -101,7 +102,7 @@ export type IsPromiseFunction<T> = T extends (...args: any[]) => Promise<any>
   : false;
 ```
 
-[packages/react/src/api/apiHooks.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L112)
+[packages/react/src/api/apiHooks.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L56)
 
 ### FunctionParameters {#api-FunctionParameters}
 
@@ -111,7 +112,7 @@ export type FunctionParameters<T> = T extends (...args: infer P) => Promise<any>
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L120)
+[packages/react/src/api/apiHooks.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L60)
 
 ### FunctionReturnType {#api-FunctionReturnType}
 
@@ -123,7 +124,7 @@ export type FunctionReturnType<T> = T extends (
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L128)
+[packages/react/src/api/apiHooks.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L64)
 
 ### ApiMethod {#api-ApiMethod}
 
@@ -133,7 +134,7 @@ export type ApiMethod<TArgs extends any[] = any[], TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:139](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L139)
+[packages/react/src/api/apiHooks.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L70)
 
 ### QueryMethod {#api-QueryMethod}
 
@@ -145,18 +146,7 @@ export type QueryMethod<Q = any, TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:148](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L148)
-
-### OnBeforeExecuteCallback {#api-OnBeforeExecuteCallback}
-
-```ts
-export type OnBeforeExecuteCallback<TParams> = (
-  abortController: AbortController | undefined,
-  params: TParams,
-) => void;
-```
-
-[packages/react/src/api/apiHooks.ts:158](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L158)
+[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
 
 ### ApiHooksMapping {#api-ApiHooksMapping}
 
@@ -172,7 +162,7 @@ export type ApiHooksMapping<
 };
 ```
 
-[packages/react/src/api/apiHooks.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L170)
+[packages/react/src/api/apiHooks.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L81)
 
 ### createExecuteApiHooks {#api-createExecuteApiHooks}
 
@@ -183,7 +173,7 @@ export function createExecuteApiHooks<
 >(options: CreateExecuteApiHooksOptions<API>): APIHooks<API, E>;
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L217)
+[packages/react/src/api/createExecuteApiHooks.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L100)
 
 ### CreateExecuteApiHooksOptions {#api-CreateExecuteApiHooksOptions}
 
@@ -193,22 +183,35 @@ export interface CreateExecuteApiHooksOptions<
 > extends CreateApiHooksOptions<API> {}
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L35)
+[packages/react/src/api/createExecuteApiHooks.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L31)
 
 ### UseApiMethodExecuteOptions {#api-UseApiMethodExecuteOptions}
 
 ```ts
 export interface UseApiMethodExecuteOptions<
-  TArgs = any[],
   TData = any,
   E = FetcherError,
 > extends UseExecutePromiseOptions<TData, E> {
-  onBeforeExecute?: OnBeforeExecuteCallback<TArgs>;
+  /** @default false */
   appendAbortController?: boolean;
 }
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L45)
+[packages/react/src/api/createExecuteApiHooks.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L35)
+
+### UseApiMethodExecuteReturn {#api-UseApiMethodExecuteReturn}
+
+```ts
+export type UseApiMethodExecuteReturn<
+  TArgs extends any[],
+  TData,
+  E = FetcherError,
+> = Omit<UseExecutePromiseReturn<TData, E>, 'execute'> & {
+  execute: (...params: TArgs) => Promise<PromiseState<TData, E>>;
+};
+```
+
+[packages/react/src/api/createExecuteApiHooks.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L47)
 
 ### APIHooks {#api-APIHooks}
 
@@ -218,19 +221,17 @@ export type APIHooks<API extends Record<string, any>, E = FetcherError> = {
     K in keyof API as API[K] extends ApiMethod ? HookName<string & K> : never
   ]: API[K] extends ApiMethod
     ? (
-        options?: UseApiMethodExecuteOptions<
-          FunctionParameters<API[K]>,
-          FunctionReturnType<API[K]>,
-          E
-        >,
-      ) => UseExecutePromiseReturn<FunctionReturnType<API[K]>, E> & {
-        execute: (...params: FunctionParameters<API[K]>) => Promise<void>;
-      }
+        options?: UseApiMethodExecuteOptions<FunctionReturnType<API[K]>, E>,
+      ) => UseApiMethodExecuteReturn<
+        FunctionParameters<API[K]>,
+        FunctionReturnType<API[K]>,
+        E
+      >
     : never;
 };
 ```
 
-[packages/react/src/api/createExecuteApiHooks.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L91)
+[packages/react/src/api/createExecuteApiHooks.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createExecuteApiHooks.ts#L56)
 
 ### createQueryApiHooks {#api-createQueryApiHooks}
 
@@ -241,7 +242,7 @@ export function createQueryApiHooks<
 >(options: CreateQueryApiHooksOptions<API>): QueryAPIHooks<API, E>;
 ```
 
-[packages/react/src/api/createQueryApiHooks.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L174)
+[packages/react/src/api/createQueryApiHooks.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L69)
 
 ### CreateQueryApiHooksOptions {#api-CreateQueryApiHooksOptions}
 
@@ -251,7 +252,7 @@ export interface CreateQueryApiHooksOptions<
 > extends CreateApiHooksOptions<API> {}
 ```
 
-[packages/react/src/api/createQueryApiHooks.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L30)
+[packages/react/src/api/createQueryApiHooks.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L24)
 
 ### UseApiMethodQueryOptions {#api-UseApiMethodQueryOptions}
 
@@ -261,11 +262,11 @@ export interface UseApiMethodQueryOptions<
   TData = any,
   E = FetcherError,
 > extends Omit<UseQueryOptions<Q, TData, E>, 'execute'> {
-  onBeforeExecute?: OnBeforeExecuteCallback<Q>;
+  attributes?: Record<string, any>;
 }
 ```
 
-[packages/react/src/api/createQueryApiHooks.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L40)
+[packages/react/src/api/createQueryApiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L28)
 
 ### QueryAPIHooks {#api-QueryAPIHooks}
 
@@ -274,13 +275,13 @@ export type QueryAPIHooks<API extends Record<string, any>, E = FetcherError> = {
   [
     K in keyof API as API[K] extends QueryMethod ? HookName<string & K> : never
   ]: API[K] extends QueryMethod<infer Q, infer R>
-    ? (options?: UseApiMethodQueryOptions<Q, R, E>) => UseQueryReturn<Q, R, E>
+    ? (options?: UseApiMethodQueryOptions<Q, R, E>) => UseQueryReturn<R, E>
     : never;
 };
 ```
 
-[packages/react/src/api/createQueryApiHooks.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L70)
+[packages/react/src/api/createQueryApiHooks.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/createQueryApiHooks.ts#L37)
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Refs, request IDs and fullscreen](./utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Latest and stable values](./utilities)

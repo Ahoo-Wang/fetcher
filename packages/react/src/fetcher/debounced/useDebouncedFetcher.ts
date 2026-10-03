@@ -11,140 +11,28 @@
  * limitations under the License.
  */
 
-import type { UseFetcherOptions, UseFetcherReturn } from '../useFetcher.js';
-import { useFetcher } from '../useFetcher.js';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 import type {
   DebounceCapable,
   UseDebouncedCallbackReturn,
 } from '../../core/index.js';
 import { useDebouncedCallback } from '../../core/index.js';
-import { useMemo } from 'react';
+import type { UseFetcherOptions, UseFetcherReturn } from '../useFetcher.js';
+import { useFetcher } from '../useFetcher.js';
 
-/**
- * Configuration options for the useDebouncedFetcher hook.
- * Extends UseFetcherOptions with debouncing capabilities to control the rate
- * at which fetch requests are executed.
- *
- * @template R - The type of the fetch result
- * @template E - The type of the error (defaults to FetcherError)
- */
 export interface UseDebouncedFetcherOptions<R, E = FetcherError>
   extends UseFetcherOptions<R, E>, DebounceCapable {}
 
-/**
- * Return type of the useDebouncedFetcher hook.
- * Provides the same state properties as useFetcher (except execute) along with
- * debounced execution controls.
- *
- * @template R - The type of the fetch result
- * @template E - The type of the error (defaults to FetcherError)
- */
 export interface UseDebouncedFetcherReturn<R, E = FetcherError>
   extends
     Omit<UseFetcherReturn<R, E>, 'execute'>,
     UseDebouncedCallbackReturn<UseFetcherReturn<R, E>['execute']> {}
 
-/**
- * A React hook that provides a debounced version of the useFetcher hook.
- * This hook wraps the fetcher's execute function with debouncing to prevent
- * excessive API calls during rapid user interactions, such as typing in a search field.
- *
- * The debouncing behavior is controlled by the `debounce` option, which specifies
- * the delay and whether to execute on the leading edge, trailing edge, or both.
- *
- * @template R - The type of the fetch result
- * @template E - The type of the error (defaults to FetcherError)
- * @param options - Configuration options including fetcher settings and debounce parameters
- * @returns An object containing the fetch state and debounced execution controls
- *
- * @throws {Error} If the debounce delay is not a positive number
- * @throws {Error} If the fetcher configuration is invalid
- *
- * @example
- * ```typescript
- * import { useDebouncedFetcher } from '@ahoo-wang/fetcher-react';
- *
- * function SearchComponent() {
- *   const { loading, result, error, run, cancel, isPending } = useDebouncedFetcher<string>({
- *     debounce: { delay: 300, trailing: true },
- *     onSuccess: (data) => console.log('Search results:', data),
- *     onError: (err) => console.error('Search failed:', err),
- *   });
- *
- *   const handleSearch = (query: string) => {
- *     if (query.trim()) {
- *       run({ url: `/api/search?q=${encodeURIComponent(query)}`, method: 'GET' });
- *     } else {
- *       cancel(); // Cancel any pending search
- *     }
- *   };
- *
- *   return (
- *     <div>
- *       <input
- *         type="text"
- *         placeholder="Search..."
- *         onChange={(e) => handleSearch(e.target.value)}
- *       />
- *       {isPending() && <div>Searching...</div>}
- *       {loading && <div>Loading...</div>}
- *       {error && <div>Error: {error.message}</div>}
- *       {result && <div>Results: {result}</div>}
- *     </div>
- *   );
- * }
- * ```
- *
- * @example Debounced form submission
- * ```typescript
- * const { run, cancel, isPending } = useDebouncedFetcher({
- *   debounce: { delay: 500, leading: false, trailing: true },
- *   onSuccess: () => console.log('Form submitted successfully'),
- * });
- *
- * const handleSubmit = (formData: FormData) => {
- *   run({
- *     url: '/api/submit',
- *     method: 'POST',
- *     body: formData,
- *   });
- * };
- * ```
- */
+/** `useFetcher` whose requests are debounced through `run`. */
 export function useDebouncedFetcher<R, E = FetcherError>(
   options: UseDebouncedFetcherOptions<R, E>,
 ): UseDebouncedFetcherReturn<R, E> {
-  const { loading, result, error, status, exchange, execute, reset, abort } =
-    useFetcher<R, E>(options);
-  const { run, cancel, isPending } = useDebouncedCallback(
-    execute,
-    options.debounce,
-  );
-  return useMemo(
-    () => ({
-      loading,
-      result,
-      error,
-      status,
-      exchange,
-      reset,
-      abort,
-      run,
-      cancel,
-      isPending,
-    }),
-    [
-      loading,
-      result,
-      error,
-      status,
-      exchange,
-      reset,
-      abort,
-      run,
-      cancel,
-      isPending,
-    ],
-  );
+  const { execute, ...state } = useFetcher<R, E>(options);
+  const debounced = useDebouncedCallback(execute, options.debounce);
+  return { ...state, ...debounced };
 }

@@ -13,255 +13,88 @@
 
 import type {
   FetcherCapable,
+  FetcherError,
   FetchExchange,
   FetchRequest,
   RequestOptions,
-  FetcherError,
 } from '@ahoo-wang/fetcher';
 import { fetcherRegistrar, getFetcher } from '@ahoo-wang/fetcher';
+import { useCallback } from 'react';
 import type {
+  PromiseState,
   UseExecutePromiseOptions,
   UseExecutePromiseReturn,
 } from '../core/index.js';
-import { useExecutePromise } from '../core/index.js';
-import { useCallback, useState, useMemo } from 'react';
-import { useLatest, useMounted, useRequestId } from '../core/index.js';
+import { useExecutePromise, useLatest } from '../core/index.js';
 
-/**
- * Configuration options for the useFetcher hook.
- * Combines request configuration, fetcher selection, and promise state management options.
- *
- * @template R - The type of the expected result from the fetch operation
- * @template E - The type of error that may be thrown (defaults to FetcherError)
- */
 export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 
-/**
- * Return type of the useFetcher hook.
- * Provides access to the current fetch state, result data, and control functions.
- *
- * @template R - The type of the expected result from the fetch operation
- * @template E - The type of error that may be thrown (defaults to FetcherError)
- */
 export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
   UseExecutePromiseReturn<R, E>,
   'execute'
 > {
   /**
-   * The FetchExchange object representing the current or most recent fetch operation.
-   * Contains request/response details, timing information, and extracted data.
-   * Undefined when no fetch operation has been performed.
+   * The exchange behind `result`, or behind `error` when the request failed
+   * with an `ExchangeError` (e.g. to read the response status).
    */
-  exchange?: FetchExchange;
-
+  exchange: FetchExchange | undefined;
   /**
-   * Function to execute a fetch request with automatic abort support.
-   * Automatically cancels any ongoing request before starting a new one using AbortController.
-   * The abort controller is automatically passed to the underlying fetch operation.
-   *
-   * @param request - The fetch request configuration including URL, method, headers, etc.
-   * @returns Promise that resolves when the fetch operation completes (success or failure)
+   * Cancels the request in flight and sends `request`. Never rejects; see
+   * `useExecutePromise`. The hook owns cancellation: an `abortController` on
+   * `request` is replaced, a `signal` still applies.
    */
-  execute: (request: FetchRequest) => Promise<void>;
+  execute: (request: FetchRequest) => Promise<PromiseState<R, E>>;
+}
+
+interface Fetched<R> {
+  exchange: FetchExchange;
+  result: R;
+}
+
+function unwrap<R, E>(state: PromiseState<Fetched<R>, E>): PromiseState<R, E> {
+  return { ...state, result: state.result?.result };
 }
 
 /**
- * A React hook for managing asynchronous HTTP fetch operations with comprehensive state handling,
- * race condition protection, automatic cleanup, and built-in abort support. Provides a clean interface
- * for making API calls with loading states, error handling, and request cancellation.
- *
- * Key features:
- * - Automatic request cancellation on component unmount or new requests via AbortController
- * - Race condition protection using request IDs
- * - Comprehensive state management (idle, loading, success, error)
- * - Type-safe result and error handling
- * - Integration with fetcher ecosystem for advanced features
- * - Memory leak prevention with automatic abort controller cleanup
- *
- * @template R - The type of the expected result from the fetch operation
- * @template E - The type of error that may be thrown (defaults to FetcherError)
- * @param options - Configuration options for the fetcher including request settings,
- *                  result extraction, error handling, and fetcher selection
- * @returns An object containing the current fetch state, result data, error information,
- *          and the execute function to trigger fetch operations
- *
- * @throws {FetcherError} When the fetch operation fails due to network issues,
- *                        HTTP errors, or result extraction problems
- * @throws {Error} When invalid options are provided or fetcher configuration is incorrect
- *
- * @example Basic GET request with automatic abort
- * ```typescript
- * import { useFetcher } from '@ahoo-wang/fetcher-react';
- * import { ResultExtractors } from '@ahoo-wang/fetcher';
- *
- * function UserProfile({ userId }: { userId: string }) {
- *   const { loading, result, error, execute } = useFetcher({
- *     resultExtractor: ResultExtractors.Json,
- *   });
- *
- *   const fetchUser = () => {
- *     execute({
- *       url: `/api/users/${userId}`,
- *       method: 'GET'
- *     });
- *   };
- *
- *   // Multiple calls to fetchUser() will automatically cancel previous requests
- *   // Handle loading, error, and success states in your component
- * }
- * ```
- *
- * @example POST request with error handling
- * ```typescript
- * import { useFetcher } from '@ahoo-wang/fetcher-react';
- *
- * function CreatePost() {
- *   const { loading, result, error, execute } = useFetcher({
- *     onSuccess: (data) => {
- *       console.log('Post created:', data);
- *       // Handle success (e.g., redirect, show notification)
- *     },
- *     onError: (error) => {
- *       console.error('Failed to create post:', error);
- *       // Handle error (e.g., show error message)
- *     }
- *   });
- *
- *   const handleSubmit = (postData: { title: string; content: string }) => {
- *     execute({
- *       url: '/api/posts',
- *       method: 'POST',
- *       body: JSON.stringify(postData),
- *       headers: {
- *         'Content-Type': 'application/json'
- *       }
- *     });
- *   };
- * }
- * ```
- *
- * @example Using custom fetcher instance
- * ```typescript
- * import { useFetcher } from '@ahoo-wang/fetcher-react';
- * import { getFetcher } from '@ahoo-wang/fetcher';
- *
- * // Using a named fetcher instance
- * const customFetcher = getFetcher('my-custom-fetcher');
- *
- * function CustomApiComponent() {
- *   const { loading, result, execute } = useFetcher({
- *     fetcher: customFetcher,
- *   });
- *
- *   // All requests will use the custom fetcher configuration
- *   const fetchData = () => execute({ url: '/data', method: 'GET' });
- * }
- * ```
+ * Sends requests through a `Fetcher` (the default one unless `fetcher` names
+ * or passes another) and tracks the latest one's state.
  */
 export function useFetcher<R, E = FetcherError>(
   options?: UseFetcherOptions<R, E>,
 ): UseFetcherReturn<R, E> {
-  const { fetcher = fetcherRegistrar.default } = options || {};
-  const {
-    loading,
-    result,
-    error,
-    status,
-    execute: promiseExecutor,
-    reset,
-    abort,
-  } = useExecutePromise<R, E>(options);
-  const [exchange, setExchange] = useState<FetchExchange | undefined>(
-    undefined,
-  );
   const latestOptions = useLatest(options);
-  const requestId = useRequestId();
-  const isMounted = useMounted();
-  const currentFetcher = getFetcher(fetcher);
-  /**
-   * Execute the fetch operation with automatic abort support.
-   * Cancels any ongoing fetch before starting a new one using AbortController.
-   * The abort controller is automatically attached to the request for cancellation support.
-   */
+  const { execute: executePromise, ...state } = useExecutePromise<
+    Fetched<R>,
+    E
+  >({
+    initialStatus: options?.initialStatus,
+    onSuccess: fetched => latestOptions.current?.onSuccess?.(fetched.result),
+    onError: error => latestOptions.current?.onError?.(error),
+    onAbort: () => latestOptions.current?.onAbort?.(),
+  });
   const execute = useCallback(
-    async (request: FetchRequest) => {
-      const currentRequestId = requestId.generate();
-      let signal: AbortSignal | undefined;
-      try {
-        await promiseExecutor(async abortController => {
-          signal = abortController.signal;
-          // Attached to the caller's request on purpose: callers cancel this
-          // execution through `request.abortController`.
-          request.abortController = abortController;
-          let exchange;
-          try {
-            exchange = await currentFetcher.exchange(
-              request,
-              latestOptions.current,
-            );
-          } catch (error) {
-            // The previous request's exchange does not describe this failure.
-            if (
-              isMounted() &&
-              !abortController.signal.aborted &&
-              requestId.isLatest(currentRequestId)
-            ) {
-              setExchange(undefined);
-            }
-            throw error;
-          }
-          if (
-            isMounted() &&
-            !abortController.signal.aborted &&
-            requestId.isLatest(currentRequestId)
-          ) {
-            setExchange(exchange);
-          }
-          return await exchange.extractResult<R>();
-        });
-      } catch (error) {
-        if (
-          isMounted() &&
-          !signal?.aborted &&
-          requestId.isLatest(currentRequestId)
-        ) {
-          setExchange(undefined);
-        }
-        throw error;
-      } finally {
-        if (
-          isMounted() &&
-          requestId.isLatest(currentRequestId) &&
-          signal?.aborted
-        ) {
-          setExchange(undefined);
-        }
-      }
-    },
-    [promiseExecutor, currentFetcher, latestOptions, requestId, isMounted],
+    async (request: FetchRequest) =>
+      unwrap(
+        await executePromise(async abortController => {
+          const {
+            fetcher = fetcherRegistrar.default,
+            resultExtractor,
+            attributes,
+          } = latestOptions.current ?? {};
+          const exchange = await getFetcher(fetcher).exchange(
+            { ...request, abortController },
+            { resultExtractor, attributes },
+          );
+          return { exchange, result: await exchange.extractResult<R>() };
+        }),
+      ),
+    [executePromise, latestOptions],
   );
-
-  const resetFn = useCallback(() => {
-    reset();
-    setExchange(undefined);
-  }, [reset]);
-  const abortFn = useCallback(() => {
-    requestId.invalidate();
-    abort();
-    setExchange(undefined);
-  }, [abort, requestId]);
-  return useMemo(
-    () => ({
-      loading,
-      result,
-      error,
-      status,
-      exchange,
-      execute,
-      reset: resetFn,
-      abort: abortFn,
-    }),
-    [loading, result, error, status, exchange, execute, resetFn, abortFn],
-  );
+  // Read structurally, not with `instanceof ExchangeError`: the error may come
+  // from another copy of @ahoo-wang/fetcher (its ESM and CommonJS builds).
+  const exchange =
+    state.result?.exchange ??
+    (state.error as { exchange?: FetchExchange } | undefined)?.exchange;
+  return { ...state, result: state.result?.result, exchange, execute };
 }

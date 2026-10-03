@@ -9,7 +9,7 @@ description: 使用真实 React Hook 状态验证 Fetcher 请求的成功、失�
 
 <<< @/../stories/docs/ReactRequests.tsx
 
-`execute()` 解析为 `void`；数据从 `result` 读取。`reset()` 只清除状态，`abort()` 还会使活动请求失效并中止它。参阅 [Fetcher Hook 参考](../reference/react/fetcher-hooks.md)和 [React 集成任务指南](../skills/react-and-integrations.md)。
+`execute()` 解析为请求结束时的状态且从不拒绝；组件改为按 Hook 状态渲染。`abort()` 取消活动请求并回到 idle；`reset()` 同样如此，并清除已完成的结果。参阅 [Fetcher Hook 参考](../reference/react/fetcher-hooks.md)和 [React 集成任务指南](../skills/react-and-integrations.md)。
 
 ## 运行已验证的 fixture
 
@@ -30,16 +30,15 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 显式安装 React 包及其声明的 peer 包图：
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^5.0.0 \
-  @ahoo-wang/fetcher-react@^5.1.3 \
-  @ahoo-wang/fetcher-eventstream@^5.0.0 \
-  @ahoo-wang/fetcher-eventbus@^5.0.0 \
-  @ahoo-wang/fetcher-storage@^5.0.0 \
-  @ahoo-wang/fetcher-cosec@^5.0.0 \
+pnpm add @ahoo-wang/fetcher@^6.0.0 \
+  @ahoo-wang/fetcher-react@^6.0.0 \
+  @ahoo-wang/fetcher-eventbus@^6.0.0 \
+  @ahoo-wang/fetcher-storage@^6.0.0 \
+  @ahoo-wang/fetcher-cosec@^6.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-从 5.1.3 起，`@ahoo-wang/fetcher-wow` 是可选 peer，本示例不需要它。它启用的 Wow 查询 Hook 只属于 5.x 线；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
+这些是 6.0 线的 Hook（peer 为 React ^19.0.0）。Wow 查询 Hook 只属于 5.x 线（`@ahoo-wang/fetcher-react@^5.1.3`）；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
 
 本节把现有 Vite 应用接入现有 API；它不会安装或创建后端。将上面的组件复制到 `src/ReactRequests.tsx`。它默认使用 `/api` 作为基础 URL；请把该路径指向提供以下演示路由的后端，或传入其他 `baseURL`：
 

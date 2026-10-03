@@ -128,7 +128,7 @@ describe('useDebouncedFetcher', () => {
       expect(result.current.status).toBe(PromiseStatus.SUCCESS);
       expect(result.current.result).toBe(mockResult);
       expect(mockFetcher.exchange).toHaveBeenCalledWith(
-        request,
+        { ...request, abortController: expect.any(AbortController) },
         expect.any(Object),
       );
     });
@@ -421,7 +421,7 @@ describe('useDebouncedFetcher', () => {
       });
 
       expect(mockFetcher.exchange).toHaveBeenCalledWith(
-        request,
+        { ...request, abortController: expect.any(AbortController) },
         expect.any(Object),
       );
     });

@@ -1,6 +1,6 @@
 ---
 title: 'Security hooks and route guards'
-description: 'Security hooks and route guards — @ahoo-wang/fetcher-react 5.0.0'
+description: 'Security hooks and route guards — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
 # Security hooks and route guards
@@ -212,4 +212,4 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Refs, request IDs and fullscreen](./utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Latest and stable values](./utilities)

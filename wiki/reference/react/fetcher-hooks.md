@@ -1,50 +1,66 @@
 ---
 title: 'Fetcher hooks'
-description: 'Fetcher hooks — @ahoo-wang/fetcher-react 5.0.0'
+description: 'Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
 # Fetcher hooks
 
-`useFetcher` exposes the Fetcher exchange pipeline as React state. It does not run on mount. `useFetcherQuery` adds a query object and POST execution; it is useful for JSON query endpoints rather than URL query-string construction.
+`useFetcher` exposes the Fetcher exchange pipeline as React state. It does not run on mount. `useFetcherQuery` adds a controlled query and POST execution; it is useful for JSON query endpoints rather than URL query-string construction.
 
 ## Inputs and returned values
 
-| API                               | Inputs and defaults                                                                                       | Result                                                                                            |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `useFetcher<R,E>(options?)`       | `RequestOptions`, executor callbacks, and `fetcher` instance/name; defaults to `fetcherRegistrar.default` | `loading`, `status`, `result`, `error`, optional `exchange`, `execute(request)`, `reset`, `abort` |
-| `execute(request)`                | Complete `FetchRequest`; the hook assigns its own `abortController` onto this object                      | `Promise<void>` after extraction; result lives in state                                           |
-| `useFetcherQuery<Q,R,E>(options)` | Required `url`, query options; extractor defaults to `JsonResultExtractor`, caller override wins          | Query and executor state; `execute()` sends the current Q as POST body                            |
+| API                               | Inputs and defaults                                                                                                        | Result                                                                                   |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `useFetcher<R,E>(options?)`       | `RequestOptions`, executor callbacks, and `fetcher` instance/name; defaults to `fetcherRegistrar.default`                  | `loading`, `status`, `result`, `error`, `exchange`, `execute(request)`, `abort`, `reset` |
+| `execute(request)`                | Complete `FetchRequest`; the hook sends a copy with its own `abortController` and leaves your object unchanged             | `Promise<PromiseState<R,E>>` after extraction; never rejects                             |
+| `exchange`                        | Derived from state: the exchange behind `result`, or behind `error` when it is an `ExchangeError`                          | `FetchExchange \| undefined`; undefined while idle or after a non-exchange failure       |
+| `useFetcherQuery<Q,R,E>(options)` | Required `url`, controlled `query`, `autoExecute` (default true); extractor defaults to `JsonResultExtractor`, caller wins | Executor state plus `exchange`; `execute()` sends the current query as POST body         |
 
-Create a new request object for each call; do not share a mutable request between hook instances. Fetcher registration is resolved during render, so a missing named registration fails there. `useFetcher` does not default to JSON independently of the selected Fetcher/options: select the extractor explicitly when you need typed JSON. HTTP status, timeout and extraction failures follow the selected Fetcher's interceptor pipeline.
+Fetcher registration is resolved when a request is sent, so a missing named registration becomes error state. `useFetcher` does not default to JSON independently of the selected Fetcher/options: select the extractor explicitly when you need typed JSON. HTTP status, timeout and extraction failures follow the selected Fetcher's interceptor pipeline.
 
-`useFetcherQuery`'s declared return extends the exchange-capable type, but the current implementation does not include `exchange` in its returned object. Use `useFetcher` directly when inspecting exchanges. A failed request clears `exchange` (undefined) instead of keeping the previous request's. `reset()` clears exchange/state; it does not cancel pending work. `abort()` clears exchange, invalidates the local request ID and aborts the executor. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state). Changing `url` or other options updates what the next execution reads; it is not itself a promise that a new request is triggered.
+`exchange` is not stored separately: it follows `result` and `error`. After an HTTP 404, `error` is an `ExchangeError` and `exchange.response?.status` is `404`; after `abort()` or `reset()` both are cleared. `useFetcherQuery` follows the [controlled-query contract](./promise-and-query-state#controlled-queries): keep the query in your state, `undefined` means not ready, and a deep-equal query does not resend. Changing `url` or other options updates what the next execution reads; it does not by itself send a new request. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state).
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
-`useFetcher` assigns the executor's AbortController to the request (`request.abortController`); that is how the caller cancels this execution. With the normal Fetcher transport, that controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, request IDs prevent older work from replacing the hook's current state.
+The hook owns cancellation: it sends `{ ...request, abortController }`, so an `abortController` on your request is replaced, while a `request.signal` still applies. Cancel through `abort()`/`reset()`, a newer `execute`, unmounting, or your own `signal`. With the normal Fetcher transport, the hook's controller, an explicit request `signal`, and the library timeout apply together: whichever fires first aborts the request. Regardless of physical cancellation, a cancelled execution never replaces the hook's current state.
 
 Select an extractor before choosing the result generic: `JsonResultExtractor` parses JSON, while ordinary Fetcher defaults can return an exchange or Response. `R` is the extracted value type, `E` is the error-state type; neither validates runtime payloads. [Request lifecycle](../../architecture/request-lifecycle) explains why a JSON parse failure can occur after exchange interception has finished.
+
+::: info Changed in 6.0
+`execute(request)` resolves to the final state instead of `void` and no longer writes `request.abortController`. On failure `exchange` is the failed request's exchange (from `ExchangeError`) instead of `undefined`, and `useFetcherQuery` now returns `exchange`. `initialQuery`, `setQuery` and `getQuery` were removed from `useFetcherQuery`; pass `query` from your own state.
+:::
 
 ## Complete example
 
 ```tsx
-import { JsonResultExtractor } from '@ahoo-wang/fetcher';
+import { ExchangeError, JsonResultExtractor } from '@ahoo-wang/fetcher';
 import { useFetcher } from '@ahoo-wang/fetcher-react';
+
 export function Profile() {
   const request = useFetcher<{ name: string }>({
     resultExtractor: JsonResultExtractor,
   });
+  const notFound = request.exchange?.response?.status === 404;
   return (
     <section>
       <button
         disabled={request.loading}
-        onClick={() => {
-          void request.execute({ url: '/api/profile', method: 'GET' });
+        onClick={async () => {
+          const { status, error } = await request.execute({
+            url: '/api/profile',
+            method: 'GET',
+          });
+          if (status === 'error' && !(error instanceof ExchangeError)) {
+            console.error(error);
+          }
         }}
       >
         Load
       </button>
-      {request.error && <p role="alert">{request.error.message}</p>}
+      {notFound && <p role="alert">No profile yet</p>}
+      {request.error && !notFound && (
+        <p role="alert">{request.error.message}</p>
+      )}
       <p>{request.result?.name}</p>
     </section>
   );
@@ -63,7 +79,7 @@ export function useFetcher<R, E = FetcherError>(
 ): UseFetcherReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:162](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L162)
+[packages/react/src/fetcher/useFetcher.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L67)
 
 ### UseFetcherOptions {#api-UseFetcherOptions}
 
@@ -72,7 +88,7 @@ export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37)
+[packages/react/src/fetcher/useFetcher.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L34)
 
 ### UseFetcherReturn {#api-UseFetcherReturn}
 
@@ -81,45 +97,51 @@ export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
   UseExecutePromiseReturn<R, E>,
   'execute'
 > {
-  exchange?: FetchExchange;
-  execute: (request: FetchRequest) => Promise<void>;
+  exchange: FetchExchange | undefined;
+  execute: (request: FetchRequest) => Promise<PromiseState<R, E>>;
 }
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L47)
+[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37)
 
 ### useFetcherQuery {#api-useFetcherQuery}
 
 ```ts
 export function useFetcherQuery<Q, R, E = FetcherError>(
   options: UseFetcherQueryOptions<Q, R, E>,
-): UseFetcherQueryReturn<Q, R, E>;
+): UseFetcherQueryReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L126)
+[packages/react/src/fetcher/useFetcherQuery.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L45)
 
 ### UseFetcherQueryOptions {#api-UseFetcherQueryOptions}
 
 ```ts
 export interface UseFetcherQueryOptions<Q, R, E = FetcherError>
-  extends UseFetcherOptions<R, E>, QueryOptions<Q>, AutoExecuteCapable {
+  extends UseFetcherOptions<R, E>, QueryOptions<Q> {
+  /** @default true */
+  autoExecute?: boolean;
   url: string;
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L30)
+`autoExecute` is declared on an internal base interface; it is shown inline here.
+
+[packages/react/src/fetcher/useFetcherQuery.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L26)
 
 ### UseFetcherQueryReturn {#api-UseFetcherQueryReturn}
 
 ```ts
-export interface UseFetcherQueryReturn<Q, R, E = FetcherError>
-  extends UseFetcherReturn<R, E>, UseQueryStateReturn<Q> {
-  execute: () => Promise<void>;
+export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
+  UseFetcherReturn<R, E>,
+  'execute'
+> {
+  execute: () => Promise<PromiseState<R, E>>;
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L42)
+[packages/react/src/fetcher/useFetcherQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L32)
 
 ## Related topics
 
-[Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Refs, request IDs and fullscreen](./utilities)
+[Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Latest and stable values](./utilities)

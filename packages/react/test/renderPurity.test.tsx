@@ -82,7 +82,7 @@ describe('useKeyStorage hydration', () => {
 });
 
 describe('useFetcher exchange on failure', () => {
-  it('does not keep the previous request exchange once a request fails', async () => {
+  it('exposes the failed request exchange, not the previous one', async () => {
     const fetcher = new Fetcher({ baseURL: 'https://purity.test' });
     let fail = false;
     vi.stubGlobal('fetch', async () => {
@@ -103,7 +103,7 @@ describe('useFetcher exchange on failure', () => {
       await result.current.execute({ url: '/b' });
     });
     expect(result.current.status).toBe('error');
-    expect(result.current.exchange).toBeUndefined();
+    expect(result.current.exchange?.request.url).toContain('/b');
     vi.unstubAllGlobals();
   });
 });

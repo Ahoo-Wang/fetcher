@@ -31,7 +31,7 @@ Cancellation does not roll back a write already received by the server. Before r
 
 ## Hooks change how errors reach components
 
-`useExecutePromise` normally stores errors in state. `propagateError` rethrows general errors when enabled; an error recognized as `AbortError` returns to idle. `execute()` returns `Promise<void>`; read business data from `result`. New executions and unmount abort controllers, but a generic Promise must cooperate with that controller. See [packages/react/src/core/useExecutePromise.ts:265](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L265) and [React request guide](../guides/react/requests.md).
+`useExecutePromise` stores errors in state, and `execute()` never rejects: it resolves to the state the execution ended in (`success`, `error`, or `idle` when cancelled), so a caller branches on `status` instead of catching. An error named `AbortError`, such as one from a signal of your own, returns to idle. `onSuccess`/`onError` run only for the current execution; a throwing callback is reported with `console.error` and does not change state. A new execution, `abort()`, `reset()` and unmount abort the execution's controller, but a generic Promise must cooperate with that controller. `useFetcher` additionally exposes the failed request's `exchange` from an `ExchangeError`, for example to read a 404 status. See [packages/react/src/core/useExecutePromise.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L107) and [React request guide](../guides/react/requests.md).
 
 ## Streams and authentication have specific recovery contracts
 

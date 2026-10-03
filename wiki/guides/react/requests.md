@@ -13,7 +13,7 @@ Use an existing React application with the installation and entry file in [the c
 
 Follow [Run the verified fixture](../../examples/react.md#run-the-verified-fixture), or copy `ReactRequests.tsx` and mount `<ReactRequests />` using the consumer instructions on the same page. The maintained file is the complete implementation; keep request behavior there instead of duplicating it in wrappers.
 
-The component memoizes its `Fetcher` by `baseURL`, calls `useFetcher` with an explicit JSON extractor, and binds each button to `execute({ url })`. The application reads `result`, `error`, `loading`, and `status` from the hook. `execute()` returns `Promise<void>`, not the user data.
+The component memoizes its `Fetcher` by `baseURL`, calls `useFetcher` with an explicit JSON extractor, and binds each button to `execute({ url })`. The application reads `result`, `error`, `loading`, and `status` from the hook. `execute()` resolves to the state the request ended in (`success`, `error`, or `idle` when cancelled); the component ignores it with `void` because it renders from hook state.
 
 ## Check each visible state
 
@@ -26,6 +26,13 @@ In your own application, `/api/users` must return a JSON user array, `/api/error
 
 ## Handle errors and cleanup
 
-By default execution errors populate hook state instead of rethrowing. If you enable `propagateError`, also handle the returned promise's rejection. A new execution cancels its predecessor and only the latest mounted execution can publish state. Unmount cleans up the owned request. These protections do not provide a global query cache or undo work already performed by a server.
+Execution errors populate hook state; `execute()` never rejects. To act on the outcome, for example to navigate after success, await it and branch on `status`:
+
+```ts
+const { status } = await request.execute({ url: '/users' });
+if (status === 'success') navigate('/users');
+```
+
+A new execution cancels its predecessor and only the latest mounted execution can publish state. `abort()` cancels the request in flight; `reset()` also clears a settled result. Unmount cleans up the owned request. These protections do not provide a global query cache or undo work already performed by a server.
 
 Continue with [input-driven queries](./queries.md), [cleanup](./cleanup.md), [hook reference](../../reference/react/fetcher-hooks.md), and [state ownership](../../architecture/state-and-resources.md).

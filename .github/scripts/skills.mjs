@@ -46,9 +46,10 @@ export const DESCRIPTION_MAX_CHARS = 1024;
 /**
  * What `@ahoo-wang/fetcher-react` stopped exporting in 6.0
  * (`docs/releases/v6.0.0.md`, checked against the v5.1.3 sources): the Wow
- * query hooks, now in `@ahoo-wang/wow-react`, and the data-monitor hooks,
- * which have no replacement. Only the migration skill may name them, and it
- * must name every one.
+ * query hooks, now in `@ahoo-wang/wow-react`, the data-monitor hooks, which
+ * have no replacement, and what the 6.0 hook redesign dropped (fullscreen and
+ * small utility hooks, `useQueryState`, `onBeforeExecute`). Only the migration
+ * skill may name them, and it must name every one.
  */
 export const REMOVED_REACT_EXPORTS = [
   ...['Single', 'List', 'Paged', 'Count', 'ListStream'].flatMap(kind => [
@@ -69,6 +70,34 @@ export const REMOVED_REACT_EXPORTS = [
   'UseDataMonitorEventBusReturn',
   'DataChangedEvent',
   'dataMonitorEventBus',
+  // The 6.0 hook redesign.
+  'useFullscreen',
+  'UseFullscreenOptions',
+  'UseFullscreenReturn',
+  'FullscreenProvider',
+  'FullscreenProviderProps',
+  'FullscreenContext',
+  'FullscreenContextValue',
+  'useFullscreenContext',
+  'getFullscreenElement',
+  'isFullscreen',
+  'enterFullscreen',
+  'exitFullscreen',
+  'addFullscreenChangeListener',
+  'removeFullscreenChangeListener',
+  'useRefs',
+  'UseRefsReturn',
+  'useForceUpdate',
+  'useMounted',
+  'useRequestId',
+  'UseRequestIdReturn',
+  'useQueryState',
+  'useCancellableQueryState',
+  'UseQueryStateOptions',
+  'UseQueryStateReturn',
+  'isValidateQuery',
+  'OnBeforeExecuteCallback',
+  'PromiseStateCallbacks',
 ];
 /** Platform names a SKILL.md may put in backticks without a package export. */
 const PLATFORM_NAMES = new Set([

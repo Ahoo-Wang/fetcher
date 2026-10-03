@@ -13,7 +13,7 @@ description: 用已验证的 useFetcher 组件展示加载、结果、错误和�
 
 按[完整示例](../../examples/react.md)运行仓库夹具，或复制 `ReactRequests.tsx`，通过该页消费者入口挂载 `<ReactRequests />`。维护中的文件包含完整实现；请求行为保留在那里，不必复制到多层包装中。
 
-组件按 `baseURL` memoize `Fetcher`，向 `useFetcher` 显式传入 JSON 提取器，并将各按钮绑定到 `execute({ url })`。应用从 Hook 读取 `result`、`error`、`loading` 和 `status`。`execute()` 返回 `Promise<void>`，不会返回用户数据。
+组件按 `baseURL` memoize `Fetcher`，向 `useFetcher` 显式传入 JSON 提取器，并将各按钮绑定到 `execute({ url })`。应用从 Hook 读取 `result`、`error`、`loading` 和 `status`。`execute()` 解析为请求结束时的状态（`success`、`error`，取消时为 `idle`）；组件用 `void` 忽略它，因为它按 Hook 状态渲染。
 
 ## 检查各个可见状态
 
@@ -26,6 +26,13 @@ description: 用已验证的 useFetcher 组件展示加载、结果、错误和�
 
 ## 错误与清理
 
-执行错误默认保存到 Hook 状态而不重新抛出。开启 `propagateError` 后还应处理返回 Promise 的拒绝。新执行会取消前一个请求，只有最新且仍挂载的执行能够发布状态。卸载会清理拥有的请求。这些保护不提供全局查询缓存，也不能撤销服务端已经完成的操作。
+执行错误保存到 Hook 状态；`execute()` 从不拒绝。需要根据结果行动（例如成功后跳转）时，await 它并按 `status` 分支：
+
+```ts
+const { status } = await request.execute({ url: '/users' });
+if (status === 'success') navigate('/users');
+```
+
+新执行会取消前一个请求，只有最新且仍挂载的执行能够发布状态。`abort()` 取消在途请求；`reset()` 还会清除已完成的结果。卸载会清理拥有的请求。这些保护不提供全局查询缓存，也不能撤销服务端已经完成的操作。
 
 继续阅读[输入驱动查询](./queries.md)、[清理资源](./cleanup.md)、[Hook 参考](../../reference/react/fetcher-hooks.md)与[状态归属](../../architecture/state-and-resources.md)。

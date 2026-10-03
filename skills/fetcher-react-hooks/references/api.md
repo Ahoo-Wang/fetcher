@@ -1,63 +1,78 @@
-# Fetcher React Hooks API Reference
+# Fetcher React Hooks API Reference (6.x)
 
 ## Contents
 
-- [Hook Architecture (Layered Design)](#hook-architecture-layered-design)
-- [PromiseStatus State Machine](#promisestatus-state-machine)
+- [Model](#model)
+- [Hook Layers](#hook-layers)
+- [PromiseStatus and PromiseState](#promisestatus-and-promisestate)
 - [Core State Hooks](#core-state-hooks)
   - [usePromiseState](#usepromisestate)
   - [useExecutePromise](#useexecutepromise)
-- [HTTP Fetch Hooks](#http-fetch-hooks)
-  - [useFetcher](#usefetcher)
-  - [useFetcherQuery](#usefetcherquery)
-- [Generic Query Hooks](#generic-query-hooks)
+- [Query Hooks](#query-hooks)
   - [useQuery](#usequery)
-  - [useQueryState](#usequerystate)
-- [Removed in 6.0 and Subpath Entries](#removed-in-60-and-subpath-entries)
-- [Utility Hooks](#utility-hooks)
-  - [useMounted](#usemounted)
-  - [useLatest](#uselatest)
-  - [useForceUpdate](#useforceupdate)
-  - [useRefs](#userefs)
-  - [useFullscreen](#usefullscreen)
-- [Storage Hooks](#storage-hooks)
-  - [useKeyStorage](#usekeystorage)
-  - [useImmerKeyStorage](#useimmerkeystorage)
-- [Event Hooks](#event-hooks)
-  - [useEventSubscription](#useeventsubscription)
-- [API Hooks Generation](#api-hooks-generation)
-  - [createExecuteApiHooks](#createexecuteapihooks)
-  - [createQueryApiHooks](#createqueryapihooks)
-- [Security (CoSec)](#security-cosec)
-  - [SecurityProvider / useSecurityContext / useSecurity / RouteGuard](#securityprovider--usesecuritycontext--usesecurity--routeguard)
+  - [useFetcherQuery](#usefetcherquery)
+- [useFetcher](#usefetcher)
 - [Debounced Hooks](#debounced-hooks)
+- [Utility Hooks](#utility-hooks)
+- [Storage Hooks](#storage-hooks)
+- [Event Hooks](#event-hooks)
+- [API Hooks Generation](#api-hooks-generation)
+- [Security (CoSec)](#security-cosec)
+- [Entry Points](#entry-points)
 - [Key Imports](#key-imports)
 
-## Hook Architecture (Layered Design)
+## Model
+
+A request is identified by its `AbortController`. Only the current execution
+may write state; replacing it with a newer one, `abort()`, `reset()` and
+unmounting all abort it. State is one value `{ status, loading, result, error }`.
+`execute` never rejects: it resolves to the state this execution ended in
+(`idle` when cancelled). Queries are controlled: the query lives in the
+caller's state and is passed in; the hook executes when its content
+(deep-equal) changes.
+
+Removed in 6.0 (see `$fetcher-v6-migration`): the fullscreen hooks, the small
+utility hooks for refs, mount checks, forced updates and request ids, the
+standalone query-state hook, the `propagateError` option, `initialQuery` /
+`setQuery` / `getQuery` on query hooks, and `onBeforeExecute` on generated
+hooks. Never suggest them for 6.x code.
+
+## Hook Layers
 
 ```
-usePromiseState          (raw state machine: PromiseStatus transitions)
-  └─> useExecutePromise  (adds execute/abort with AbortController, unmount safety)
-        ├─> useFetcher         (HTTP-specific: wraps Fetcher with FetchExchange)
-        │     └─> useFetcherQuery  (POST query with setQuery/getQuery)
-        └─> useQuery           (generic query with custom execute function)
+usePromiseState          (state: idle → loading → success | error)
+  └─> useExecutePromise  (execute / abort / reset, one execution at a time)
+        ├─> useFetcher         (sends a FetchRequest through a Fetcher)
+        │     └─> useFetcherQuery  (controlled query sent as POST url, JSON)
+        └─> useQuery           (controlled query, your own execute function)
 ```
 
 ---
 
-## PromiseStatus State Machine
+## PromiseStatus and PromiseState
 
 ```typescript
-enum PromiseStatus {
-  IDLE = 'idle',
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  ERROR = 'error',
+const PromiseStatus = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  ERROR: 'error',
+} as const;
+type PromiseStatus = 'idle' | 'loading' | 'success' | 'error';
+
+interface PromiseState<R, E> {
+  status: PromiseStatus;
+  loading: boolean; // status === 'loading'
+  result: R | undefined; // kept while a new execution is loading
+  error: E | undefined;
 }
 ```
 
-All promise hooks share this state: `status`, `loading` (boolean), `result`, `error`.
-The error type parameter `E` defaults to `FetcherError` (from `@ahoo-wang/fetcher`).
+`PromiseStatus` is a const object and a literal union, so both
+`status === PromiseStatus.SUCCESS` and `status === 'success'` type-check.
+`loading` keeps the previous `result` and clears `error`; `error` clears
+`result`; `idle` clears both. The error type `E` defaults to `FetcherError`
+(from `@ahoo-wang/fetcher`).
 
 ---
 
@@ -65,8 +80,8 @@ The error type parameter `E` defaults to `FetcherError` (from `@ahoo-wang/fetche
 
 ### usePromiseState
 
-Raw state management for promises without execution logic. Provides `setLoading`, `setSuccess`, `setError`, `setIdle` transitions with unmount-safe checks.
-Options: `initialStatus` (default `PromiseStatus.IDLE`), `onSuccess`, `onError`.
+Raw state with stable, synchronous setters. Option: `initialStatus` (default
+`'idle'`). No callbacks.
 
 ```tsx
 const {
@@ -79,216 +94,210 @@ const {
   setError,
   setIdle,
 } = usePromiseState<string>();
-
-setLoading(); // status = LOADING, error cleared, previous result kept
-setSuccess('data'); // status = SUCCESS, result set (async, calls onSuccess)
-setError(err); // status = ERROR, error set, result cleared (async, calls onError)
-setIdle(); // status = IDLE, all cleared
 ```
 
 ### useExecutePromise
 
-Manages async operations with race condition protection, AbortController, and unmount safety. Options: `propagateError` (default off: `execute()` resolves even on error), `onAbort`, plus `onSuccess`/`onError`/`initialStatus`. Returns `status`, `loading`, `result`, `error`, `execute`, `reset`, `abort`; unmount aborts the in-flight request. Race protection is built on `useRequestId` — each execution gets an id, and stale resolutions are discarded. Manual cancellation invalidates the id even when the supplier ignores its signal, so late results and errors cannot restore state. Accepts a `PromiseSupplier<R>`:
-
 ```typescript
 type PromiseSupplier<R> = (abortController: AbortController) => Promise<R>;
+
+useExecutePromise<R, E = FetcherError>(options?: {
+  initialStatus?: PromiseStatus;
+  onSuccess?: (result: R) => void | Promise<void>;
+  onError?: (error: E) => void | Promise<void>;
+  onAbort?: () => void;
+}): PromiseState<R, E> & {
+  execute(supplier: PromiseSupplier<R>): Promise<PromiseState<R, E>>;
+  abort(): void;
+  reset(): void;
+};
 ```
 
-After StrictMode cleanup cancels an operation, effect replay returns it to idle
-unless another execution has started. Cleanup preserves the initial state when
-no operation is running.
-
-If the supplier's controller is aborted directly, a still-current execution returns
-to idle when it settles, even when the supplier ignores the signal. Cancellation
-before the supplier settles prevents `onSuccess` or `onError` from starting. If a
-callback is already running, execution waits for it and rechecks cancellation
-before settling. An older execution cannot clear a newer execution's state.
-`AbortError` remains ignored; other errors still reject `execute()` when
-`propagateError` is enabled. Directly aborting the controller does not add an
-`onAbort` callback invocation.
+- `execute` cancels the execution in flight, then runs `supplier` with a new
+  controller. It **never rejects**; it resolves to `success`, `error`, or
+  `idle` when this execution was cancelled (or the component already
+  unmounted — then the supplier does not run).
+- `onSuccess` / `onError` run only for the current execution and are awaited
+  by `execute`; a throwing callback is reported with `console.error`.
+- `onAbort()` is called synchronously when an in-flight execution is
+  cancelled (newer execution, `abort`, `reset`, unmount). It is not awaited.
+- `abort()`: cancels the in-flight execution, which returns to `idle`. With
+  nothing in flight it changes nothing — a settled result stays.
+- `reset()`: cancels the in-flight execution and returns to `idle`, clearing
+  `result` and `error`.
+- An `AbortError` thrown from a signal of the caller's own ends in `idle`, not
+  `error`.
+- Pass the supplier's `abortController.signal` on, or cancellation only drops
+  the state update.
 
 ```tsx
-const { loading, result, error, execute, reset, abort } =
-  useExecutePromise<string>({
-    onAbort: () => console.log('Operation aborted'),
-  });
+const { loading, result, error, execute, abort, reset } =
+  useExecutePromise<Data>();
 
-// CORRECT: pass a PromiseSupplier (receives AbortController)
-execute(abortController =>
+// CORRECT: a supplier, which receives the AbortController
+const { status, result: data } = await execute(abortController =>
   fetch('/api/data', { signal: abortController.signal }).then(res =>
     res.json(),
   ),
 );
+if (status === 'success') use(data);
 
-// New calls auto-cancel previous requests; state updates skip if unmounted
-abort(); // manual cancel
-reset(); // reset to IDLE
+// WRONG: execute(fetch('/api/data')) — the request already started, and
+// abort() cannot cancel it.
 ```
-
-**Key: `execute` only accepts `PromiseSupplier<R>`, NOT raw promises.**
 
 ---
 
-## HTTP Fetch Hooks
+## Query Hooks
 
-### useFetcher
+### useQuery
 
-HTTP-specific hook wrapping Fetcher with `FetchExchange` support. Options are
-`RequestOptions` (`resultExtractor`, `attributes`) + `fetcher` (name or instance,
-default `fetcherRegistrar.default`) + the `useExecutePromise` options.
-`execute(request: FetchRequest)` sets `request.abortController` itself; callers
-cancel that execution through it.
-**The default `resultExtractor` is the Fetcher default (`ResultExtractors.Exchange`),
-so `result` is the `FetchExchange` unless you pass `ResultExtractors.Json`.** Exchange
-snapshots follow the same cancellation and stale-request rules as result state.
-An exchange remains visible while its result is being extracted. When the current
-execution settles after its controller was externally aborted, the exchange is
-cleared together with result/error state, including cancellation during extraction
-or an async callback. Completion of a superseded request preserves the newer
-request's exchange. A failed request clears `exchange` (undefined) instead of
-keeping the previous request's.
+```typescript
+useQuery<Q, R, E = FetcherError>(options: {
+  query?: Q; // undefined = not ready, nothing runs
+  execute: (query: Q, abortController: AbortController) => Promise<R>;
+  autoExecute?: boolean; // default true
+  // + initialStatus, onSuccess, onError, onAbort
+}): PromiseState<R, E> & {
+  execute(): Promise<PromiseState<R, E>>; // runs the current query
+  abort(): void;
+  reset(): void;
+};
+```
+
+- Re-executes when the query content changes (compared with `dequal`) or
+  `autoExecute` turns on. An inline object equal to the last one does not
+  re-run; the latest `execute` option is used without re-running.
+- First render is `loading` when it will execute on mount (unless
+  `initialStatus` is given).
+- `execute()` resolves to `idle` while `query` is `undefined`.
+
+```tsx
+const [query, setQuery] = useState<UserQuery>({ id: '1' });
+const { loading, result, error, execute } = useQuery<UserQuery, User>({
+  query,
+  execute: (query, abortController) =>
+    fetch(`/api/users/${query.id}`, { signal: abortController.signal }).then(
+      res => res.json(),
+    ),
+});
+// setQuery({ id: '2' }) → runs again; execute() → re-runs { id: '2' }
+```
+
+Wait for input: pass `query: ready ? query : undefined`, or
+`autoExecute: false` and call `execute()` yourself.
+
+### useFetcherQuery
+
+`useFetcher` options plus `url` (required), `query?`, `autoExecute?`
+(default `true`). Each run sends `POST url` with the query as the JSON body;
+`resultExtractor` defaults to JSON here. Returns the `useQuery` shape plus
+`exchange`.
+
+```tsx
+const [query, setQuery] = useState<SearchQuery>({ keyword: '', limit: 10 });
+const { loading, result, error, exchange, execute } = useFetcherQuery<
+  SearchQuery,
+  SearchResult
+>({ url: '/api/search', query });
+```
+
+---
+
+## useFetcher
+
+```typescript
+useFetcher<R, E = FetcherError>(options?: {
+  fetcher?: string | Fetcher; // default fetcherRegistrar.default
+  resultExtractor?: ResultExtractor; // default: the Fetcher's (the exchange)
+  attributes?: Record<string, any> | Map<string, any>;
+  // + initialStatus, onSuccess, onError, onAbort
+}): PromiseState<R, E> & {
+  exchange: FetchExchange | undefined;
+  execute(request: FetchRequest): Promise<PromiseState<R, E>>;
+  abort(): void;
+  reset(): void;
+};
+```
+
+- **`result` is the whole `FetchExchange` unless you pass
+  `resultExtractor: ResultExtractors.Json`** (or another extractor).
+- `exchange` is the exchange behind `result`, or behind `error` when that is
+  an `ExchangeError` (e.g. `HttpStatusValidationError` for a 404) — read
+  `exchange?.response?.status` there.
+- The caller's request is not modified: the hook sends
+  `{ ...request, abortController }`. An `abortController` on the request is
+  replaced; a `request.signal` still applies. Cancel with `abort()`/`reset()`.
 
 ```tsx
 import { useFetcher } from '@ahoo-wang/fetcher-react';
 import { ResultExtractors } from '@ahoo-wang/fetcher';
 
 function UserProfile({ userId }: { userId: string }) {
-  const { loading, result, error, exchange, execute, abort } = useFetcher<User>(
-    {
-      resultExtractor: ResultExtractors.Json,
-    },
-  );
-
-  const fetchUser = () => {
-    execute({ url: `/api/users/${userId}`, method: 'GET' });
-  };
-  // exchange contains request/response details
+  const { loading, result, error, exchange, execute } = useFetcher<User>({
+    resultExtractor: ResultExtractors.Json,
+  });
+  useEffect(() => {
+    execute({ url: `/api/users/${userId}` });
+  }, [execute, userId]);
+  if (exchange?.response?.status === 404) return <p>Not found</p>;
+  // …
 }
 ```
 
-### useFetcherQuery
+---
 
-POST-based query hook with `setQuery`/`getQuery` management. `url` is required; each run sends `POST url` with the query as the JSON body. `resultExtractor` defaults to `ResultExtractors.Json` here, and `autoExecute` defaults to `true` (runs on mount with `initialQuery`). A controlled `query` option is also accepted. `execute()` takes no argument -- it uses the current query from `getQuery()` and does nothing while the query is `undefined`.
+## Debounced Hooks
+
+`debounce: { delay, leading?, trailing? }` is required (`leading` defaults to
+`false`, `trailing` to `true`; both `false` throws).
+
+Query hooks — follow the controlled query:
+
+- `useDebouncedQuery({ ...useQuery options, debounce })`
+- `useDebouncedFetcherQuery({ ...useFetcherQuery options, debounce })`
+
+They return the query hook's fields plus `pending: boolean` (a query change is
+waiting) and `flush()` (apply it now). The first query executes at once; later
+changes after `debounce.delay`. `autoExecute` defaults to `true` as in the
+plain query hooks. `execute()` re-runs the applied query.
 
 ```tsx
-const { loading, result, execute, setQuery, getQuery } = useFetcherQuery<
+const [query, setQuery] = useState({ keyword: '' });
+const { loading, result, error, pending, flush } = useDebouncedFetcherQuery<
   SearchQuery,
   SearchResult
->({
-  url: '/api/search',
-  initialQuery: { keyword: '', limit: 10 },
-  autoExecute: true,
-});
-
-setQuery({ keyword: 'hello', limit: 10 }); // executes immediately while autoExecute is on
-execute(); // manual re-execute with current query
+>({ url: '/api/search', query, debounce: { delay: 300 } });
+// <input onChange={e => setQuery({ keyword: e.target.value })} />
+// Enter key: flush()
 ```
 
-**Key: `useFetcherQuery.execute()` has no parameters. Use `setQuery` to update, `execute` to re-run.**
+Value:
 
----
+- `useDebouncedValue(value, { delay, leading?, trailing? })` →
+  `{ value, pending, flush }`. The first render returns `value` itself;
+  content is compared deeply.
 
-## Generic Query Hooks
+Callbacks — debounce calls through `run`:
 
-### useQuery
+- `useDebouncedCallback(callback, { delay, … })` → `{ run, cancel, isPending }`
+- `useDebouncedExecutePromise({ ...useExecutePromise options, debounce })` →
+  state + `run(supplier)`, `cancel()`, `isPending()`, `abort()`, `reset()`
+- `useDebouncedFetcher({ ...useFetcher options, debounce })` → state +
+  `exchange` + `run(request)`, `cancel()`, `isPending()`
 
-Generic query hook with a custom `execute(query, attributes?, abortController?)` function and request cancellation. `autoExecute` defaults to `true`; `attributes` is an option passed through as the second argument. The returned `execute()` takes no argument.
-
-```tsx
-const { loading, result, execute, setQuery } = useQuery<UserQuery, User>({
-  initialQuery: { id: '1' },
-  execute: async (query, attributes, abortController) => {
-    const res = await fetch(`/api/users/${query.id}`, {
-      signal: abortController?.signal,
-    });
-    return res.json();
-  },
-  autoExecute: true,
-});
-```
-
-### useQueryState
-
-Standalone query state management; returns only `{ getQuery, setQuery }`. `execute` is required (`(query) => Promise<void>`) and `autoExecute` defaults to `true`.
-When `query` is supplied, equal committed values stay deduplicated during
-StrictMode replay; this hook does not cancel `execute`. `useQuery` and
-`useFetcherQuery` restart their cancelled automatic requests during replay.
-Late results from those cancelled requests remain ignored.
-`execute` may be inline: the latest one is always called, and a new `execute`
-alone does not re-run; a change in query content or `autoExecute` turning on does.
-
-```tsx
-const { getQuery, setQuery } = useQueryState<UserQuery>({
-  initialQuery: { id: '1' },
-  autoExecute: true,
-  execute: async query => {
-    /* ... */
-  },
-});
-```
-
----
-
-## Removed in 6.0 and Subpath Entries
-
-The Wow query hooks and the data-monitor hooks are no longer exported in 6.0; see `$fetcher-v6-migration`.
-Two ESM-only subpaths exist besides the root: `@ahoo-wang/fetcher-react/core` (promise/query state, `useRequestId`, utility, fullscreen and debounce hooks — no HTTP, security, storage or event integrations) and `@ahoo-wang/fetcher-react/fetcher` (`useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery`).
+`isPending` is a function; `pending` (query hooks, `useDebouncedValue`) is a
+boolean.
 
 ---
 
 ## Utility Hooks
 
-### useMounted
-
-Returns a function that checks if the component is still mounted. Used internally by all promise hooks for safe state updates.
-
-```tsx
-const isMounted = useMounted();
-useEffect(() => {
-  someAsyncOp().then(() => {
-    if (isMounted()) setState(result); // safe update
-  });
-}, []);
-```
-
-### useLatest
-
-Returns a ref holding the latest committed value, updated after each render
-commits (in an insertion effect). Effects and async callbacks see the new value;
-reading `.current` during render gives the last committed one.
-
-```tsx
-const latestCount = useLatest(count);
-// latestCount.current reflects the latest committed count
-```
-
-### useForceUpdate
-
-Force a component re-render.
-
-```tsx
-const forceUpdate = useForceUpdate();
-```
-
-### useRefs
-
-Map-like interface for managing multiple refs by key.
-
-```tsx
-const refs = useRefs<HTMLDivElement>();
-<div ref={refs.register('myDiv')} />;
-const el = refs.get('myDiv');
-```
-
-### useFullscreen
-
-Fullscreen toggle hook returning `fullscreen`, `getTarget`, `enter(target?)`, `exit`, `toggle(target?)`; the target defaults to `document.documentElement`. A target passed to `enter(el)` lasts until fullscreen ends; then the configured `target` applies again. `FullscreenProvider` / `useFullscreenContext` share one instance through context.
-
-```tsx
-const { fullscreen, toggle, enter, exit } = useFullscreen({
-  target: containerRef,
-});
-```
+- `useLatest(value)` → a ref holding the latest committed value, updated after
+  each render commits. Effects and async callbacks see the new value; reading
+  `.current` during render gives the last committed one.
+- `useStableValue(value)` → `value`, keeping the previous reference while the
+  content is deeply equal, so an inline object can drive an effect.
 
 ---
 
@@ -296,24 +305,22 @@ const { fullscreen, toggle, enter, exit } = useFullscreen({
 
 ### useKeyStorage
 
-Reactive state for `KeyStorage` with automatic subscription. Returns `[value, set, remove]`; `value` is `T | null` without a default. On the server and during hydration it renders the default (`defaultValue ?? null`), then the stored value, so SSR markup matches; client-only rendering reads storage immediately. `useSecurity` / `SecurityProvider` inherit this.
+Reactive state for `KeyStorage` with automatic subscription. Returns
+`[value, set, remove]`; `value` is `T | null` without a default. On the server
+and during hydration it renders the default (`defaultValue ?? null`), then the
+stored value, so SSR markup matches. `useSecurity` / `SecurityProvider` inherit
+this.
 
 ```tsx
-const [theme, setTheme, removeTheme] = useKeyStorage(themeStorage); // theme: T | null
-const [theme2, setTheme2] = useKeyStorage(themeStorage, 'light'); // theme2: T
+const [theme, setTheme, removeTheme] = useKeyStorage(themeStorage); // T | null
+const [theme2, setTheme2] = useKeyStorage(themeStorage, 'light'); // T
 ```
 
 ### useImmerKeyStorage
 
-Immer-powered immutable updates for complex objects. Each updater reads the
-latest stored value, so consecutive updates in one render batch accumulate.
-The updater stays stable while its `KeyStorage` instance is unchanged, including
-with inline default objects, and reads the latest committed default when storage
-is empty. Defaults are available before descendant layout effects run; a render
-that suspends without committing does not change the retained updater's default.
-An updater returning `null` removes the key. Only a stored `null` selects the default; a serializer-produced `undefined` is passed to
-the updater unchanged. After switching storage instances, a retained updater
-continues using its original storage and that storage's last committed default.
+Immer-powered updates for stored objects. Each updater reads the latest stored
+value, so consecutive updates in one batch accumulate. An updater returning
+`null` removes the key.
 
 ```tsx
 const [prefs, updatePrefs, resetPrefs] = useImmerKeyStorage(
@@ -331,52 +338,29 @@ updatePrefs(draft => {
 
 ### useEventSubscription
 
-Subscribe to a `TypedEventBus` with automatic lifecycle management. The effect
-re-subscribes whenever `bus` or `handler` identity changes, so keep the handler
-stable (module constant or `useMemo`). `bus.on` rejects a duplicate handler
-`name` (returns `false`, logged as a warning); unmount then leaves that name
-alone, so the other subscriber keeps its handler. Returns `{ subscribe, unsubscribe }`
-for manual control.
+`useEventSubscription({ bus, handler })` subscribes on mount and unsubscribes
+(by `handler.name`) on unmount. It subscribes once per `bus` and handler
+`name` / `order` / `once`, and always calls the latest `handle` — an inline
+handler does not resubscribe each render. `bus.on` rejects a duplicate handler
+`name` (a warning is logged), and unmount then leaves that other subscription
+alone. Returns `{ subscribe, unsubscribe }` for manual control.
 
 ```tsx
-const handler = useMemo(
-  () => ({ name: 'myEvent', handle: (event: MyEvent) => console.log(event) }),
-  [],
-);
-useEventSubscription({ bus: eventBus, handler });
-// auto-subscribes on mount; on unmount unsubscribes (by handler.name) if it subscribed
+useEventSubscription({
+  bus: eventBus,
+  handler: { name: 'myEvent', handle: (event: MyEvent) => setLast(event) },
+});
 ```
 
 ---
 
 ## API Hooks Generation
 
-### createExecuteApiHooks
-
-Generate `useExecutePromise`-based hooks from decorator API classes. Creating the
-hook set does not evaluate accessors. Function-valued getters are resolved and
-cached when their corresponding hook is first read or the hook set is enumerated,
-with both the getter and its returned function bound to the API instance.
-The `in` operator, `Object.hasOwn`, and property-descriptor inspection also
-resolve the inspected getter. Non-function getters are removed from the hook
-set; function-valued getters are cached and evaluated only once.
-`Object.keys`, object spread, and `Object.assign` resolve accessors and include
-only function-valued getter hooks alongside ordinary methods.
-If multiple API names map to the same hook name (for example, `load` and `Load`),
-the last function in own-property then prototype traversal order wins.
-Non-function getters do not replace a function found earlier in that order.
-Generated hooks remain replaceable by assignment before and after getter
-resolution. Assigning a replacement before the first read does not evaluate
-the API getter.
-The shared `collectMethods<T>(api, onAccessor?)` utility still returns a
-`Map<string, T>` of bound methods, including functions returned by getters when
-called with one argument. Its optional callback has the signature
-`onAccessor(name: string, get: () => unknown, methods: ReadonlyMap<string, T>): void`.
-It receives each accessor name, a lazy reader, and the bound methods collected
-before that accessor. Existing callbacks accepting only `name` and `get` remain
-supported. Both ordinary properties and accessors preserve Proxy `get` traps.
-Accessor values are read through the original API object, preserving its getter
-receiver; these reads are deferred during hook creation.
+Both factories collect the API object's methods with `collectMethods(api)`:
+own and prototype-chain function properties, bound to the object, nearest
+definition wins; `constructor` and accessors are skipped (getters never run, so
+a function returned by a getter does not become a hook). `getUser` becomes
+`useGetUser` (`methodNameToHookName`).
 
 ```tsx
 @api('/users')
@@ -384,44 +368,73 @@ class UserApi {
   @get('/{id}') getUser(@path('id') id: string): Promise<User> {
     throw autoGeneratedError(id);
   }
-  @post('') createUser(@body() data: CreateUser): Promise<User> {
+  @post('') updateUser(@body() data: UpdateUser): Promise<User> {
     throw autoGeneratedError(data);
   }
+  @post('/search') searchUsers(
+    @body() query: UserQuery,
+    @attribute() attributes?: Record<string, any>,
+    abortController?: AbortController,
+  ): Promise<User[]> {
+    throw autoGeneratedError(query, attributes, abortController);
+  }
 }
-
-const apiHooks = createExecuteApiHooks({ api: new UserApi() });
-// apiHooks.useGetUser(options?) -> { loading, result, error, status, execute, reset, abort }
-// execute('123') - fully typed; returns Promise<void>
+const userApi = new UserApi();
 ```
 
-Every promise-returning method becomes a `use<Method>` hook. Hook options are the
-`useExecutePromise` options plus `onBeforeExecute(abortController, params)` and
-`appendAbortController` (default `false`). By default `execute` calls
-`method(...params)` without the AbortController, so `abort()` only discards the
-state update. With `appendAbortController: true` it calls
-`method(...params, abortController)`: decorator methods detect an
-`AbortController` argument, so replacing or unmounting cancels the HTTP request.
-Keep it off for methods with optional trailing parameters (the controller would
-fill that slot); `onBeforeExecute` can place it in a specific slot instead.
+### createExecuteApiHooks
+
+```tsx
+const { useGetUser, useUpdateUser } = createExecuteApiHooks({ api: userApi });
+
+const { loading, result, error, execute, abort, reset } = useUpdateUser({
+  appendAbortController: true,
+  onSuccess: user => toast(`Saved ${user.name}`),
+});
+const { status } = await execute(form); // typed params; never rejects
+```
+
+Options (`UseApiMethodExecuteOptions<TData, E>`): `initialStatus`,
+`onSuccess`, `onError`, `onAbort`, `appendAbortController` (default `false`).
+`execute(...params)` resolves to the `PromiseState`. Without
+`appendAbortController` it calls `method(...params)`, so `abort()` only drops
+the state update; with it, `method(...params, abortController)` — decorator
+methods detect a trailing `AbortController`, so cancelling cancels the HTTP
+request. Keep it off for methods with optional trailing parameters (the
+controller would fill that slot).
 
 ### createQueryApiHooks
 
-Generate query hooks with `useQuery`-based state management. Each method is called as `method(query, attributes, abortController)`, so the first parameter is the query and decorator methods receive the controller. Hook options are the `useQuery` options minus `execute`, plus `onBeforeExecute(abortController, query)`.
-Function-valued getters have the same lazy resolution and instance binding as
-`createExecuteApiHooks`.
-
 ```tsx
-const queryHooks = createQueryApiHooks({ api: new UserApi() });
-// queryHooks.useGetUser({ initialQuery: '123' }) -> useQuery return; autoExecute defaults to true
+const { useSearchUsers } = createQueryApiHooks({ api: userApi });
+
+const [query, setQuery] = useState<UserQuery>({ name: '' });
+const { loading, result, execute } = useSearchUsers({
+  query,
+  attributes: { tenant },
+});
 ```
+
+Options (`UseApiMethodQueryOptions<Q, TData, E>`): the `useQuery` options
+without `execute` — `query`, `autoExecute` (default `true`), callbacks,
+`initialStatus` — plus `attributes`. Each run calls
+`method(query, attributes, abortController)`; returns the `useQuery` shape.
 
 ---
 
 ## Security (CoSec)
 
-### SecurityProvider / useSecurityContext / useSecurity / RouteGuard
-
-Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>` (`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws outside the provider) and `useSecurity(tokenStorage, options?)` return `currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`, `signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `authenticated` is computed at render; `useSecurity` re-renders when the refresh token expires (not when only the access token does, since the next request refreshes it). `RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only when authenticated and calls `onUnauthorized` in an effect after commit, once each time the user becomes (or starts out) unauthenticated, so it may call `navigate()`; `RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`, `refreshing?`) tries a token refresh first.
+Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>`
+(`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws
+outside the provider) and `useSecurity(tokenStorage, options?)` return
+`currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`,
+`signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `useSecurity` re-renders
+when the refresh token expires. `RouteGuard` (`children`, `fallback?`,
+`onUnauthorized?`) renders children only when authenticated and calls
+`onUnauthorized` in an effect after commit, once each time the user becomes (or
+starts out) unauthenticated, so it may call `navigate()`;
+`RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`,
+`refreshing?`) tries a token refresh first.
 
 ```tsx
 import {
@@ -434,96 +447,46 @@ import {
 
 ---
 
-## Debounced Hooks
+## Entry Points
 
-Rate-limiting variants of core hooks. All take a required
-`debounce: { delay, leading?, trailing? }` (`leading` defaults to `false`,
-`trailing` to `true`; both `false` throws). They return `run`, `cancel`, and
-`isPending` (a function, call `isPending()`) instead of `execute`.
-**`useDebouncedQuery` and `useDebouncedFetcherQuery` only auto-execute with an
-explicit `autoExecute: true`** (unlike `useQuery`/`useFetcherQuery`, which default
-to `true`); their `run()` takes no argument. With `autoExecute: true`, controlled query
-changes schedule execution; equal query values do not schedule duplicate work.
-Changing a controlled query to `undefined` cancels pending automatic work instead
-of rescheduling the last stored query.
-If `query` is explicitly present but `undefined`, re-enabling automatic
-execution does not schedule the previous stored query. `initialQuery` seeds query
-storage only on initialization; a defined `query` takes precedence and updates
-that storage. Omitting `query` uses the stored value without resetting it to
-`initialQuery`, and manual `run()` remains available.
-Switching from an omitted `query` to explicit `query: undefined` cancels pending
-automatic work; switching back schedules the stored query again, even
-though both property values are `undefined`.
-Disabling automatic execution cancels pending automatic work. An explicit
-`run()` replaces the current schedule with manual work, which survives later
-disabling of automatic execution or clearing of the controlled query. `cancel()`
-still cancels either kind of pending work and preserves the existing leading-edge
-cooldown. Automatic cancellation also resets that cooldown.
-Public cancellation, controlled-query clearing, and automatic cancellation clear
-their automatic scheduling marker, so restoring the same controlled value can
-schedule it again. Scheduling also supports StrictMode
-effect replay, including `{ leading: true, trailing: false }`.
-When automatic execution is enabled, syncing the controlled `query` with the
-value just passed to `setQuery` does not schedule it again, including with
-`{ leading: true, trailing: true }`. Only an invoked callback or a pending timer
-marks an automatic query as scheduled; a call suppressed by a leading-only
-cooldown does not suppress a later controlled commit of that query. Restoring cancelled automatic work starts a fresh leading window.
+| Entry                              | Formats  | Holds                                                                                                                                                |
+| ---------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-react`         | ESM, UMD | everything                                                                                                                                           |
+| `@ahoo-wang/fetcher-react/core`    | ESM      | `PromiseStatus`, `usePromiseState`, `useExecutePromise`, `useQuery`, `useLatest`, `useStableValue`, the debounced callback/value/promise/query hooks |
+| `@ahoo-wang/fetcher-react/fetcher` | ESM      | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their types                                                   |
 
-- `useDebouncedCallback(callback, options)` - Debounce any callback
-- `useDebouncedExecutePromise` - `run(supplier)` debounces promise execution
-- `useDebouncedQuery` - Debounce `useQuery` execution
-- `useDebouncedFetcher` - `run(request)` debounces HTTP fetches
-- `useDebouncedFetcherQuery` - Debounce fetcher queries
-
-```tsx
-const { loading, result, setQuery, run, cancel, isPending } =
-  useDebouncedFetcherQuery<SearchQuery, SearchResult>({
-    url: '/api/search',
-    initialQuery: { keyword: '' },
-    autoExecute: true, // otherwise only run() executes
-    debounce: { delay: 300 },
-  });
-setQuery({ keyword: 'hel' }); // scheduled after 300 ms of quiet
-```
-
----
+Neither subpath loads CoSec, storage or event-bus code. Peer: `react` `^19.0.0`.
 
 ## Key Imports
 
 ```tsx
 import {
-  // State machine
+  // State and execution
   PromiseStatus,
   usePromiseState,
-  // Execution
   useExecutePromise,
-  useRequestId,
-  // HTTP fetch
+  // Queries
+  useQuery,
   useFetcher,
   useFetcherQuery,
-  // Generic query
-  useQuery,
-  useQueryState,
-  // Utility
-  useMounted,
-  useLatest,
-  useForceUpdate,
-  useRefs,
-  useFullscreen,
-  // Storage
-  useKeyStorage,
-  useImmerKeyStorage,
-  // Events
-  useEventSubscription,
-  // API generation
-  createExecuteApiHooks,
-  createQueryApiHooks,
   // Debounce
   useDebouncedCallback,
+  useDebouncedValue,
   useDebouncedExecutePromise,
   useDebouncedQuery,
   useDebouncedFetcher,
   useDebouncedFetcherQuery,
+  // Utility
+  useLatest,
+  useStableValue,
+  // Storage and events
+  useKeyStorage,
+  useImmerKeyStorage,
+  useEventSubscription,
+  // API generation
+  createExecuteApiHooks,
+  createQueryApiHooks,
+  collectMethods,
   // Security
   SecurityProvider,
   useSecurity,
@@ -531,12 +494,16 @@ import {
   RouteGuard,
   RefreshableRouteGuard,
 } from '@ahoo-wang/fetcher-react';
+import type {
+  PromiseState,
+  PromiseSupplier,
+  UseExecutePromiseOptions,
+  UseQueryOptions,
+  UseFetcherOptions,
+  UseFetcherQueryOptions,
+  UseDebouncedQueryReturn,
+  UseDebouncedValueReturn,
+  UseApiMethodExecuteOptions,
+  UseApiMethodQueryOptions,
+} from '@ahoo-wang/fetcher-react';
 ```
-
-## Lightweight core import
-
-`@ahoo-wang/fetcher-react/core` (runtime `dist/core.es.js`, types `dist/core/index.d.ts`) and `@ahoo-wang/fetcher-react/fetcher` (`dist/fetcher.es.js`) are ESM-only (no `require` condition). `/core` provides the generic hooks without initializing HTTP/security/storage/event integrations; prefer it for generic execution and debounce in UI libraries.
-
-`useExecutePromise` assigns request order synchronously before awaiting onAbort. Manual abort invalidates useRequestId before releasing the controller, so even sources ignoring cancellation cannot publish stale results or callbacks. There is no return-type change: execute still returns Promise<void>; use state or onSuccess for results.
-
-The root ESM entry, `/core` and `/fetcher` are generated together and share module identity, including FullscreenContext. UMD is built separately. `pnpm --filter @ahoo-wang/fetcher-react test:package` checks built export targets, cross-entry providers/consumers and the core dependency boundary; build runs it automatically. `useExecutePromise.abort` clears its old controller reference before abort notification so synchronous listeners can start a replacement request without losing its cancellation handle.

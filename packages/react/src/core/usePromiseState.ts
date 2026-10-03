@@ -11,180 +11,133 @@
  * limitations under the License.
  */
 
-import { useCallback, useMemo, useState } from 'react';
-import { useMounted } from './useMounted.js';
-import { useLatest } from './useLatest.js';
+import { useCallback, useReducer } from 'react';
 import type { FetcherError } from '@ahoo-wang/fetcher';
 
 /**
- * Enumeration of possible promise execution states
+ * The status of an asynchronous operation. Usable both as values
+ * (`PromiseStatus.SUCCESS`) and as a literal type (`'success'`).
  */
-export enum PromiseStatus {
-  IDLE = 'idle',
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  ERROR = 'error',
-}
+export const PromiseStatus = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  SUCCESS: 'success',
+  ERROR: 'error',
+} as const;
+
+export type PromiseStatus = (typeof PromiseStatus)[keyof typeof PromiseStatus];
 
 export interface PromiseState<R, E = unknown> {
-  /** Current status of the promise */
   status: PromiseStatus;
-  /** Indicates if currently loading */
+  /** `status === 'loading'`. */
   loading: boolean;
-  /** The result value */
+  /** The last result. Kept while a new execution is loading. */
   result: R | undefined;
-  /** The error value */
   error: E | undefined;
 }
 
-export interface PromiseStateCallbacks<R, E = unknown> {
-  /** Callback invoked on success (can be async) */
-  onSuccess?: (result: R) => void | Promise<void>;
-  /** Callback invoked on error (can be async) */
-  onError?: (error: E) => void | Promise<void>;
+type PromiseAction<R, E> =
+  | { type: 'idle' }
+  | { type: 'loading' }
+  | { type: 'success'; result: R }
+  | { type: 'error'; error: E };
+
+/** The state each status starts from; `loading` keeps the previous result. */
+export function promiseStateReducer<R, E>(
+  state: PromiseState<R, E>,
+  action: PromiseAction<R, E>,
+): PromiseState<R, E> {
+  switch (action.type) {
+    case 'idle':
+      return idleState();
+    case 'loading':
+      return state.status === PromiseStatus.LOADING
+        ? state
+        : {
+            status: PromiseStatus.LOADING,
+            loading: true,
+            result: state.result,
+            error: undefined,
+          };
+    case 'success':
+      return successState(action.result);
+    case 'error':
+      return errorState(action.error);
+  }
 }
 
-/**
- * Options for configuring usePromiseState behavior
- * @template R - The type of result
- *
- * @example
- * ```typescript
- * const options: UsePromiseStateOptions<string> = {
- *   initialStatus: PromiseStatus.IDLE,
- *   onSuccess: (result) => console.log('Success:', result),
- *   onError: async (error) => {
- *     await logErrorToServer(error);
- *     console.error('Error:', error);
- *   },
- * };
- * ```
- */
-export interface UsePromiseStateOptions<
-  R,
-  E = FetcherError,
-> extends PromiseStateCallbacks<R, E> {
-  /** Initial status, defaults to IDLE */
+export function idleState<R, E>(): PromiseState<R, E> {
+  return {
+    status: PromiseStatus.IDLE,
+    loading: false,
+    result: undefined,
+    error: undefined,
+  };
+}
+
+export function successState<R, E>(result: R): PromiseState<R, E> {
+  return {
+    status: PromiseStatus.SUCCESS,
+    loading: false,
+    result,
+    error: undefined,
+  };
+}
+
+export function errorState<R, E>(error: E): PromiseState<R, E> {
+  return {
+    status: PromiseStatus.ERROR,
+    loading: false,
+    result: undefined,
+    error,
+  };
+}
+
+export interface UsePromiseStateOptions {
+  /**
+   * The status of the first render, e.g. `'loading'` for a request that
+   * starts on mount.
+   * @default 'idle'
+   */
   initialStatus?: PromiseStatus;
 }
 
-/**
- * Return type for usePromiseState hook
- * @template R - The type of result
- */
 export interface UsePromiseStateReturn<
   R,
   E = FetcherError,
 > extends PromiseState<R, E> {
-  /** Set status to LOADING */
   setLoading: () => void;
-  /** Set status to SUCCESS with result */
-  setSuccess: (result: R) => Promise<void>;
-  /** Set status to ERROR with error */
-  setError: (error: E) => Promise<void>;
-  /** Set status to IDLE */
+  setSuccess: (result: R) => void;
+  setError: (error: E) => void;
   setIdle: () => void;
 }
 
 /**
- * A React hook for managing promise state without execution logic
- * @template R - The type of result
- * @param options - Configuration options
- * @returns State management object
- *
- * @example
- * ```typescript
- * import { usePromiseState, PromiseStatus } from '@ahoo-wang/fetcher-react';
- *
- * function MyComponent() {
- *   const { status, loading, result, error, setSuccess, setError, setIdle } = usePromiseState<string>();
- *
- *   const handleSuccess = () => setSuccess('Data loaded');
- *   const handleError = () => setError(new Error('Failed to load'));
- *
- *   return (
- *     <div>
- *       <button onClick={handleSuccess}>Set Success</button>
- *       <button onClick={handleError}>Set Error</button>
- *       <button onClick={setIdle}>Reset</button>
- *       <p>Status: {status}</p>
- *       {loading && <p>Loading...</p>}
- *       {result && <p>Result: {result}</p>}
- *       {error && <p>Error: {error.message}</p>}
- *     </div>
- *   );
- * }
- * ```
+ * The state of one asynchronous operation: `idle`, `loading`, `success` or
+ * `error`, with its result or error. The setters are stable.
  */
 export function usePromiseState<R = unknown, E = FetcherError>(
-  options?: UsePromiseStateOptions<R, E>,
+  options?: UsePromiseStateOptions,
 ): UsePromiseStateReturn<R, E> {
-  const [status, setStatus] = useState<PromiseStatus>(
-    options?.initialStatus ?? PromiseStatus.IDLE,
-  );
-  const [result, setResult] = useState<R | undefined>(undefined);
-  const [error, setError] = useState<E | undefined>(undefined);
-  const isMounted = useMounted();
-  const latestOptions = useLatest(options);
-  const setLoadingFn = useCallback(() => {
-    if (isMounted()) {
-      setStatus(PromiseStatus.LOADING);
-      setError(undefined);
-    }
-  }, [isMounted]);
-
-  const setSuccessFn = useCallback(
-    async (result: R) => {
-      if (isMounted()) {
-        setResult(result);
-        setStatus(PromiseStatus.SUCCESS);
-        setError(undefined);
-        try {
-          await latestOptions.current?.onSuccess?.(result);
-        } catch (callbackError) {
-          // Log callback errors but don't affect state
-          console.warn('PromiseState onSuccess callback error:', callbackError);
-        }
-      }
-    },
-    [isMounted, latestOptions],
-  );
-
-  const setErrorFn = useCallback(
-    async (error: E) => {
-      if (isMounted()) {
-        setError(error);
-        setStatus(PromiseStatus.ERROR);
-        setResult(undefined);
-        try {
-          await latestOptions.current?.onError?.(error);
-        } catch (callbackError) {
-          // Log callback errors but don't affect state
-          console.warn('PromiseState onError callback error:', callbackError);
-        }
-      }
-    },
-    [isMounted, latestOptions],
-  );
-
-  const setIdleFn = useCallback(() => {
-    if (isMounted()) {
-      setStatus(PromiseStatus.IDLE);
-      setError(undefined);
-      setResult(undefined);
-    }
-  }, [isMounted]);
-  return useMemo(
-    () => ({
-      status,
-      loading: status === PromiseStatus.LOADING,
-      result,
-      error,
-      setLoading: setLoadingFn,
-      setSuccess: setSuccessFn,
-      setError: setErrorFn,
-      setIdle: setIdleFn,
+  const [state, dispatch] = useReducer(
+    promiseStateReducer<R, E>,
+    options?.initialStatus,
+    (initialStatus = PromiseStatus.IDLE): PromiseState<R, E> => ({
+      status: initialStatus,
+      loading: initialStatus === PromiseStatus.LOADING,
+      result: undefined,
+      error: undefined,
     }),
-    [status, result, error, setLoadingFn, setSuccessFn, setErrorFn, setIdleFn],
   );
+  const setLoading = useCallback(() => dispatch({ type: 'loading' }), []);
+  const setSuccess = useCallback(
+    (result: R) => dispatch({ type: 'success', result }),
+    [],
+  );
+  const setError = useCallback(
+    (error: E) => dispatch({ type: 'error', error }),
+    [],
+  );
+  const setIdle = useCallback(() => dispatch({ type: 'idle' }), []);
+  return { ...state, setLoading, setSuccess, setError, setIdle };
 }

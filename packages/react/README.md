@@ -9,8 +9,8 @@ security. Use them when a component should own async state and cancellation.
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-Install the peer package for each integration you import: event stream, event
-bus, storage, or CoSec.
+Install the peer package for each integration you import: event bus, storage,
+or CoSec.
 
 > **Wow query hooks have moved.** `useSingleQuery`, `useListQuery`,
 > `usePagedQuery`, `useCountQuery`, `useListStreamQuery` and the other Wow
@@ -27,39 +27,72 @@ bus, storage, or CoSec.
 
 ## Example
 
+A query lives in your own state; the hook runs it whenever its content
+changes and cancels the request it replaces.
+
 ```tsx
-import { ResultExtractors } from '@ahoo-wang/fetcher';
-import { useFetcher } from '@ahoo-wang/fetcher-react';
+import { useState } from 'react';
+import { useQuery } from '@ahoo-wang/fetcher-react';
 
-interface User {
-  id: string;
-  name: string;
-}
-
-export function UserProfile({ id }: { id: string }) {
-  const { loading, result, error, execute } = useFetcher<User>({
-    resultExtractor: ResultExtractors.Json,
+export function UserSearch() {
+  const [query, setQuery] = useState({ keyword: '' });
+  const { loading, result, error } = useQuery({
+    query,
+    execute: (query, abortController) =>
+      api.searchUsers(query, abortController),
   });
 
   return (
     <section>
-      <button
-        disabled={loading}
-        onClick={() => void execute({ url: `/api/users/${id}` })}
-      >
-        Load user
-      </button>
-      {error && <p role="alert">Unable to load user</p>}
-      {result && <p>{result.name}</p>}
+      <input
+        value={query.keyword}
+        onChange={e => setQuery({ keyword: e.target.value })}
+      />
+      {loading && <p>Searching…</p>}
+      {error && <p role="alert">Search failed</p>}
+      {result?.map(user => (
+        <p key={user.id}>{user.name}</p>
+      ))}
     </section>
+  );
+}
+```
+
+`execute` never rejects: it resolves to the state the request ended in, and
+to `idle` when a newer request, `abort()`, `reset()` or unmounting cancelled it.
+
+```tsx
+import { ResultExtractors } from '@ahoo-wang/fetcher';
+import { useFetcher } from '@ahoo-wang/fetcher-react';
+
+export function SaveButton({ user }: { user: User }) {
+  const { loading, execute } = useFetcher<User>({
+    resultExtractor: ResultExtractors.Json,
+  });
+
+  const save = async () => {
+    const { status, error } = await execute({
+      url: `/api/users/${user.id}`,
+      method: 'PUT',
+      body: user,
+    });
+    if (status === 'success') toast('Saved');
+    else if (status === 'error') toast(error.message);
+  };
+
+  return (
+    <button disabled={loading} onClick={() => void save()}>
+      Save
+    </button>
   );
 }
 ```
 
 ## Hooks by job
 
-- Async core: promise state, execution, query state, debounce, latest refs.
-- Fetcher: request execution, JSON queries, manual or debounced refresh.
+- Async core: promise state, cancellable execution, controlled queries,
+  debounced values and callbacks, latest refs.
+- Fetcher: request execution, JSON queries, debounced requests and queries.
 - API objects: derive execute/query hooks from promise-returning methods.
 - State: typed KeyStorage and event-bus subscriptions.
 - CoSec: security provider, user state, and route guards.
@@ -72,12 +105,12 @@ export function UserProfile({ id }: { id: string }) {
 
 [中文](./README.zh-CN.md) · [License](../../LICENSE)
 
-### Lightweight core entry
+### Subpath entries
 
-Generic hooks are also available through the ESM subpath `@ahoo-wang/fetcher-react/core`, including `useExecutePromise`, `useQuery`, and `useDebouncedCallback`. This entry avoids loading HTTP, security, storage and event integrations just to use core hooks. Existing root ESM/UMD exports remain unchanged.
-
-The fetcher hooks (`useFetcher`, `useFetcherQuery` and their debounced forms) are also available through `@ahoo-wang/fetcher-react/fetcher`. Its types and modules load no security, storage or event integration, which is what integrations built on these hooks — such as `@ahoo-wang/wow-react` — import.
-
-`useExecutePromise.abort()` invalidates the active request before cancellation callbacks run. A source that ignores AbortSignal cannot publish late success/error, and asynchronous onAbort callbacks cannot reorder newer executions.
-
-The root ESM entry and `/core` share the same core modules, including FullscreenContext; providers and hooks can be mixed across the two ESM entries. `pnpm test:package` verifies this on built artifacts and is included in `build`. `abort()` detaches the previous controller before notifying synchronous listeners, preserving cancellation of a replacement request started by a listener.
+The core hooks (`useExecutePromise`, `useQuery`, `useDebouncedQuery`, …) are
+also available from the ESM subpath `@ahoo-wang/fetcher-react/core`, and the
+fetcher hooks (`useFetcher`, `useFetcherQuery` and their debounced forms) from
+`@ahoo-wang/fetcher-react/fetcher`. Neither loads the security, storage or
+event-bus integration. The root entry shares their modules, so hooks from
+different entries can be mixed; `pnpm test:package` verifies this on the built
+artifacts and runs as part of `build`.

@@ -147,20 +147,23 @@ describe('createExecuteApiHooks', () => {
   });
 
   it('should pass useExecutePromiseOptions to underlying hook', async () => {
+    const error = new Error('Test Error');
     const errorApi = {
-      getUser: vi.fn((id: string) => Promise.reject(new Error('Test Error'))),
+      getUser: vi.fn((_id: string) => Promise.reject(error)),
     };
     const errorApiHooks = createExecuteApiHooks({ api: errorApi });
+    const onError = vi.fn();
 
     const { result: errorResult } = renderHook(() =>
-      errorApiHooks.useGetUser({ propagateError: true }),
+      errorApiHooks.useGetUser({ onError }),
     );
 
-    await expect(
-      act(async () => {
-        await errorResult.current.execute('user123');
-      }),
-    ).rejects.toThrow('Test Error');
+    let settled;
+    await act(async () => {
+      settled = await errorResult.current.execute('user123');
+    });
+    expect(settled).toMatchObject({ status: 'error', error });
+    expect(onError).toHaveBeenCalledExactlyOnceWith(error);
   });
 
   it('should handle empty API object', () => {
@@ -261,62 +264,6 @@ describe('createExecuteApiHooks', () => {
     });
   });
 
-  it('should call onBeforeExecute with abortController and parameters', async () => {
-    const customApi = {
-      getUser: vi.fn((id: string) => Promise.resolve({ id })),
-    };
-    const apiHooks = createExecuteApiHooks({ api: customApi });
-
-    let receivedController: AbortController | undefined;
-    let receivedArgs: any[] | undefined;
-
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({
-        onBeforeExecute: (abortController, args) => {
-          receivedController = abortController;
-          receivedArgs = [...args]; // Copy args before modification
-          // Modify args in place
-          if (args[0] === 'user123') {
-            args[0] = 'modified-user123';
-          }
-        },
-      }),
-    );
-
-    await act(async () => {
-      await result.current.execute('user123');
-    });
-
-    expect(receivedController).toBeInstanceOf(AbortController);
-    expect(receivedArgs).toEqual(['user123']); // Original args
-    expect(customApi.getUser).toHaveBeenCalledWith('modified-user123'); // Args were modified
-  });
-
-  it('should allow onBeforeExecute to inspect parameters without modification', async () => {
-    const customApi = {
-      getUser: vi.fn((id: string) => Promise.resolve({ id })),
-    };
-    const apiHooks = createExecuteApiHooks({ api: customApi });
-
-    const { result } = renderHook(() =>
-      apiHooks.useGetUser({
-        onBeforeExecute: (abortController, args) => {
-          // Just inspect, don't modify
-          expect(args).toEqual(['user123']);
-          expect(abortController).toBeInstanceOf(AbortController);
-        },
-      }),
-    );
-
-    await act(async () => {
-      await result.current.execute('user123');
-    });
-
-    expect(customApi.getUser).toHaveBeenCalledWith('user123'); // Args unchanged
-  });
-});
-
-describe('appendAbortController', () => {
   it('calls the method with its parameters only by default', async () => {
     const getUser = vi.fn(async (id: string) => id);
     const hooks = createExecuteApiHooks({ api: { getUser } });

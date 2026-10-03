@@ -31,7 +31,7 @@ description: 在失败实际发生的边界处理传输、HTTP、提取、Hook �
 
 ## Hook 改变错误到达组件的方式
 
-`useExecutePromise` 默认把错误存入状态。启用 `propagateError` 后会重新抛出一般错误；识别为 `AbortError` 的错误回到空闲状态。`execute()` 返回 `Promise<void>`，业务数据从 `result` 读取。新执行和卸载会取消 controller，但普通 Promise 必须配合 controller 才能停止工作。见 [packages/react/src/core/useExecutePromise.ts:265](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L265) 与 [React 请求指南](../guides/react/requests.md)。
+`useExecutePromise` 把错误存入状态，`execute()` 从不拒绝：它解析为执行结束时的状态（`success`、`error`，取消时为 `idle`），因此调用方按 `status` 分支而不是捕获异常。名为 `AbortError` 的错误（例如来自你自己的 signal）回到空闲状态。`onSuccess`/`onError` 只对当前执行调用；回调抛错通过 `console.error` 报告，不改变状态。新执行、`abort()`、`reset()` 和卸载会中止执行的 controller，但普通 Promise 必须配合 controller 才能停止工作。`useFetcher` 还会从 `ExchangeError` 暴露失败请求的 `exchange`，例如用于读取 404 状态。见 [packages/react/src/core/useExecutePromise.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L107) 与 [React 请求指南](../guides/react/requests.md)。
 
 ## 流与认证各有具体恢复契约
 

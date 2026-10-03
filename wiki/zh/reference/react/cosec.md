@@ -1,6 +1,6 @@
 ---
 title: '安全 Hook 与路由守卫'
-description: '安全 Hook 与路由守卫 — @ahoo-wang/fetcher-react 5.0.0'
+description: '安全 Hook 与路由守卫 — @ahoo-wang/fetcher-react 6.0.0'
 ---
 
 # 安全 Hook 与路由守卫
@@ -212,4 +212,4 @@ export interface RefreshableRouteGuardProps extends Omit<
 
 ## 相关专题
 
-[Fetcher 请求 Hook](./fetcher-hooks) · [Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [存储与事件订阅](./storage-and-events) · [ref、请求 ID 与全屏](./utilities)
+[Fetcher 请求 Hook](./fetcher-hooks) · [Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [存储与事件订阅](./storage-and-events) · [最新值与稳定值](./utilities)

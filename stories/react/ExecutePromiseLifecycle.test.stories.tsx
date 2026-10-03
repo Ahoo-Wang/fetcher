@@ -42,7 +42,7 @@ export const FirstLayoutEffect: Story = {
     const trace: string[] = [];
     const signals: AbortSignal[] = [];
     const successes: string[] = [];
-    const executions: Promise<void>[] = [];
+    const executions: Promise<unknown>[] = [];
     let savedExecute!: ReturnType<typeof useExecutePromise<string>>['execute'];
     let resolve!: (value: string) => void;
     const pending = new Promise<string>(done => {

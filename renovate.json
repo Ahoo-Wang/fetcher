@@ -10,6 +10,11 @@
   "prConcurrentLimit": 5,
   "packageRules": [
     {
+      "description": "A peer range is the oldest version a package supports, not the one it is developed with: widen it for a new major, never raise its floor",
+      "matchDepTypes": ["peerDependencies"],
+      "rangeStrategy": "widen"
+    },
+    {
       "description": "Group Spring ecosystem updates into a single PR",
       "matchPackagePatterns": ["^org\\.springframework"],
       "groupName": "spring"

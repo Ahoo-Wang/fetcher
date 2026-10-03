@@ -14,6 +14,7 @@ Use the React installation and mounting instructions in [the runnable example](.
 Save the following as `src/UserSearch.tsx` and mount `<UserSearch />` using the same React entry pattern:
 
 ```tsx
+import { useState } from 'react';
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { useFetcherQuery } from '@ahoo-wang/fetcher-react';
 
@@ -21,18 +22,19 @@ const api = new Fetcher({ baseURL: '/api' });
 type User = { id: string; name: string };
 
 export function UserSearch() {
+  const [query, setQuery] = useState({ name: '' });
   const search = useFetcherQuery<{ name: string }, User[]>({
     fetcher: api,
     url: '/users/search',
-    initialQuery: { name: '' },
-    autoExecute: true,
+    query,
   });
   return (
     <section>
       <label>
         Name
         <input
-          onChange={event => search.setQuery({ name: event.target.value })}
+          value={query.name}
+          onChange={event => setQuery({ name: event.target.value })}
         />
       </label>
       <button onClick={search.abort}>Cancel</button>
@@ -48,13 +50,13 @@ export function UserSearch() {
 }
 ```
 
-`useFetcherQuery` sends the query object as a POST body and defaults to JSON extraction. It is not a GET hook that appends the query to the URL. Use `useQuery` with your own executor when a different transport or service method is required; pass its third `AbortController` argument to the real operation.
+`useFetcherQuery` sends the query object as a POST body and defaults to JSON extraction. It is not a GET hook that appends the query to the URL. Use `useQuery` with your own executor when a different transport or service method is required; pass its second `AbortController` argument to the real operation.
 
 ## Verify query changes
 
 On mount the empty-name query loads all users. Enter Ada and inspect the network request: method POST, URL `/api/users/search`, body `{ "name": "Ada" }`. The output should contain Ada. Delay the first response and change the name; only the latest execution may publish its result.
 
-`initialQuery` supplies the initial value. Use `setQuery` for this uncontrolled input pattern; a controlled `query` prop lets the parent own query updates. `autoExecute` defaults to true, shown explicitly here. Set it false for an Apply button, call `setQuery(next)`, then `execute()` to run the current query. If neither `query` nor `initialQuery` is defined at initialization, no query executes. Changing a previously defined `query` prop to `undefined` retains the stored query and can trigger that old query again; it does not pause execution. Set `autoExecute: false` to pause automatic execution, and call `abort()` separately to cancel work already running. The query check only excludes `undefined`; validate business fields before sending.
+The query is controlled: it lives in your `useState` (or a URL, or a parent's state) and the hook re-executes when its content changes. Content is compared deeply, so recreating an equal object on every render does not resend. `autoExecute` defaults to true. For an Apply button, set `autoExecute: false`, update the query, then call `execute()` to send the current query. Pass `query: undefined` while a required input is missing: nothing is sent until it is defined. Neither `undefined` nor `autoExecute: false` cancels work already running; call `abort()` for that. `undefined` is the only "not ready" value; validate business fields before passing a query.
 
 ## Failure and lifetime
 

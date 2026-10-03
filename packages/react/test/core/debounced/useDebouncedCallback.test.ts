@@ -14,7 +14,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDebouncedCallback } from '../../../src';
-import { useDebouncedCallbackInternal } from '../../../src/core/debounced/useDebouncedCallback';
 
 describe('useDebouncedCallback', () => {
   beforeEach(() => {
@@ -401,27 +400,3 @@ it.each([true, 'event'] as const)(
     }
   },
 );
-
-it('internal cancellation starts a fresh leading window and keeps the run return value unchanged', () => {
-  vi.useFakeTimers();
-  vi.setSystemTime(1000);
-  const callback = vi.fn();
-  const { result, unmount } = renderHook(() =>
-    useDebouncedCallbackInternal(callback, {
-      delay: 100,
-      leading: true,
-      trailing: false,
-    }),
-  );
-  try {
-    act(() => {
-      expect(result.current.run('first')).toBeUndefined();
-      result.current.cancel(true);
-      expect(result.current.run('second')).toBeUndefined();
-    });
-    expect(callback.mock.calls).toEqual([['first'], ['second']]);
-  } finally {
-    unmount();
-    vi.useRealTimers();
-  }
-});

@@ -19,7 +19,7 @@ flowchart LR
   storage --> eventbus
   cosec --> fetcher & eventbus & storage
   openai --> fetcher & eventstream & decorator
-  react --> fetcher & eventstream & eventbus & storage & cosec
+  react --> fetcher & eventbus & storage & cosec
   openapi
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
@@ -31,7 +31,7 @@ flowchart LR
 | eventbus / eventstream | Event delivery / SSE processing; each peers with core                                                                          | [packages/eventbus/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L52), [packages/eventstream/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L53) |
 | storage / cosec        | Storage events / authentication protocol; additional state lifetime to own                                                     | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56), [packages/cosec/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L54)               |
 | openai                 | Service-specific runtime client using core, decorators, and streams                                                            | [packages/openai/package.json:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L59)                                                                                                                                   |
-| react                  | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies; `/core` and `/fetcher` subpaths | [packages/react/package.json:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L64)                                                                                                                                     |
+| react                  | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies; `/core` and `/fetcher` subpaths | [packages/react/package.json:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L74)                                                                                                                                     |
 | openapi                | OpenAPI 3 type vocabulary; neither sends requests nor validates input                                                          | [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)                                                                                                                                 |
 
 ## Installation is not execution
@@ -47,7 +47,7 @@ The Wow-coupled packages left this repository before 6.0. Their last releases fr
 | 5.x package                                     | From 6.0                                                                                            | Where to read                                                                                                                                                         |
 | ----------------------------------------------- | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `@ahoo-wang/fetcher-wow`                        | Wow repository, [`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)              | 5.x: [Wow guide](../guides/integrations/wow.md), [Wow reference](../reference/wow/index.md); from 6.0: [wow.ahoo.me](https://wow.ahoo.me)                             |
-| Wow query hooks in `@ahoo-wang/fetcher-react`   | Wow repository, built on `@ahoo-wang/fetcher-react/fetcher`                                         | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                                    |
+| Wow query hooks in `@ahoo-wang/fetcher-react`   | `@ahoo-wang/wow-react` in the Wow repository                                                        | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                                    |
 | `@ahoo-wang/fetcher-generator`                  | Wow repository                                                                                      | 5.x: [generated client](../guides/services/generated-client.md), [generator reference](../reference/generator/index.md); from 6.0: [wow.ahoo.me](https://wow.ahoo.me) |
 | `@ahoo-wang/fetcher-viewer`, data-monitor hooks | Frozen in 5.x; superseded by `@ahoo-wang/wow-view-engine` in the Wow repository (not yet published) | 5.x: [Viewer guides](../guides/viewer/index.md), [Viewer reference](../reference/viewer/index.md)                                                                     |
 
