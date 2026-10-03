@@ -43,7 +43,7 @@ Removed from `@ahoo-wang/fetcher-react` in 6.0:
 ## 3. Rewrite, in this order
 
 1. Pin `@ahoo-wang/fetcher-react@5.1.3` — the first version whose `@ahoo-wang/fetcher-wow` peer is optional, and the first with the `/fetcher` subpath.
-2. Only when the Wow packages are published: remove `@ahoo-wang/fetcher-wow` and `@ahoo-wang/fetcher-generator`, add the Wow packages at the version `npm view` reported, and move imports (`references/api.md` has the diffs). They accept fetcher `^5.1.0 || ^6` — confirm with `npm view @ahoo-wang/wow-client peerDependencies` — so the app keeps working on 5.x.
+2. Only when the Wow packages are published: remove `@ahoo-wang/fetcher-wow` and `@ahoo-wang/fetcher-generator`, add the Wow packages at the version `npm view` reported, and move imports (`references/api.md` has the diffs). Their fetcher peer range covers the latest 5.x, so the app keeps working on 5.x; check that it also covers `^6` before step 3 with `npm view @ahoo-wang/wow-client peerDependencies`.
 3. Replace the `fetcher-generator` command with `wow-generator` (`fetcher-generator` stays an alias until Wow v10), then **regenerate** clients: code generated earlier imports `@ahoo-wang/fetcher-wow`; the new generator emits `@ahoo-wang/wow-client`. If regeneration is impossible, rewrite that import.
 4. Upgrade the remaining `@ahoo-wang/fetcher*` packages to `^6.0.0` together, and rewrite fetcher-react hook calls (3b).
 5. Verify: type-check, run tests, and re-run the grep checklist until it finds nothing.

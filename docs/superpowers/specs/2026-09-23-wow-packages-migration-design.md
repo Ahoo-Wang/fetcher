@@ -4,7 +4,7 @@
 
 方案已与用户逐条确认（2026-09-23），经两轮自审，补充项均已并入。执行见「时机与步骤」。
 
-**进度（2026-09-26）**：第 0～3′ 步全部完成（fetcher #1899、#1905；Wow #3284、#3292），本地清理已做。5.x 维护线已发 v5.1.3（第 0 步）、v5.1.4（类型声明在 node16/nodenext 与 CommonJS 下可解析，#1917）、v5.1.5（eventstream 的 Response 增强可跨 `.d.ts`/`.d.cts` 合并、viewer 声明只从 antd 根导入，#1921、#1922）；5.x 的发版准入不要求 Codacy（#1919）。**下一步是第 4a 步**，等 Wow 首个稳定版与 `wow-project-template` 切换后执行，发版当天的清单与说明草稿在 `docs/releases/v6.0.0.md`。Wow 侧的实时进度以 Wow 仓 `typescript/MIGRATION.md` 为准。
+**进度（2026-10-03）**：第 0～3′ 步全部完成（fetcher #1899、#1905；Wow #3284、#3292），本地清理已做。5.x 维护线已发 v5.1.3（第 0 步）、v5.1.4（类型声明在 node16/nodenext 与 CommonJS 下可解析，#1917）、v5.1.5（eventstream 的 Response 增强可跨 `.d.ts`/`.d.cts` 合并、viewer 声明只从 antd 根导入，#1921、#1922）；5.x 的发版准入不要求 Codacy（#1919）。main 上的 6.0 又合入一轮按第一性原理的审查与重构：fetcher-react 围绕取消重新设计（#1956，破坏性，已获用户认可）、fetcher 核心的错误契约与可注入 `fetch`（#1957）、其余各包的缺陷修复（#1958）、cosec 刷新不可达时保留会话与 eventbus 只关自己创建的 messenger（#1959），全部写进 `docs/releases/v6.0.0.md`。**下一步仍是第 4a 步**，等 Wow 首个稳定版与 `wow-project-template` 切换后执行，发版当天的清单与说明草稿在 `docs/releases/v6.0.0.md`；发版前的两项阻塞见该文件清单（Wow 的 peer 范围未含 `^6`、`downstream-wow.yml` 在 Wow 侧失败）。Wow 侧的实时进度以 Wow 仓 `typescript/MIGRATION.md` 为准。
 
 - Fetcher 基线：`2f47af0f7`（#1849）。Wow 基线：`8eb3fe580`（#3277），版本 `9.1.5`。
 - 耦合度：2026-03 以来 wow 相关路径（`packages/wow`、`view-engine`、`generator`、`viewer`、`react/src/wow`、`react/src/dataMonitor`）共 547 个非合并提交，其中只有 13 个同时改了核心包源码（约 2.4%）；view-engine 的 341 个提交里只有 4 个动了别的包。
@@ -66,7 +66,7 @@ Wow/
   - fetcher 6.0 只做删除，不带核心 API 的破坏性改动（有的话留到 7.0），否则 `^6` 这个范围就不成立；
   - 迁移窗口里先发一个 fetcher 5.x 补丁（5.1.3），把 fetcher-react 对 fetcher-wow 的 peer 依赖标成可选（`peerDependenciesMeta`），并新增子路径 `/fetcher`（见下一条）。否则装 wow-react 会连带装上 fetcher-wow，项目里就有两份 Wow 类型和两套同名的查询 hook。
 - **Wow 内部包之间**（比如 view-engine 依赖 wow-client）也用 peer 依赖，范围写 `workspace:~`，发布后是 `~x.y.z`，即同一个小版本内兼容。现在 view-engine 对 fetcher-wow 是普通依赖、范围是 `^`，迁移时一起改。
-- 拆出去的 `wow-react` 只依赖 fetcher-react 的 `core` 和 `fetcher` 两处。`core` 早有子路径 `@ahoo-wang/fetcher-react/core`；`fetcher`（`useFetcher`、`useFetcherQuery` 等）原来只能从根入口拿到，而根入口的类型声明引用 `@ahoo-wang/fetcher-wow`、还导出一套与 wow-react 同名的查询 hook。所以第 0 步的 5.x 补丁新增子路径 `@ahoo-wang/fetcher-react/fetcher`（构建产物校验它不加载任何集成），**wow-react 只从 `/core` 与 `/fetcher` 两个子路径导入**，peer 依赖写 `^5.1.3 || ^6`。（2026-09-24 准备第 0 步时补上；运行时根入口对 fetcher-wow 只有 `import type`，不装它也不会找不到模块，问题只在类型层。）
+- 拆出去的 `wow-react` 只依赖 fetcher-react 的 `core` 和 `fetcher` 两处。`core` 早有子路径 `@ahoo-wang/fetcher-react/core`；`fetcher`（`useFetcher`、`useFetcherQuery` 等）原来只能从根入口拿到，而根入口的类型声明引用 `@ahoo-wang/fetcher-wow`、还导出一套与 wow-react 同名的查询 hook。所以第 0 步的 5.x 补丁新增子路径 `@ahoo-wang/fetcher-react/fetcher`（构建产物校验它不加载任何集成），**wow-react 只从 `/core` 与 `/fetcher` 两个子路径导入**，peer 依赖写 `^5.1.3 || ^6`。（2026-09-24 准备第 0 步时补上；运行时根入口对 fetcher-wow 只有 `import type`，不装它也不会找不到模块，问题只在类型层。）（**已被取代**，2026-10：wow-react 改用自有请求状态机，不再依赖 fetcher-react，见 Wow 仓 `typescript/wow-react/docs/design/refactor-2026-09.md`；fetcher-react 6.0 随后按 #1956 重新设计，`downstream-wow.yml` 也不再监听 `packages/react`。）
 
 ## 发布策略
 
@@ -137,7 +137,7 @@ renovate 把 `@ahoo-wang/fetcher*` 归成一组来升级。
 ### fetcher 仓
 
 - `ci.yml` 的 suite 只剩 `core`；删掉 `generator-test.yml`；`integration-test` 只保留核心包的用例。decorator、fetcher、openai 的用例继续拿 wow-example-server 镜像当普通 HTTP 后端，这种测试时的依赖可以接受。
-- 新增 `downstream-wow.yml`：改到 Wow 会用到的核心包时触发（fetcher、decorator、eventstream、react/core、openapi）。它 checkout Wow，通过 `pnpm overrides` 把依赖链接到这次 PR 的构建产物，然后跑 Wow 的 JS 单测和类型检查。一开始只作提示，不作为必须通过的检查。
+- 新增 `downstream-wow.yml`：改到 Wow 会用到的核心包时触发（fetcher、decorator、eventstream、openapi；react/core 已于 #1956 移出，wow-react 不再依赖 fetcher-react）。它 checkout Wow，通过 `pnpm overrides` 把依赖链接到这次 PR 的构建产物，然后跑 Wow 的 JS 单测和类型检查。一开始只作提示，不作为必须通过的检查。
 - 发版准入检查要求的五条流水线（`ci.yml`、`quality.yml`、`build-storybook.yml`、`integration-test.yml`、`generator-test.yml`）分支过滤都加上 `5.x`，否则 5.x 分支的提交没有这些 push 运行，发版准入检查就过不去（`release-admission.mjs` 的 `requiredWorkflows`；3′ 删掉 `generator-test.yml` 时要从这张表里一起拿掉）。
 - fetcher 6.0 发布以后，`5.x` 的补丁一律加 `--tag release-5` 发布（现在的 `publish-npm.sh` 没有指定 dist-tag；`v5` 会被 npm 拒收，见「发布策略」），否则会把 `latest` 改回 5.x。这一改在 `5.x` 分支上、随第 4a 步做：6.0 发布之前 5.x 的补丁仍发到 `latest`。
 
