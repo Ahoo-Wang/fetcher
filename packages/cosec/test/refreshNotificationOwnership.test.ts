@@ -11,7 +11,12 @@
  * limitations under the License.
  */
 
-import { Fetcher, deleteHeader, type FetchExchange } from '@ahoo-wang/fetcher';
+import {
+  ExchangeError,
+  Fetcher,
+  deleteHeader,
+  type FetchExchange,
+} from '@ahoo-wang/fetcher';
 import { InMemoryStorage } from '@ahoo-wang/fetcher-storage';
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 import {
@@ -187,7 +192,10 @@ describe('shared refresh notification ownership', () => {
             : 'RefreshTokenError',
         );
         if (outcome !== 'resolve') {
-          expect(result.exchange.error.cause).toBe(callbackError);
+          // The refresh request rejects with an ExchangeError, as every
+          // fetcher exchange does; the callback's error is its cause.
+          expect(result.exchange.error.cause).toBeInstanceOf(ExchangeError);
+          expect(result.exchange.error.cause.cause).toBe(callbackError);
         }
       }
       if (outcome === 'sign-in-reject') {

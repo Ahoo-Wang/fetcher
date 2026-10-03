@@ -15,7 +15,7 @@ description: 在失败实际发生的边界处理传输、HTTP、提取、Hook �
 | 错误拦截器自身抛错 | 从错误处理直接传播                                                                        | 不假设所有拒绝都是 `ExchangeError`                |
 | SSE 读取/转换失败  | 异步迭代流期间                                                                            | 处理部分输出并释放 reader                         |
 
-默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:170](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L170)；包装、原样抛出与恢复见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)；提取见 [packages/fetcher/src/fetcher.ts:240](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L240) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。状态失败直接满足 `instanceof HttpStatusValidationError`。超时或网络失败会被包装，仅在外层检查 `instanceof FetchTimeoutError` 会遗漏；应检查 `ExchangeError` 的 cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
+默认状态验证见 [packages/fetcher/src/validateStatusInterceptor.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L169)；包装、原样抛出与恢复见 [packages/fetcher/src/interceptorManager.ts:204](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L204)；提取见 [packages/fetcher/src/fetcher.ts:246](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L246) 和 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69)。状态失败直接满足 `instanceof HttpStatusValidationError`。超时或网络失败会被包装，仅在外层检查 `instanceof FetchTimeoutError` 会遗漏；应检查 `ExchangeError` 的 cause，见[失败指南](../guides/http/failures.md)和[错误参考](../reference/fetcher/errors-and-cancellation.md)。
 
 ## 超时与取消是不同控制
 
@@ -25,7 +25,7 @@ description: 在失败实际发生的边界处理传输、HTTP、提取、Hook �
 | 两者都未提供，开启超时                       | 库用自己的 timer 取消 Fetch                                   | 库清理 timer；不写入请求对象                                |
 | 关闭超时                                     | 原生 Fetch，若提供 `signal` 或 `abortController` 则由它们取消 | 调用方                                                      |
 
-组合实现见 [packages/fetcher/src/timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。超时以 `FetchTimeoutError` 拒绝；调用方取消以调用方的 abort reason 拒绝。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
+组合实现见 [packages/fetcher/src/timeout.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L184)。timer 在 Fetch 竞争结束时清除，不等待后续 `response.json()` 或整个 SSE 流完成。超时以 `FetchTimeoutError` 拒绝；调用方取消以调用方的 abort reason 拒绝。需要完整操作截止时间时，应自行管理 signal 和完整消费生命周期。步骤见[取消指南](../guides/http/cancellation.md)。
 
 取消不会回滚服务端已接收的写操作。超时或丢失响应后重试前，应依据端点的幂等与结果核对契约。
 

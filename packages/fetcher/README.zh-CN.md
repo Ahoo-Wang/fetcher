@@ -44,6 +44,7 @@ const user = await api.get<User>(
 - 客户端和单次请求超时，并支持 Abort。
 - 自定义状态校验和类型化 Fetcher 错误。
 - 多后端场景下的命名 Fetcher 注册。
+- `fetch` 选项，供自带 `fetch` 的运行时、框架或测试使用。
 
 ## 文档
 

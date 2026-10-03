@@ -560,7 +560,11 @@ spaceIdStorage.set('workspace-alpha'); // cross-tab synchronized
 Error interceptors only run when the exchange threw — for a 401/403 that means
 the built-in `ValidateStatusInterceptor` rejected the status. Neither CoSec
 error interceptor clears `exchange.error`, so the original call still rejects
-with `ExchangeError` after the callback runs.
+with `ExchangeError` after the callback runs. If `onUnauthorized`/`onForbidden`
+throws, its error becomes `exchange.error` and the call rejects with an
+`ExchangeError` whose `cause` is the callback error. When that happens on the
+refresh request itself, the resulting `RefreshTokenError.cause` is the refresh
+request's `ExchangeError` (its `cause` is the callback error).
 
 ### UnauthorizedErrorInterceptor (401)
 

@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FetcherError } from '../src';
+import { ExchangeError, Fetcher, FetcherError } from '../src';
 
 describe('FetcherError', () => {
   it('should create FetcherError with default message', () => {
@@ -44,9 +44,19 @@ describe('FetcherError', () => {
     expect(error.cause).toBe(cause);
   });
 
-  it('should copy stack trace from cause', () => {
+  it('keeps its own stack and the original failure on cause', () => {
     const cause = new Error('Cause error');
     const error = new FetcherError(undefined, cause);
-    expect(error.stack).toBe(cause.stack);
+    expect(error.stack?.split('\n')[0]).toBe('FetcherError: Cause error');
+    expect(error.cause).toBe(cause);
+  });
+
+  it('can be subclassed without resetting the prototype', () => {
+    class AppError extends FetcherError {}
+    class AppExchangeError extends ExchangeError {}
+    const exchange = new Fetcher().resolveExchange({ url: '/x' });
+    expect(new AppError('a')).toBeInstanceOf(AppError);
+    expect(new AppExchangeError(exchange)).toBeInstanceOf(AppExchangeError);
+    expect(new AppExchangeError(exchange)).toBeInstanceOf(FetcherError);
   });
 });

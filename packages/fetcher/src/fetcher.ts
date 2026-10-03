@@ -12,8 +12,11 @@
  */
 
 import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
-import { resolveTimeout, type TimeoutCapable } from './timeout.js';
-import type { AttributesCapable } from './fetchExchange.js';
+import {
+  resolveTimeout,
+  type FetchImplementation,
+  type TimeoutCapable,
+} from './timeout.js';
 import { FetchExchange } from './fetchExchange.js';
 import type {
   BaseURLCapable,
@@ -25,10 +28,13 @@ import type {
 import { HttpMethod } from './fetchRequest.js';
 import { InterceptorManager } from './interceptorManager.js';
 import type { UrlTemplateStyle } from './urlTemplateResolver.js';
-import type { ResultExtractorCapable } from './resultExtractor.js';
-import { ResultExtractors } from './resultExtractor.js';
-import { mergeRequestOptions } from './mergeRequest.js';
 import { mergeHeaders } from './requestHeaders.js';
+import type { RequestOptions } from './requestOptions.js';
+import {
+  DEFAULT_FETCH_OPTIONS,
+  DEFAULT_REQUEST_OPTIONS,
+  mergeRequestOptions,
+} from './requestOptions.js';
 import type { ValidateStatus } from './validateStatusInterceptor.js';
 
 /**
@@ -77,6 +83,18 @@ export interface FetcherOptions
    * validateStatus: (status) => status === 200
    */
   validateStatus?: ValidateStatus;
+
+  /**
+   * The `fetch` to send requests with, for a runtime or framework that
+   * supplies its own, or a test. Read at call time, the global `fetch` by
+   * default. Like `validateStatus`, it configures the default interceptors,
+   * so it has no effect if a custom InterceptorManager is provided via
+   * `interceptors`.
+   *
+   * @example
+   * new Fetcher({ baseURL, fetch: (input, init) => tauriFetch(input, init) });
+   */
+  fetch?: FetchImplementation;
 }
 
 // No default Content-Type: it describes a body, so the RequestBodyInterceptor
@@ -87,19 +105,6 @@ const DEFAULT_HEADERS: RequestHeaders = {};
 export const DEFAULT_OPTIONS: FetcherOptions = {
   baseURL: '',
   headers: DEFAULT_HEADERS,
-};
-
-/**
- * Options for individual requests.
- */
-export interface RequestOptions
-  extends AttributesCapable, ResultExtractorCapable {}
-
-export const DEFAULT_REQUEST_OPTIONS: RequestOptions = {
-  resultExtractor: ResultExtractors.Exchange,
-};
-export const DEFAULT_FETCH_OPTIONS: RequestOptions = {
-  resultExtractor: ResultExtractors.Response,
 };
 
 /**
@@ -148,7 +153,8 @@ export class Fetcher
     this.headers = mergeHeaders(options.headers ?? DEFAULT_HEADERS);
     this.timeout = options.timeout;
     this.interceptors =
-      options.interceptors ?? new InterceptorManager(options.validateStatus);
+      options.interceptors ??
+      new InterceptorManager(options.validateStatus, options.fetch);
   }
 
   /**
@@ -298,15 +304,7 @@ export class Fetcher
     request: FetchRequestInit = {},
     options?: RequestOptions,
   ): Promise<R> {
-    const mergedRequest: FetchRequest = {
-      ...request,
-      url,
-      method,
-    };
-    return await this.request(
-      mergedRequest,
-      mergeRequestOptions(DEFAULT_FETCH_OPTIONS, options),
-    );
+    return await this.fetch<R>(url, { ...request, method }, options);
   }
 
   /**

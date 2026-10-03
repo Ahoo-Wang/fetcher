@@ -121,7 +121,7 @@ Key FetchExchange methods:
 
 1. **Request phase** -- request interceptors in ascending `order`. `RequestBodyInterceptor` (`Number.MIN_SAFE_INTEGER + 10000`) runs before any interceptor with an ordinary order, so a plain object you assign to `request.body` in your own request interceptor is **not** JSON-serialized. Your interceptor still sees the unresolved template URL and `urlParams` (use `ensureRequestUrlParams()` to add path/query values); `UrlResolveInterceptor` then builds the final URL and sets `urlParams` to `undefined`, and `FetchInterceptor` performs the fetch.
 2. **Response phase** -- response interceptors (including `ValidateStatusInterceptor`), only if the request phase did not throw.
-3. **Error phase** -- if either phase threw, the thrown value is stored in `exchange.error` and error interceptors run. If they clear `exchange.error`, the exchange is returned as recovered **without re-running the response phase**; otherwise the exchange rejects: an `ExchangeError` raised for this same exchange (`HttpStatusValidationError`) is rethrown as is, anything else is wrapped in `new ExchangeError(exchange)` with the original as `cause`. `hasError()` is true unless `exchange.error` is `undefined` or `null`.
+3. **Error phase** -- if either phase threw, the thrown value is stored in `exchange.error` and error interceptors run. If they clear `exchange.error`, the exchange is returned as recovered **without re-running the response phase**; otherwise the exchange rejects: an `ExchangeError` raised for this same exchange (`HttpStatusValidationError`) is rethrown as is, anything else is wrapped in `new ExchangeError(exchange)` with the original as `cause`. An error interceptor that throws (or a callback it runs) stops the error phase — later error interceptors do not run — and its throw becomes `exchange.error`, wrapped the same way. `hasError()` is true unless `exchange.error` is `undefined` or `null`.
 
 ```text
 // InterceptorRegistry methods
@@ -504,16 +504,17 @@ export const userService = {
 
 ### Constructor Options
 
-| Option             | Type                          | Default                         | Description                                                                                                                                                    |
-| ------------------ | ----------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseURL`          | `string`                      | `''`                            | Base URL; **required** in the `FetcherOptions` type whenever you pass options                                                                                  |
-| `timeout`          | `number`                      | `undefined`                     | Timeout in ms (undefined = no timeout)                                                                                                                         |
-| `headers`          | `RequestHeaders`              | `{}`                            | Default headers, merged under request headers; no `Content-Type` by default (`RequestBodyInterceptor` sets it from the body); each instance keeps its own copy |
-| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                   | Path param style                                                                                                                                               |
-| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300` | Status validation¹                                                                                                                                             |
-| `interceptors`     | `InterceptorManager`          | new InterceptorManager()        | Custom interceptor manager                                                                                                                                     |
+| Option             | Type                          | Default                            | Description                                                                                                                                                    |
+| ------------------ | ----------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL`          | `string`                      | `''`                               | Base URL; **required** in the `FetcherOptions` type whenever you pass options                                                                                  |
+| `timeout`          | `number`                      | `undefined`                        | Timeout in ms (undefined = no timeout)                                                                                                                         |
+| `headers`          | `RequestHeaders`              | `{}`                               | Default headers, merged under request headers; no `Content-Type` by default (`RequestBodyInterceptor` sets it from the body); each instance keeps its own copy |
+| `urlTemplateStyle` | `UrlTemplateStyle`            | `UriTemplate`                      | Path param style                                                                                                                                               |
+| `validateStatus`   | `(status: number) => boolean` | `status >= 200 && status < 300`    | Status validation¹                                                                                                                                             |
+| `interceptors`     | `InterceptorManager`          | new InterceptorManager()           | Custom interceptor manager                                                                                                                                     |
+| `fetch`            | `FetchImplementation`         | global `fetch` (read at call time) | The `fetch` that sends requests, for runtimes/frameworks that supply their own (Tauri, instrumentation) or tests; timeouts and signals still apply¹            |
 
-¹ `validateStatus` has no effect when a custom `interceptors` manager is provided — the default `ValidateStatusInterceptor` is only installed by the default manager. Register it yourself in that case.
+¹ `validateStatus` and `fetch` have no effect when a custom `interceptors` manager is provided — they configure the default manager's `ValidateStatusInterceptor` and `FetchInterceptor`. Build the manager with them yourself in that case: `new InterceptorManager(validateStatus, fetchImplementation)`.
 
 ### Request Cancellation
 

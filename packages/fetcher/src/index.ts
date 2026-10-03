@@ -13,6 +13,7 @@
 
 export * from './fetcher.js';
 export * from './fetcherCapable.js';
+export * from './fetcherConfigurer.js';
 export * from './fetcherError.js';
 export * from './fetcherRegistrar.js';
 export * from './fetchExchange.js';
@@ -24,6 +25,8 @@ export * from './mergeRequest.js';
 export * from './namedFetcher.js';
 export * from './orderedCapable.js';
 export * from './requestBodyInterceptor.js';
+export * from './requestOptions.js';
+export * from './responseJson.js';
 export * from './resultExtractor.js';
 export * from './timeout.js';
 export * from './types.js';

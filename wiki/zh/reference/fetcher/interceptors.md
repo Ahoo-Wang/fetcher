@@ -15,20 +15,20 @@ description: '拦截器管线 — @ahoo-wang/fetcher 5.0.0'
 
 ## 内置阶段 {#pipeline}
 
-| 注册表 / 实现                         | 导出的顺序值                                                   | 效果                                           |
-| ------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
-| request：`RequestBodyInterceptor`     | `REQUEST_BODY_INTERCEPTOR_ORDER = MIN_SAFE_INTEGER + 10000`    | 规范化正文与 Content-Type。                    |
-| request：`UrlResolveInterceptor`      | `URL_RESOLVE_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 20000`     | 解析基础路径、路径参数、查询，清空 urlParams。 |
-| request：`FetchInterceptor`           | `FETCH_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000`           | 等待 `timeoutFetch` 并赋值 response。          |
-| response：`ValidateStatusInterceptor` | `VALIDATE_STATUS_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000` | 除非绕过，否则拒绝不接受的状态。               |
+| 注册表 / 实现                         | 导出的顺序值                                                   | 效果                                                   |
+| ------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------ |
+| request：`RequestBodyInterceptor`     | `REQUEST_BODY_INTERCEPTOR_ORDER = MIN_SAFE_INTEGER + 10000`    | 规范化正文与 Content-Type。                            |
+| request：`UrlResolveInterceptor`      | `URL_RESOLVE_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 20000`     | 解析基础路径、路径参数、查询，清空 urlParams。         |
+| request：`FetchInterceptor`           | `FETCH_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000`           | 用配置的 `fetch` 等待 `timeoutFetch` 并赋值 response。 |
+| response：`ValidateStatusInterceptor` | `VALIDATE_STATUS_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000` | 除非绕过，否则拒绝不接受的状态。                       |
 
 对应 `*_INTERCEPTOR_NAME` 等于实现类名。order 为零的请求拦截器看到已规范化正文、尚未解析的 URL；order 为零的响应拦截器在默认状态校验之前运行。移除 FetchInterceptor 后不再执行内置 HTTP I/O；`clear()` 并非只移除自定义钩子。
 
 ## 失败与恢复 {#recovery}
 
-`new InterceptorManager(validateStatus?)` 创建上述请求/响应注册表和空错误注册表。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
+`new InterceptorManager(validateStatus?, fetchImplementation?)` 创建上述请求/响应注册表和空错误注册表；`fetchImplementation` 传给 `new FetchInterceptor(fetchImplementation?)`，省略时在调用时读取全局 `fetch` 发送。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
 
-错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误链自身抛错会直接传出，后续错误拦截器不再执行。错误拦截器不自动重试，提取器失败发生在此管理器之外。
+错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误拦截器（或它运行的回调）抛错会终止错误链，后续错误拦截器不再执行；抛出的值成为 `exchange.error`，exchange 与其他失败一样以 `ExchangeError` 拒绝，`cause` 为该值。错误拦截器不自动重试，提取器失败发生在此管理器之外。
 
 共享客户端中的拦截器会一直保留直到移除。使用独立稳定名称，并在所有者结束时移除请求专属埋点；不要每次请求都追加新拦截器。
 
@@ -62,7 +62,7 @@ console.assert(client.interceptors.request.eject('trace'));
 | <a id="responseinterceptor"></a>`ResponseInterceptor`                         | [interceptor.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L135)                     |
 | <a id="errorinterceptor"></a>`ErrorInterceptor`                               | [interceptor.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L164)                     |
 | <a id="interceptorregistry"></a>`InterceptorRegistry`                         | [interceptor.ts:189](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L189)                     |
-| <a id="interceptormanager"></a>`InterceptorManager`                           | [interceptorManager.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L48)         |
+| <a id="interceptormanager"></a>`InterceptorManager`                           | [interceptorManager.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L49)         |
 | <a id="orderedcapable"></a>`OrderedCapable`                                   | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                 |
 | <a id="sortorder"></a>`sortOrder`                                             | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                 |
 | <a id="tosorted"></a>`toSorted`                                               | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                 |

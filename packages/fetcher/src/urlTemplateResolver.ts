@@ -187,12 +187,9 @@ export function urlTemplateRegexExtract(
   urlTemplate: string,
   pathParamRegex: RegExp,
 ): string[] {
-  const matches: string[] = [];
-  let match;
-  while ((match = pathParamRegex.exec(urlTemplate)) !== null) {
-    matches.push(match[1]);
-  }
-  return matches;
+  // matchAll iterates a copy of the regex, so the shared global regexes keep
+  // no `lastIndex` state between calls.
+  return Array.from(urlTemplate.matchAll(pathParamRegex), match => match[1]);
 }
 
 /**

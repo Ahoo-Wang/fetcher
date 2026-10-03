@@ -6,7 +6,7 @@ description: Choose the smallest client layer and identify the responsibilities 
 
 # Architecture and choices
 
-Start with the layer that solves your current problem. `Fetcher` sends HTTP requests and provides shared defaults, interceptors, and result extraction. It does not require React, a Wow backend, or an authentication service. Its configuration and request pipeline live in [packages/fetcher/src/fetcher.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L145).
+Start with the layer that solves your current problem. `Fetcher` sends HTTP requests and provides shared defaults, interceptors, and result extraction. It does not require React, a Wow backend, or an authentication service. Its configuration and request pipeline live in [packages/fetcher/src/fetcher.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L150).
 
 | Your decision                             | Read                                                | What you will decide                                                   |
 | ----------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------- |

@@ -45,6 +45,7 @@ const user = await api.get<User>(
 - Client and request-level timeouts with abort support.
 - Custom status validation and typed Fetcher errors.
 - Named Fetcher registration for multiple backends.
+- A `fetch` option for runtimes, frameworks, or tests that supply their own.
 
 ## Documentation
 

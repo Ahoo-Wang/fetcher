@@ -6,7 +6,7 @@ description: 选择满足当前需求的最小客户端层，并明确应用仍�
 
 # 架构与选型
 
-从解决当前问题的一层开始。`Fetcher` 发送 HTTP 请求，提供共享默认配置、拦截器和结果提取；它不要求 React、Wow 后端或认证服务。配置与请求管线见 [packages/fetcher/src/fetcher.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L145)。
+从解决当前问题的一层开始。`Fetcher` 发送 HTTP 请求，提供共享默认配置、拦截器和结果提取；它不要求 React、Wow 后端或认证服务。配置与请求管线见 [packages/fetcher/src/fetcher.ts:150](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L150)。
 
 | 需要决定什么         | 阅读                                   | 决策结果                                   |
 | -------------------- | -------------------------------------- | ------------------------------------------ |

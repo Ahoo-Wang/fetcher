@@ -79,8 +79,8 @@ console.assert(first === second && first.name === 'Ada');
 | <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106) |
 | <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120) |
 | <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131) |
-| <a id="partialby"></a>`PartialBy`                                   | [types.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L33)                       |
-| <a id="requiredby"></a>`RequiredBy`                                 | [types.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L52)                       |
-| <a id="removereadonlyfields"></a>`RemoveReadonlyFields`             | [types.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L85)                       |
+| <a id="partialby"></a>`PartialBy`                                   | [types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L31)                       |
+| <a id="requiredby"></a>`RequiredBy`                                 | [types.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L50)                       |
+| <a id="removereadonlyfields"></a>`RemoveReadonlyFields`             | [types.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L83)                       |
 
 [包索引](./index.md)
