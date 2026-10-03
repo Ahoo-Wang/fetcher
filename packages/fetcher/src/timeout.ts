@@ -49,8 +49,6 @@ export class FetchTimeoutError extends FetcherError {
     super(message);
     this.name = 'FetchTimeoutError';
     this.request = request;
-    // Fix prototype chain
-    Object.setPrototypeOf(this, FetchTimeoutError.prototype);
   }
 }
 
@@ -128,6 +126,26 @@ function anySignal(signals: AbortSignal[]): {
 }
 
 /**
+ * A `fetch`-compatible function: the global `fetch` by default, or one a
+ * runtime, framework or test supplies (see `FetcherOptions.fetch`).
+ */
+export type FetchImplementation = (
+  input: string,
+  init?: RequestInit,
+) => Promise<Response>;
+
+/** The `RequestInit` part of a request: fetcher-only fields left out. */
+function toRequestInit(request: FetchRequest, signal?: AbortSignal) {
+  // The body is serialized by now (RequestBodyInterceptor).
+  const init: Partial<FetchRequest> = { ...request, signal };
+  delete init.url;
+  delete init.timeout;
+  delete init.urlParams;
+  delete init.abortController;
+  return init as RequestInit;
+}
+
+/**
  * Executes an HTTP request, applying every cancellation source at once.
  *
  * The request is aborted by whichever comes first:
@@ -143,6 +161,7 @@ function anySignal(signals: AbortSignal[]): {
  * be sent again.
  *
  * @param request - The request configuration including URL, method, headers, body, and optional timeout
+ * @param fetchImplementation - The `fetch` to send it with; the global `fetch`, read at call time, by default
  * @returns Promise that resolves to the Response object
  * @throws FetchTimeoutError if the request times out
  * @throws The abort reason of the caller's signal or controller when it aborts
@@ -162,8 +181,12 @@ function anySignal(signals: AbortSignal[]): {
  * }
  * ```
  */
-export async function timeoutFetch(request: FetchRequest): Promise<Response> {
+export async function timeoutFetch(
+  request: FetchRequest,
+  fetchImplementation?: FetchImplementation,
+): Promise<Response> {
   const { url, timeout } = request;
+  const send = fetchImplementation ?? fetch;
   const signals: AbortSignal[] = [];
   if (request.signal) signals.push(request.signal);
   if (request.abortController) signals.push(request.abortController.signal);
@@ -171,7 +194,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   if (!timeout || timeout <= 0) {
     const { signal, dispose } = anySignal(signals);
     try {
-      return await fetch(url, { ...(request as RequestInit), signal });
+      return await send(url, toRequestInit(request, signal));
     } finally {
       dispose();
     }
@@ -190,7 +213,7 @@ export async function timeoutFetch(request: FetchRequest): Promise<Response> {
   });
   try {
     return await Promise.race([
-      fetch(url, { ...(request as RequestInit), signal }),
+      send(url, toRequestInit(request, signal)),
       timeoutPromise,
     ]);
   } finally {

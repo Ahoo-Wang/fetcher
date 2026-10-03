@@ -1,6 +1,7 @@
 import { UrlResolveInterceptor } from './urlResolveInterceptor.js';
 import { RequestBodyInterceptor } from './requestBodyInterceptor.js';
 import { FetchInterceptor } from './fetchInterceptor.js';
+import type { FetchImplementation } from './timeout.js';
 import type { FetchExchange } from './fetchExchange.js';
 import { ExchangeError } from './fetcherError.js';
 import { InterceptorRegistry } from './interceptor.js';
@@ -59,11 +60,7 @@ export class InterceptorManager {
    * 2. UrlResolveInterceptor (order: near Number.MAX_SAFE_INTEGER) - Resolves the final URL
    * 3. FetchInterceptor (order: Number.MAX_SAFE_INTEGER - BUILT_IN_INTERCEPTOR_ORDER_STEP) - Executes the actual HTTP request
    */
-  readonly request: InterceptorRegistry = new InterceptorRegistry([
-    new RequestBodyInterceptor(),
-    new UrlResolveInterceptor(),
-    new FetchInterceptor(),
-  ]);
+  readonly request: InterceptorRegistry;
 
   /**
    * Manager for response-phase interceptors.
@@ -78,12 +75,23 @@ export class InterceptorManager {
    * By default, the response interceptor registry has one built-in interceptor registered:
    * 1. ValidateStatusInterceptor - Validates HTTP status codes and throws HttpStatusValidationError for invalid statuses
    *
-   * @param validateStatus - Optional custom status validation function.
-   *   Defaults to accepting 2xx status codes.
    */
   readonly response: InterceptorRegistry;
 
-  constructor(validateStatus?: ValidateStatus) {
+  /**
+   * @param validateStatus - Decides which statuses are successful; 2xx by default.
+   * @param fetchImplementation - The `fetch` the FetchInterceptor sends with;
+   *   the global `fetch` by default.
+   */
+  constructor(
+    validateStatus?: ValidateStatus,
+    fetchImplementation?: FetchImplementation,
+  ) {
+    this.request = new InterceptorRegistry([
+      new RequestBodyInterceptor(),
+      new UrlResolveInterceptor(),
+      new FetchInterceptor(fetchImplementation),
+    ]);
     this.response = new InterceptorRegistry([
       new ValidateStatusInterceptor(validateStatus),
     ]);
@@ -139,6 +147,8 @@ export class InterceptorManager {
    *   an ExchangeError raised for this same exchange (such as
    *   HttpStatusValidationError) is rethrown as is, so `instanceof` on its own
    *   class works; any other error is wrapped, with the original as `cause`
+   * - An error interceptor that throws stops the error phase; what it threw
+   *   becomes the exchange's error and is wrapped the same way
    *
    * Order of Execution:
    * 1. Request interceptors (sorted by order property, ascending)
@@ -201,7 +211,13 @@ export class InterceptorManager {
     } catch (error: any) {
       // Apply error interceptors
       fetchExchange.error = error;
-      await this.error.intercept(fetchExchange);
+      try {
+        await this.error.intercept(fetchExchange);
+      } catch (interceptorError) {
+        // A failing error interceptor (or a callback it runs) replaces the
+        // error; the rejection is still an ExchangeError, as documented.
+        fetchExchange.error = interceptorError;
+      }
 
       // If error interceptors cleared the error, the exchange is considered
       // recovered and returned as-is. The response phase is NOT re-run:

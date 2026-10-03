@@ -15,7 +15,7 @@ import {
   BUILT_IN_INTERCEPTOR_ORDER_STEP,
   type RequestInterceptor,
 } from './interceptor.js';
-import { timeoutFetch } from './timeout.js';
+import { timeoutFetch, type FetchImplementation } from './timeout.js';
 import type { FetchExchange } from './fetchExchange.js';
 
 /**
@@ -74,6 +74,12 @@ export class FetchInterceptor implements RequestInterceptor {
   readonly order = FETCH_INTERCEPTOR_ORDER;
 
   /**
+   * @param fetchImplementation - The `fetch` to send requests with; the
+   * global `fetch` by default.
+   */
+  constructor(private readonly fetchImplementation?: FetchImplementation) {}
+
+  /**
    * Intercept and process HTTP requests.
    *
    * Executes the actual HTTP request and applies timeout control. This is the final
@@ -99,6 +105,9 @@ export class FetchInterceptor implements RequestInterceptor {
    * console.log(exchange.response); // HTTP response object
    */
   async intercept(exchange: FetchExchange) {
-    exchange.response = await timeoutFetch(exchange.request);
+    exchange.response = await timeoutFetch(
+      exchange.request,
+      this.fetchImplementation,
+    );
   }
 }

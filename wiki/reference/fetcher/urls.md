@@ -64,10 +64,10 @@ console.assert(
 | <a id="formaturlparam"></a>`formatUrlParam`                                  | [urlTemplateResolver.ts:149](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L149) |
 | <a id="urltemplateregexresolve"></a>`urlTemplateRegexResolve`                | [urlTemplateResolver.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L165) |
 | <a id="urltemplateregexextract"></a>`urlTemplateRegexExtract`                | [urlTemplateResolver.ts:186](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L186) |
-| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:217](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L217) |
-| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:309](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L309) |
-| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:328](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L328) |
-| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:411](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L411) |
+| <a id="uritemplateresolver"></a>`UriTemplateResolver`                        | [urlTemplateResolver.ts:214](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L214) |
+| <a id="uritemplateresolver-instance"></a>`uriTemplateResolver`               | [urlTemplateResolver.ts:306](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L306) |
+| <a id="expressurltemplateresolver"></a>`ExpressUrlTemplateResolver`          | [urlTemplateResolver.ts:325](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L325) |
+| <a id="expressurltemplateresolver-instance"></a>`expressUrlTemplateResolver` | [urlTemplateResolver.ts:408](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L408) |
 | <a id="isabsoluteurl"></a>`isAbsoluteURL`                                    | [urls.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L27)                                 |
 | <a id="combineurls"></a>`combineURLs`                                        | [urls.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urls.ts#L49)                                 |
 

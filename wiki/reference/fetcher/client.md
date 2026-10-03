@@ -5,20 +5,21 @@ description: 'Client and registration — @ahoo-wang/fetcher 5.0.0'
 
 # Client and registration
 
-Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests still use the runtime's global `fetch`; a client does not own a connection pool or require `destroy()`.
+Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Requests use the runtime's global `fetch` unless the `fetch` option supplies another; a client does not own a connection pool or require `destroy()`.
 
 ## Construction and defaults {#construction}
 
 `new Fetcher(options?: FetcherOptions)` accepts the following options. Supplying an options object requires `baseURL`; omitting the object uses `DEFAULT_OPTIONS`.
 
-| Option                     | Default                        | Contract                                                                                                                                                                                                   |
-| -------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseURL: string`          | `''`                           | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                                                                                                                    |
-| `headers?: RequestHeaders` | `{}`                           | No `Content-Type` by default; the [body interceptor](./requests.md#body) sets it from the body. The client keeps its own copy of a supplied object. Each request gets a defensive, case-insensitive merge. |
-| `timeout?: number`         | `undefined`                    | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                                                                                                                       |
-| `urlTemplateStyle?`        | `UrlTemplateStyle.UriTemplate` | `{id}` syntax; `Express` selects `:id`.                                                                                                                                                                    |
-| `interceptors?`            | New `InterceptorManager`       | Supplied manager is used as-is; it can be shared across clients.                                                                                                                                           |
-| `validateStatus?`          | `200 <= status < 300`          | Used only when constructing the default manager.                                                                                                                                                           |
+| Option                                                                                   | Default                           | Contract                                                                                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL: string`                                                                        | `''`                              | Used by the mutable `urlBuilder`; relative URLs still need a runtime that accepts them.                                                                                                                                         |
+| `headers?: RequestHeaders`                                                               | `{}`                              | No `Content-Type` by default; the [body interceptor](./requests.md#body) sets it from the body. The client keeps its own copy of a supplied object. Each request gets a defensive, case-insensitive merge.                      |
+| `timeout?: number`                                                                       | `undefined`                       | Milliseconds; no timer until configured. Request `0` disables the inherited timeout.                                                                                                                                            |
+| `urlTemplateStyle?`                                                                      | `UrlTemplateStyle.UriTemplate`    | `{id}` syntax; `Express` selects `:id`.                                                                                                                                                                                         |
+| `interceptors?`                                                                          | New `InterceptorManager`          | Supplied manager is used as-is; it can be shared across clients.                                                                                                                                                                |
+| `validateStatus?`                                                                        | `200 <= status < 300`             | Used only when constructing the default manager.                                                                                                                                                                                |
+| `fetch?: FetchImplementation` ([type](./errors-and-cancellation.md#fetchimplementation)) | Global `fetch`, read at call time | The `fetch` that sends requests, for a runtime or framework that supplies its own (Tauri, instrumentation) or a test. Timeouts and signals still apply. Like `validateStatus`, used only when constructing the default manager. |
 
 `urlBuilder`, `headers`, and `timeout` can be changed for subsequent requests. `interceptors` is readonly as a property, while its registries remain mutable. Each client owns a copy of its headers, so mutating `client.headers` affects only that client; mutating exported `DEFAULT_OPTIONS.headers` still changes every client created afterwards, so use request headers instead.
 
@@ -70,12 +71,12 @@ fetcherRegistrar.unregister('reports');
 
 | Symbol                                                        | Implementation                                                                                                          |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L51)                     |
-| <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L87)                     |
-| <a id="requestoptions"></a>`RequestOptions`                   | [fetcher.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L95)                     |
-| <a id="default_request_options"></a>`DEFAULT_REQUEST_OPTIONS` | [fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)                     |
-| <a id="default_fetch_options"></a>`DEFAULT_FETCH_OPTIONS`     | [fetcher.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L101)                   |
-| <a id="fetcher"></a>`Fetcher`                                 | [fetcher.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L124)                   |
+| <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L57)                     |
+| <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L105)                   |
+| <a id="requestoptions"></a>`RequestOptions`                   | [requestOptions.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L21)       |
+| <a id="default_request_options"></a>`DEFAULT_REQUEST_OPTIONS` | [requestOptions.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L25)       |
+| <a id="default_fetch_options"></a>`DEFAULT_FETCH_OPTIONS`     | [requestOptions.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L30)       |
+| <a id="fetcher"></a>`Fetcher`                                 | [fetcher.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L129)                   |
 | <a id="fetchercapable"></a>`FetcherCapable`                   | [fetcherCapable.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L22)       |
 | <a id="getfetcher"></a>`getFetcher`                           | [fetcherCapable.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L37)       |
 | <a id="default_fetcher_name"></a>`DEFAULT_FETCHER_NAME`       | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)   |
@@ -84,6 +85,6 @@ fetcherRegistrar.unregister('reports');
 | <a id="namedfetcher"></a>`NamedFetcher`                       | [namedFetcher.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L38)           |
 | <a id="fetcher-instance"></a>`fetcher`                        | [namedFetcher.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/namedFetcher.ts#L94)           |
 | <a id="namedcapable"></a>`NamedCapable`                       | [types.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L141)                       |
-| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [types.ts:234](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L234)                       |
+| <a id="fetcherconfigurer"></a>`FetcherConfigurer`             | [fetcherConfigurer.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherConfigurer.ts#L39) |
 
 [Package index](./index.md)

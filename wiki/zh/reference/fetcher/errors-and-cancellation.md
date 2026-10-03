@@ -11,20 +11,20 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 ## 错误类型与状态策略 {#errors}
 
-| API                                   | 契约                                                                                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause，并复制 Error cause 的 stack。        |
-| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。   |
-| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；exchange 以它本身拒绝（不包装），`.exchange.error` 是同一个错误。 |
-| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                              |
-| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。        |
-| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                   |
+| API                                   | 契约                                                                                                                                                                                      |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`      | 消息回退到 Error cause 的消息，再回退到通用消息；保存 cause。保留自身 stack（失败浮现之处），原始失败及其 stack 留在 `cause` 上。子类无需 `Object.setPrototypeOf` 即可通过 `instanceof`。 |
+| `ExchangeError(exchange, message?)`   | 保存 exchange，cause 取自 `exchange.error`；消息依次回退到错误消息、响应 statusText、请求 URL。                                                                                           |
+| `HttpStatusValidationError(exchange)` | 状态校验创建，包含状态码与 URL；exchange 以它本身拒绝（不包装），`.exchange.error` 是同一个错误。                                                                                         |
+| `FetchTimeoutError(request)`          | 保存超时请求，消息包含超时、方法（默认 GET）和 URL。                                                                                                                                      |
+| `ValidateStatus`                      | `(status: number) => boolean`，用于构造选项或 `new ValidateStatusInterceptor(predicate)`。                                                                                                |
+| `IGNORE_VALIDATE_STATUS`              | 属性键 `'__ignoreValidateStatus__'`，仅字面量 `true` 绕过校验。                                                                                                                           |
 
-没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`：状态失败就是 `HttpStatusValidationError` 本身，其他错误（超时、网络、abort reason、拦截器抛错）被包装，原错误作为 `cause`。错误拦截器自身抛错及后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
+没有响应时状态校验直接跳过。管线失败通常为 `ExchangeError`：状态失败就是 `HttpStatusValidationError` 本身，其他错误（超时、网络、abort reason、请求/响应/错误拦截器抛错）被包装，原错误作为 `cause`。只有后续提取器失败可以不经过此包装。不要假定每个失败都有响应，也不要假定所有拒绝值都是 Error。
 
 ## 超时优先级 {#timeout}
 
-`TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request): Promise<Response>` 行为如下：
+`TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request, fetchImplementation?): Promise<Response>` 使用 `fetchImplementation` 发送，其类型 `FetchImplementation` 为 `(input: string, init?: RequestInit) => Promise<Response>`（默认在调用时读取全局 `fetch`）。URL 作为第一个参数，并传入干净的 `RequestInit`：不含 `url`、`timeout`、`urlParams` 和 `abortController`，取消通过合并后的 `signal` 传递。行为如下：
 
 | 输入                                     | 行为                                                                                                                                                            |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -68,17 +68,18 @@ try {
 
 | 符号                                                                              | 实现                                                                                                                                      |
 | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L37)                             |
-| <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:86](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L86)                             |
+| <a id="fetchererror"></a>`FetcherError`                                           | [fetcherError.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L40)                             |
+| <a id="exchangeerror"></a>`ExchangeError`                                         | [fetcherError.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherError.ts#L83)                             |
 | <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
-| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L62)                                       |
-| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L83)                                       |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L165)                                     |
+| <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
+| <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
+| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L132)                                     |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L184)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
-| <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L62)   |
-| <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L70)   |
-| <a id="validate_status_interceptor_order"></a>`VALIDATE_STATUS_INTERCEPTOR_ORDER` | [validateStatusInterceptor.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L77)   |
-| <a id="ignore_validate_status"></a>`IGNORE_VALIDATE_STATUS`                       | [validateStatusInterceptor.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L97)   |
-| <a id="validatestatusinterceptor"></a>`ValidateStatusInterceptor`                 | [validateStatusInterceptor.ts:126](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L126) |
+| <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L61)   |
+| <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L69)   |
+| <a id="validate_status_interceptor_order"></a>`VALIDATE_STATUS_INTERCEPTOR_ORDER` | [validateStatusInterceptor.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L76)   |
+| <a id="ignore_validate_status"></a>`IGNORE_VALIDATE_STATUS`                       | [validateStatusInterceptor.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L96)   |
+| <a id="validatestatusinterceptor"></a>`ValidateStatusInterceptor`                 | [validateStatusInterceptor.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L125) |
 
 [包索引](./index.md)

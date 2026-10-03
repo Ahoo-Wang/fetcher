@@ -30,7 +30,7 @@ sequenceDiagram
   Extractor-->>Caller: 返回选择的值或 Promise 拒绝
 ```
 
-图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L63)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:174](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L174)。
+图中展示 `request()` 的成功路径，参与者依次为调用方、Fetcher、请求拦截器、原生 Fetch、响应拦截器和提取器。默认请求 registry 包含请求体准备、URL 解析和 Fetch 本身，原生传输位于请求阶段内部。每个 registry 按 `order` 升序串行执行。`exchange()` 执行请求、响应 registry 后返回 exchange；`request()` 随后调用 `extractResult()`。见 [packages/fetcher/src/interceptorManager.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L90)、[packages/fetcher/src/interceptor.ts:294](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L294) 和 [packages/fetcher/src/fetcher.ts:180](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L180)。
 
 | 入口                                              | 默认返回值            | 适用需求                           |
 | ------------------------------------------------- | --------------------- | ---------------------------------- |
@@ -39,11 +39,11 @@ sequenceDiagram
 | `fetch()`、`get()`、`post()` 及其他 HTTP 辅助方法 | `Response`            | 状态、响应头或原生响应体读取器     |
 | 显式选择 JSON 提取器的请求                        | 解析值                | 返回数据的服务函数，由应用验证数据 |
 
-默认值依据 [packages/fetcher/src/fetcher.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L98)、[packages/fetcher/src/fetcher.ts:236](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L236) 和 [packages/fetcher/src/fetcher.ts:262](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L262)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
+默认值依据 [packages/fetcher/src/requestOptions.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L25)、[packages/fetcher/src/fetcher.ts:242](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L242) 和 [packages/fetcher/src/fetcher.ts:268](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L268)。JSON 提取调用 `response.json()`，泛型参数不增加运行时验证。见 [packages/fetcher/src/resultExtractor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L69) 与[选择结果](../guides/http/results.md)。
 
 ## 恢复不会重跑验证
 
-请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误以 `ExchangeError` 拒绝：已为该 exchange 创建的（如 `HttpStatusValidationError`）原样抛出，其他错误被包装，原错误作为 `cause`。错误拦截器自身抛出的错误则直接传播。见 [packages/fetcher/src/interceptorManager.ts:194](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L194)。
+请求或响应拦截器抛错时，管理器将错误存入 exchange 并执行错误拦截器。如果错误被清除，exchange 立即返回，不再执行响应拦截器。因此恢复拦截器应负责替代响应的有效性。剩余错误以 `ExchangeError` 拒绝：已为该 exchange 创建的（如 `HttpStatusValidationError`）原样抛出，其他错误被包装，原错误作为 `cause`。错误拦截器自身抛出的错误会终止错误链、替换 `exchange.error`，并以同样方式包装。见 [packages/fetcher/src/interceptorManager.ts:204](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L204)。
 
 结果提取在这之后发生。JSON 解码或自定义提取器可以失败，且不会重新进入错误 registry。应在消费结果的代码旁处理解码失败，详见[失败模型](./failure-model.md)。
 

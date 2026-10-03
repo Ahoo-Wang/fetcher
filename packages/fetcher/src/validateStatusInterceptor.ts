@@ -31,7 +31,6 @@ export class HttpStatusValidationError extends ExchangeError {
       `Request failed with status code ${exchange.response?.status} for ${exchange.request.url}`,
     );
     this.name = 'HttpStatusValidationError';
-    Object.setPrototypeOf(this, HttpStatusValidationError.prototype);
   }
 }
 
@@ -136,7 +135,7 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
   /**
    * Gets the order of this interceptor.
    *
-   * @returns VALIDATE_STATUS_INTERCEPTOR_ORDER, indicating this interceptor should execute early
+   * @returns VALIDATE_STATUS_INTERCEPTOR_ORDER: it runs after the other response interceptors
    */
   get order(): number {
     return VALIDATE_STATUS_INTERCEPTOR_ORDER;

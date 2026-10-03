@@ -75,8 +75,8 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
 | <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
-| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L65)     |
-| <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [mergeRequest.ts:118](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L118)   |
+| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L63)     |
+| <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [requestOptions.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L41) |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
 | <a id="deleteheader"></a>`deleteHeader`                   | [requestHeaders.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L29) |
 | <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L39) |

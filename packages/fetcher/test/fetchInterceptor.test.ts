@@ -41,7 +41,7 @@ describe('FetchInterceptor', () => {
 
     await interceptor.intercept(exchange);
 
-    expect(timeoutFetchSpy).toHaveBeenCalledWith(request);
+    expect(timeoutFetchSpy).toHaveBeenCalledWith(request, undefined);
     expect(exchange.response).toBe(mockResponse);
 
     // Clean up spy

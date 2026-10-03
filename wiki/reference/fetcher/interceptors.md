@@ -15,20 +15,20 @@ Interceptors mutate a shared `FetchExchange`; they return `void | Promise<void>`
 
 ## Built-in phases {#pipeline}
 
-| Registry / implementation             | Exported order                                                 | Effect                                    |
-| ------------------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
-| request: `RequestBodyInterceptor`     | `REQUEST_BODY_INTERCEPTOR_ORDER = MIN_SAFE_INTEGER + 10000`    | Normalize body and Content-Type.          |
-| request: `UrlResolveInterceptor`      | `URL_RESOLVE_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 20000`     | Resolve base/path/query, clear urlParams. |
-| request: `FetchInterceptor`           | `FETCH_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000`           | Await `timeoutFetch`, assign response.    |
-| response: `ValidateStatusInterceptor` | `VALIDATE_STATUS_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000` | Reject unaccepted status unless bypassed. |
+| Registry / implementation             | Exported order                                                 | Effect                                                             |
+| ------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------ |
+| request: `RequestBodyInterceptor`     | `REQUEST_BODY_INTERCEPTOR_ORDER = MIN_SAFE_INTEGER + 10000`    | Normalize body and Content-Type.                                   |
+| request: `UrlResolveInterceptor`      | `URL_RESOLVE_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 20000`     | Resolve base/path/query, clear urlParams.                          |
+| request: `FetchInterceptor`           | `FETCH_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000`           | Await `timeoutFetch` with the configured `fetch`, assign response. |
+| response: `ValidateStatusInterceptor` | `VALIDATE_STATUS_INTERCEPTOR_ORDER = MAX_SAFE_INTEGER - 10000` | Reject unaccepted status unless bypassed.                          |
 
 Each corresponding `*_INTERCEPTOR_NAME` equals the implementation's class name. A request interceptor with order zero sees a normalized body but an unresolved URL. A response interceptor with order zero runs before default status validation. Removing FetchInterceptor means no built-in HTTP I/O; `clear()` is not merely removing custom hooks.
 
 ## Failure and recovery {#recovery}
 
-`new InterceptorManager(validateStatus?)` constructs these request/response registries and an empty error registry. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then, if `hasError()` remains true, rejects with an `ExchangeError`: an `ExchangeError` for this same exchange (such as `HttpStatusValidationError`) is rethrown as is, anything else is wrapped with the original as `cause`. To recover, set `exchange.error` to `undefined` or `null`.
+`new InterceptorManager(validateStatus?, fetchImplementation?)` constructs these request/response registries and an empty error registry; `fetchImplementation` is passed to `new FetchInterceptor(fetchImplementation?)`, which sends with the global `fetch`, read at call time, when it is omitted. `exchange(exchange)` runs request then response. On rejection it stores the thrown value in `exchange.error`, runs the error registry, then, if `hasError()` remains true, rejects with an `ExchangeError`: an `ExchangeError` for this same exchange (such as `HttpStatusValidationError`) is rethrown as is, anything else is wrapped with the original as `cause`. To recover, set `exchange.error` to `undefined` or `null`.
 
-An error interceptor recovers by supplying any needed response/result state and clearing `exchange.error`. The response chain is **not rerun** after recovery, so recovered responses must already meet the application's policy. A throw from the error chain escapes directly and prevents later error interceptors. Error interceptors are not automatic retries, and extractor failures occur outside this manager.
+An error interceptor recovers by supplying any needed response/result state and clearing `exchange.error`. The response chain is **not rerun** after recovery, so recovered responses must already meet the application's policy. A throw from an error interceptor (or from a callback it runs) stops the error chain, so later error interceptors do not run; the thrown value becomes `exchange.error` and the exchange rejects with an `ExchangeError` whose `cause` is that value, like any other failure. Error interceptors are not automatic retries, and extractor failures occur outside this manager.
 
 Interceptors added to a shared client remain until ejected. Use distinct stable names and remove request-specific instrumentation when its owner ends; do not accumulate a new interceptor per request.
 
@@ -62,7 +62,7 @@ console.assert(client.interceptors.request.eject('trace'));
 | <a id="responseinterceptor"></a>`ResponseInterceptor`                         | [interceptor.ts:135](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L135)                     |
 | <a id="errorinterceptor"></a>`ErrorInterceptor`                               | [interceptor.ts:164](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L164)                     |
 | <a id="interceptorregistry"></a>`InterceptorRegistry`                         | [interceptor.ts:189](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptor.ts#L189)                     |
-| <a id="interceptormanager"></a>`InterceptorManager`                           | [interceptorManager.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L48)         |
+| <a id="interceptormanager"></a>`InterceptorManager`                           | [interceptorManager.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/interceptorManager.ts#L49)         |
 | <a id="orderedcapable"></a>`OrderedCapable`                                   | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                 |
 | <a id="sortorder"></a>`sortOrder`                                             | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                 |
 | <a id="tosorted"></a>`toSorted`                                               | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                 |

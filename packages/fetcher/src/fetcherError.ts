@@ -20,6 +20,9 @@ import type { FetchExchange } from './fetchExchange.js';
  * all custom errors thrown by the Fetcher library. It includes support for
  * error chaining through the cause property.
  *
+ * The library targets ES2020, where classes extend `Error` natively, so
+ * subclasses need no `Object.setPrototypeOf` for `instanceof` to hold.
+ *
  * @example
  * ```typescript
  * try {
@@ -49,15 +52,9 @@ export class FetcherError extends Error {
     const errorMessage =
       errorMsg || causeMessage || 'An error occurred in the fetcher';
     super(errorMessage);
+    // Keeps its own stack: where the failure surfaced. The original failure
+    // and its stack stay on `cause`, which runtimes print after this one.
     this.name = 'FetcherError';
-
-    // Copy stack trace from cause if available
-    if (cause instanceof Error && cause.stack) {
-      this.stack = cause.stack;
-    }
-
-    // Set prototype for instanceof checks to work correctly
-    Object.setPrototypeOf(this, FetcherError.prototype);
   }
 }
 
@@ -101,6 +98,5 @@ export class ExchangeError extends FetcherError {
       `Request to ${exchange.request.url} failed during exchange`;
     super(errorMessage, exchange.error);
     this.name = 'ExchangeError';
-    Object.setPrototypeOf(this, ExchangeError.prototype);
   }
 }

@@ -66,13 +66,11 @@ describe('Fetcher', () => {
   // mocked-out exchange. The previous tests stubbed interceptors.exchange (the
   // unit under test), verifying only "mock returned mock".
   function stubFetchReturning(body = 'ok', status = 200) {
-    const calls: RequestInit[] = [];
+    const calls: (RequestInit & { url: string })[] = [];
     const stub = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      // Snapshot the init at call time: timeoutFetch cleans up the internal
-      // signal/abortController it wrote onto the request once the call
-      // settles, so reading the shared object afterwards would observe the
-      // cleaned state instead of what fetch actually received.
-      calls.push({ ...(init ?? ({ url: String(input) } as RequestInit)) });
+      // fetch receives the URL as its input and a RequestInit without the
+      // fetcher-only fields; record both as one call.
+      calls.push({ ...init, url: String(input) });
       return new Response(body, { status });
     });
     vi.stubGlobal('fetch', stub);
@@ -153,7 +151,10 @@ describe('Fetcher', () => {
 
   it('should throw FetcherError when fetch returns no response', async () => {
     const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-    vi.stubGlobal('fetch', vi.fn(async () => undefined as any));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => undefined as any),
+    );
     await expect(fetcher.get('/users')).rejects.toThrow(FetcherError);
   });
 
