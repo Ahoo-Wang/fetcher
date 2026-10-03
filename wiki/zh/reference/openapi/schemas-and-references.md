@@ -21,7 +21,7 @@ description: 'Schema 与引用 — Fetcher 5.0.0'
 | 组合   | allOf/anyOf/oneOf 为数组，not 为单个 Schema/Reference                                                                                                  |
 | 元数据 | discriminator、xml、externalDocs                                                                                                                       |
 
-`SchemaType` 包含 string、number、integer、boolean、array、object、null。它同时容纳部分 3.0 与 3.1 表达（`nullable`、type 数组、`$schema`、const、数字排他边界），不是完整 JSON Schema 2020-12 模型。没有布尔 Schema 分支，也没有 `$defs`、prefixItems、unevaluatedProperties 字段。
+`SchemaType` 包含 string、number、integer、boolean、array、object、null。它同时容纳 3.0 与 3.1 表达（`nullable`、type 数组、`$schema`、const、数字排他边界），并以可选字段提供 3.1 schema 使用的 JSON Schema 2020-12 关键字：`$id`、`$anchor`、`$dynamicAnchor`、`$comment`、`$defs`、`examples`、`contentMediaType`/`contentEncoding`/`contentSchema`、`prefixItems`、`contains`/`minContains`/`maxContains`、`unevaluatedItems`、`patternProperties`、`propertyNames`、`dependentRequired`、`dependentSchemas`、`unevaluatedProperties` 与 `if`/`then`/`else`。它仍不是完整的 2020-12 模型：没有布尔 Schema 分支；Schema 上也不声明并列的 `$ref`，因为代码靠 `'$ref' in value` 区分 Reference 与 Schema。`OpenAPI.paths` 仍是必填，尽管 3.1 允许只有 components 或 webhooks 的文档；这种文档传 `paths: {}`。
 
 ## 引用与组件
 
