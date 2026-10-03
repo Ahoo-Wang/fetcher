@@ -11,10 +11,10 @@ Typed values backed by browser Storage or memory, with explicit notification own
 ## Installation and runtime
 
 ```sh
-pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher
+pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus
 ```
 
-The command includes the recursive peer chain: Storage → EventBus → Fetcher. Browser persistence needs accessible localStorage; non-browser defaults use a fresh memory store.
+The command includes the peer chain: Storage → EventBus, which has no dependencies. Browser persistence needs accessible localStorage; non-browser defaults use a fresh memory store.
 
 Version 5.0.0 declares Node >=18.20.8 for consumers. Repository development has a separate Node >=22.12.0 / pnpm 10.34.5 requirement. Browser/runtime APIs used by a feature must also exist; the engine range is not a promise that every Web API (for example Response.bytes) is available.
 

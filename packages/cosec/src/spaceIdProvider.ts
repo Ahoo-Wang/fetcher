@@ -16,10 +16,7 @@ import {
   KeyStorage,
   typedIdentitySerializer,
 } from '@ahoo-wang/fetcher-storage';
-import {
-  BroadcastTypedEventBus,
-  SerialTypedEventBus,
-} from '@ahoo-wang/fetcher-eventbus';
+import { storageEventBus } from './storageEventBus.js';
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 
 /**
@@ -243,13 +240,7 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
   }: SpaceIdStorageOptions = {}) {
     super({
       key,
-      // The default bus channel must be derived from the actual key so that
-      // storages for different keys never cross-talk over the same channel.
-      eventBus:
-        eventBus ??
-        new BroadcastTypedEventBus({
-          delegate: new SerialTypedEventBus(key),
-        }),
+      eventBus: storageEventBus(key, eventBus),
       ...reset,
       serializer: typedIdentitySerializer(),
     });

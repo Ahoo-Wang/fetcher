@@ -13,6 +13,9 @@
 
 import { type FetchExchange, isAbsoluteURL } from '@ahoo-wang/fetcher';
 
+/** Exchange attribute holding the trust decided for it, per predicate. */
+const REQUEST_TRUST_ATTRIBUTE = 'CoSec-Request-Trust';
+
 /**
  * Decides whether a request to an absolute URL may carry CoSec credentials
  * (the `Authorization` token and the CoSec headers, device ID included).
@@ -72,6 +75,20 @@ export function isTrustedRequest(
   isTrusted?: RequestTrust,
 ): boolean {
   if (!isTrusted) return true;
+  // Trust is decided once per exchange, on its first pass through the request
+  // chain: a retry (after a 401 refresh) sees the URL already resolved
+  // against the baseURL, and must not lose the credentials the original
+  // relative URL was trusted with.
+  let decisions: Map<RequestTrust, boolean> | undefined =
+    exchange.attributes.get(REQUEST_TRUST_ATTRIBUTE);
+  const decided = decisions?.get(isTrusted);
+  if (decided !== undefined) return decided;
   const url = exchange.request.url;
-  return !isAbsoluteURL(url) || isTrusted(url, exchange);
+  const trusted = !isAbsoluteURL(url) || isTrusted(url, exchange);
+  if (!decisions) {
+    decisions = new Map();
+    exchange.attributes.set(REQUEST_TRUST_ATTRIBUTE, decisions);
+  }
+  decisions.set(isTrusted, trusted);
+  return trusted;
 }

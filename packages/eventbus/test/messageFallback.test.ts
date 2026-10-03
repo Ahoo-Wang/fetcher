@@ -109,3 +109,54 @@ it.each([true, false])(
     bus.destroy();
   },
 );
+
+it('runs local handlers but posts nothing after destroy', async () => {
+  const handle = vi.fn();
+  let closed = false;
+  const postMessage = vi.fn(() => {
+    // BroadcastChannel.postMessage on a closed channel.
+    if (closed) throw new DOMException('closed', 'InvalidStateError');
+  });
+  const serialize = vi.fn(String);
+  const bus = new BroadcastTypedEventBus({
+    delegate: new SerialTypedEventBus<string>('destroyed'),
+    messenger: {
+      postMessage,
+      close() {
+        closed = true;
+      },
+      set onmessage(_: CrossTabMessageHandler) {},
+    },
+    messageTransformer: {
+      serializeBeforeDispatch: true,
+      serialize,
+      deserialize: String,
+    },
+  });
+  bus.on({ name: 'local', handle });
+  bus.destroy();
+  await expect(bus.emit('after')).resolves.toBeUndefined();
+  expect(handle).toHaveBeenCalledExactlyOnceWith('after');
+  expect(postMessage).not.toHaveBeenCalled();
+  expect(serialize).not.toHaveBeenCalled();
+});
+
+it('rejects a failed post without a fallback after local handlers ran', async () => {
+  const failure = new DOMException('not cloneable', 'DataCloneError');
+  const handle = vi.fn();
+  const bus = new BroadcastTypedEventBus<() => void>({
+    delegate: new SerialTypedEventBus('uncloneable'),
+    messenger: {
+      postMessage() {
+        throw failure;
+      },
+      close() {},
+      set onmessage(_: CrossTabMessageHandler) {},
+    },
+  });
+  bus.on({ name: 'local', handle });
+  const event = () => {};
+  await expect(bus.emit(event)).rejects.toBe(failure);
+  expect(handle).toHaveBeenCalledExactlyOnceWith(event);
+  bus.destroy();
+});

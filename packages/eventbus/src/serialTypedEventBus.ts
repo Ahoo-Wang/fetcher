@@ -12,8 +12,12 @@
  */
 
 import type { EventHandler, EventType } from './types.js';
-import { toSorted } from '@ahoo-wang/fetcher';
 import { AbstractTypedEventBus } from './abstractTypedEventBus.js';
+
+/** Stable ascending sort by `order` (default 0), without mutating the input. */
+function sortByOrder<T extends { order?: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
 
 /**
  * Serial implementation of TypedEventBus
@@ -68,7 +72,7 @@ export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
     if (!original.some(item => item.name === name)) {
       return false;
     }
-    this.eventHandlers = toSorted(original, item => item.name !== name);
+    this.eventHandlers = original.filter(item => item.name !== name);
     return true;
   }
 
@@ -85,7 +89,7 @@ export class SerialTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
     if (original.some(item => item.name === handler.name)) {
       return false;
     }
-    this.eventHandlers = toSorted([...original, handler]);
+    this.eventHandlers = sortByOrder([...original, handler]);
     return true;
   }
 }

@@ -132,7 +132,10 @@ describe('AuthorizationResponseInterceptor', () => {
       token: 'current-token',
     });
 
-    mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
+    mockTokenRefresher.refresh = vi.fn().mockResolvedValue({
+      accessToken: 'new-access-token',
+      refreshToken: 'new-refresh-token',
+    });
 
     await interceptor.intercept(exchange);
 
@@ -185,7 +188,10 @@ describe('AuthorizationResponseInterceptor', () => {
       token: 'current-token',
     });
 
-    mockTokenRefresher.refresh = vi.fn().mockResolvedValue('new-token');
+    mockTokenRefresher.refresh = vi.fn().mockResolvedValue({
+      accessToken: 'new-access-token',
+      refreshToken: 'new-refresh-token',
+    });
     mockFetcher.interceptors.request.intercept = vi
       .fn()
       .mockRejectedValue(new Error('Network error'));

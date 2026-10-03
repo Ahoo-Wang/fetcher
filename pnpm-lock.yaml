@@ -391,10 +391,6 @@ importers:
         version: 4.1.11(@types/node@24.12.2)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(jsdom@29.1.1)(msw@2.15.0(@types/node@24.12.2)(typescript@6.0.3))(vite@8.3.1(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.7.0)(less@4.9.1)(yaml@2.9.1))
 
   packages/eventbus:
-    dependencies:
-      '@ahoo-wang/fetcher':
-        specifier: workspace:^
-        version: link:../fetcher
     devDependencies:
       '@eslint/js':
         specifier: 'catalog:'

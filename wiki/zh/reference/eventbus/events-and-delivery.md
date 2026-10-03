@@ -11,15 +11,15 @@ description: '事件与本地投递 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 ## 事件与订阅契约 {#subscriptions}
 
-`EventType = string`。`EventHandler<EVENT>` 必填 `name: string`、`handle(event): void | Promise<void>`；串行排序中可选 `order` 默认零，可选 `once` 默认 false。`TypedEventBus<EVENT>` 提供 `type`、`handlers`、`on`、`off`、`emit`、`destroy`。
+`EventType = string`。`EventHandler<EVENT>` 必填 `name: string`、`handle(event): void | Promise<void>`；串行排序中可选 `order` 默认零，可选 `once` 默认 false。这些字段与 `@ahoo-wang/fetcher` 的 `NamedCapable`、`OrderedCapable` 一致，但在本包内声明：本包没有依赖。`TypedEventBus<EVENT>` 提供 `type`、`handlers`、`on`、`off`、`emit`、`destroy`。
 
-| 方法          | 返回值                  | 契约                                             |
-| ------------- | ----------------------- | ------------------------------------------------ |
-| `on(handler)` | `boolean`               | 已有同名处理器时返回 false。                     |
-| `off(name)`   | `boolean`               | 缺失返回 false，移除影响后续 emit。              |
-| `handlers`    | `EventHandler<EVENT>[]` | 数组副本，仍包含原处理器对象。                   |
-| `emit(event)` | `Promise<void>`         | 按选定策略等待处理器结束。                       |
-| `destroy()`   | `void`                  | 本地总线清空处理器，没有禁止再次使用的终止状态。 |
+| 方法          | 返回值                  | 契约                                                                         |
+| ------------- | ----------------------- | ---------------------------------------------------------------------------- |
+| `on(handler)` | `boolean`               | 已有同名处理器时返回 false。                                                 |
+| `off(name)`   | `boolean`               | 缺失返回 false，移除影响后续 emit。                                          |
+| `handlers`    | `EventHandler<EVENT>[]` | 按投递顺序的数组副本（串行按 `order`，并行按注册顺序），仍包含原处理器对象。 |
+| `emit(event)` | `Promise<void>`         | 按选定策略等待处理器结束。                                                   |
+| `destroy()`   | `void`                  | 本地总线清空处理器，没有禁止再次使用的终止状态。                             |
 
 每次 emit 快照处理器数组，并在调用任何处理器前移除所有 `once` 注册，因此并发/重入 emit 不会重复投递同一个 once 注册。投递期间增删订阅不会改变当前投递的快照。
 
@@ -31,7 +31,7 @@ description: '事件与本地投递 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 ## 多事件路由 {#routing}
 
-`new EventBus<Events>(typeEventBusSupplier: TypeEventBusSupplier)` 仅在 `on(type, handler)` 时延迟创建对应总线。`TypeEventBusSupplier` 为 `(type: EventType) => TypedEventBus<unknown>`。总线不存在时 `off(type, name)` 返回 false；`emit(type, event): void | Promise<void>` 返回 undefined，不缓存事件。`destroy()` 销毁所有已创建总线并清空 Map。键使用字符串泛型，应使用固定事件映射与正确名称，不要将类型视为运行时校验。
+`new EventBus<Events>(typeEventBusSupplier: TypeEventBusSupplier)` 在某类型首次 `on(type, handler)` 或 `emit(type, event)` 时延迟创建对应总线。`TypeEventBusSupplier` 为 `(type: EventType) => TypedEventBus<unknown>`。总线不存在时 `off(type, name)` 返回 false，且不创建总线。`emit(type, event)` 返回该总线 emit 的 Promise；不缓存事件，因此订阅前的 emit 不会到达本地处理器，但广播 supplier 仍会把它发布到其他标签页。`destroy()` 销毁所有已创建总线并清空 Map；之后的 `on` 或 `emit` 会创建新总线。键使用字符串泛型，应使用固定事件映射与正确名称，不要将类型视为运行时校验。
 
 `NameGenerator.generate(prefix): string` 由 `DefaultNameGenerator` 实现；实例级计数器生成 `prefix_1`、`prefix_2` 等。`nameGenerator` 是共享实例。名称用于本地注册标识，并非全局唯一 ID。
 
@@ -69,10 +69,10 @@ bus.destroy();
 | <a id="namegenerator"></a>`NameGenerator`                 | [nameGenerator.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L17)                 |
 | <a id="defaultnamegenerator"></a>`DefaultNameGenerator`   | [nameGenerator.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L24)                 |
 | <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L41)                 |
-| <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L33) |
-| <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34)     |
+| <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L34) |
+| <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L38)     |
 | <a id="typedeventbus"></a>`TypedEventBus`                 | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                 |
-| <a id="eventtype"></a>`EventType`                         | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                 |
-| <a id="eventhandler"></a>`EventHandler`                   | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                 |
+| <a id="eventtype"></a>`EventType`                         | [types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L14)                                 |
+| <a id="eventhandler"></a>`EventHandler`                   | [types.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L22)                                 |
 
 [包索引](./index.md)

@@ -189,3 +189,20 @@ describe('SerialTypedEventBus', () => {
     expect(bus.handlers.length).toBe(0);
   });
 });
+
+describe('SerialTypedEventBus ordering', () => {
+  it('runs handlers by order, keeping registration order for ties, after off()', async () => {
+    const bus = new SerialTypedEventBus<string>('ordering');
+    const calls: string[] = [];
+    const add = (name: string, order?: number) =>
+      bus.on({ name, order, handle: () => void calls.push(name) });
+    add('late', 5);
+    add('default-a');
+    add('early', -1);
+    add('default-b', 0);
+    add('removed', -2);
+    bus.off('removed');
+    await bus.emit('event');
+    expect(calls).toEqual(['early', 'default-a', 'default-b', 'late']);
+  });
+});

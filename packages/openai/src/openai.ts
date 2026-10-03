@@ -12,8 +12,8 @@
  */
 
 import { ChatClient } from './chat';
-import type { BaseURLCapable } from '@ahoo-wang/fetcher';
-import { Fetcher } from '@ahoo-wang/fetcher';
+import type { FetcherOptions } from '@ahoo-wang/fetcher';
+import { Fetcher, mergeHeaders } from '@ahoo-wang/fetcher';
 
 /**
  * Configuration options for the OpenAI client.
@@ -21,7 +21,7 @@ import { Fetcher } from '@ahoo-wang/fetcher';
  * This interface defines the required settings to initialize an OpenAI client instance,
  * including the API endpoint and authentication credentials.
  */
-export interface OpenAIOptions extends BaseURLCapable {
+export interface OpenAIOptions extends Omit<FetcherOptions, 'baseURL'> {
   /**
    * The base URL for the OpenAI API.
    *
@@ -34,7 +34,8 @@ export interface OpenAIOptions extends BaseURLCapable {
    * The API key for authenticating requests to the OpenAI API.
    *
    * This key must be a valid OpenAI API key obtained from the OpenAI platform.
-   * It is included in the Authorization header as a Bearer token for all requests.
+   * It is included in the Authorization header as a Bearer token for all requests,
+   * taking precedence over an `Authorization` entry in `headers`.
    */
   apiKey: string;
 }
@@ -96,11 +97,12 @@ export class OpenAI {
    * ```
    */
   constructor(options: OpenAIOptions) {
+    // Any other Fetcher option (timeout, fetch, validateStatus, interceptors)
+    // configures the client's Fetcher as given.
+    const { apiKey, headers, ...fetcherOptions } = options;
     this.fetcher = new Fetcher({
-      baseURL: options.baseURL,
-      headers: {
-        Authorization: `Bearer ${options.apiKey}`,
-      },
+      ...fetcherOptions,
+      headers: mergeHeaders(headers, { Authorization: `Bearer ${apiKey}` }),
     });
     this.chat = new ChatClient({ fetcher: this.fetcher });
   }

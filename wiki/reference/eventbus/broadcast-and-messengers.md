@@ -13,20 +13,20 @@ Keep the delegate when constructing a broadcast bus so its handlers can be clean
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` requires `delegate`. Its `type` and `handlers` come from the delegate; `on`/`off` forward to it. Default messenger is `createCrossTabMessenger('_broadcast_:' + delegate.type)`; construction throws `Error('Messenger setup failed')` if none is available.
 
-| Option/member                             | Default                    | Contract                                                                     |
-| ----------------------------------------- | -------------------------- | ---------------------------------------------------------------------------- |
-| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                             |
-| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                       |
-| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                        |
-| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery. |
-| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.           |
-| `destroy()`                               | —                          | Closes messenger only; does not destroy delegate or remove its handlers.     |
+| Option/member                             | Default                    | Contract                                                                                                                  |
+| ----------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                                                                          |
+| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                                                                    |
+| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                                                                     |
+| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery.                                              |
+| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.                                                        |
+| `destroy()`                               | —                          | Closes messenger only; does not destroy delegate or remove its handlers. Later emits run local handlers and post nothing. |
 
-`emit` awaits the local delegate first, then posts the message (with optional pre-serialization). Outbound serialization/post failures reject emit; local delivery may already have happened. A pre-serialization throw prevents local delivery. Incoming messages deserialize and emit only on the delegate, so they are not rebroadcast; decode/delegate rejections are caught and warned. The mutable `messageTransformer` affects later operations.
+`emit` awaits the local delegate first, then posts the message (with optional pre-serialization). Outbound serialization/post failures reject emit; local delivery may already have happened. A post that throws (DataCloneError for a non-cloneable event on a BroadcastChannel, say) rejects unless `fallbackSerialize` is set and its retry succeeds. After `destroy()`, emit skips serialization and posting and resolves once local delivery completes. A pre-serialization throw prevents local delivery. Incoming messages deserialize and emit only on the delegate, so they are not rebroadcast; decode/delegate rejections are caught and warned. The mutable `messageTransformer` affects later operations.
 
 ## CrossTabMessenger {#messengers}
 
-The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTabMessageHandler`, and `close(): void`; handler type is `(message: any) => void`. Setting onmessage replaces the callback.
+The contract is `postMessage(message: any): void`, a setter `onmessage: CrossTabMessageHandler`, and `close(): void`; handler type is `(message: any) => void`. Setting onmessage replaces the callback. A messenger never receives its own posts, but other messengers on the same channel in the same tab differ by transport: `BroadcastChannelMessenger` delivers to them (BroadcastChannel reaches every other channel object, same document included), while `StorageMessenger` does not, because a `storage` event never fires in the document that wrote it. With the storage fallback, two buses in one tab do not hear each other.
 
 `isBroadcastChannelSupported()` checks the global and prototype postMessage. `isStorageEventSupported()` checks StorageEvent, window.addEventListener, and localStorage or sessionStorage availability. These are feature probes, not permission tests. `createCrossTabMessenger(channelName)` prefers `BroadcastChannelMessenger`, then `StorageMessenger`, otherwise returns undefined. Construction errors are not silently converted to fallback.
 
@@ -72,14 +72,14 @@ if (messenger) {
 
 | Symbol                                                                    | Implementation                                                                                                                                      |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a id="broadcasttypedeventbusoptions"></a>`BroadcastTypedEventBusOptions` | [broadcastTypedEventBus.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L24)                  |
-| <a id="broadcasttypedeventbus"></a>`BroadcastTypedEventBus`               | [broadcastTypedEventBus.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L121)                |
+| <a id="broadcasttypedeventbusoptions"></a>`BroadcastTypedEventBusOptions` | [broadcastTypedEventBus.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L30)                  |
+| <a id="broadcasttypedeventbus"></a>`BroadcastTypedEventBus`               | [broadcastTypedEventBus.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/broadcastTypedEventBus.ts#L127)                |
 | <a id="broadcastchannelmessenger"></a>`BroadcastChannelMessenger`         | [broadcastChannelMessenger.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/broadcastChannelMessenger.ts#L19) |
 | <a id="crosstabmessagehandler"></a>`CrossTabMessageHandler`               | [crossTabMessenger.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L17)                 |
-| <a id="crosstabmessenger"></a>`CrossTabMessenger`                         | [crossTabMessenger.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L25)                 |
-| <a id="isbroadcastchannelsupported"></a>`isBroadcastChannelSupported`     | [crossTabMessenger.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L46)                 |
-| <a id="isstorageeventsupported"></a>`isStorageEventSupported`             | [crossTabMessenger.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L53)                 |
-| <a id="createcrosstabmessenger"></a>`createCrossTabMessenger`             | [crossTabMessenger.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L63)                 |
+| <a id="crosstabmessenger"></a>`CrossTabMessenger`                         | [crossTabMessenger.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L32)                 |
+| <a id="isbroadcastchannelsupported"></a>`isBroadcastChannelSupported`     | [crossTabMessenger.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L53)                 |
+| <a id="isstorageeventsupported"></a>`isStorageEventSupported`             | [crossTabMessenger.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L60)                 |
+| <a id="createcrosstabmessenger"></a>`createCrossTabMessenger`             | [crossTabMessenger.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/crossTabMessenger.ts#L70)                 |
 | <a id="storagemessengeroptions"></a>`StorageMessengerOptions`             | [storageMessenger.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/storageMessenger.ts#L19)                   |
 | <a id="storagemessage"></a>`StorageMessage`                               | [storageMessenger.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/storageMessenger.ts#L27)                   |
 | <a id="storagemessenger"></a>`StorageMessenger`                           | [storageMessenger.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/messengers/storageMessenger.ts#L35)                   |

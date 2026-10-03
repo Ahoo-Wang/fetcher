@@ -54,7 +54,8 @@ src/
 
 ## Dependencies
 
-- `@ahoo-wang/fetcher` — core HTTP client (for shared types)
+- None. `EventHandler` declares `name` and `order` itself (structurally the
+  same as `NamedCapable`/`OrderedCapable` of `@ahoo-wang/fetcher`).
 
 ## Code Style
 

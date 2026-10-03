@@ -15,7 +15,7 @@ Choose the environment before deciding which client objects to share. The core d
 | Repository development | Node `>=22.12.0`, pnpm `10.34.5`                                                    | Use the repository toolchain for building and tests                                                                |
 | React                  | Peer React `^19.0.0`; repository development and tests use React/ReactDOM `^19.3.0` | Validate your framework and SSR import/render/hydration path; do not infer React 18 support                        |
 
-Requirements come from [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31), [package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41), [pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31), and the [package manifests](./package-boundaries.md). Stream extraction checks the body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38).
+Requirements come from [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31), [package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41), [pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31), and the [package manifests](./package-boundaries.md). Stream extraction checks the body in [packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41).
 
 ## Share configuration only within its intended identity scope
 

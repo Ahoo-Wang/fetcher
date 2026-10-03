@@ -7,10 +7,10 @@ state.
 ## Install
 
 ```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
+pnpm add @ahoo-wang/fetcher-eventbus
 ```
 
-Peer dependency: `@ahoo-wang/fetcher`.
+No dependencies.
 
 ## Example
 

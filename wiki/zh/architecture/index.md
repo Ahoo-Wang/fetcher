@@ -21,7 +21,7 @@ description: 选择满足当前需求的最小客户端层，并明确应用仍�
 
 普通端点从 [HTTP 指南](../guides/http/index.md) 开始；端点声明重复时阅读[服务指南](../guides/services/index.md)；组件需要请求状态时阅读 [React 指南](../guides/react/index.md)。
 
-每增加一层都会引入契约。SSE 需要可读事件流；CoSec 需要其 token 与刷新端点。安装客户端不会创造这些服务端能力。流提取对可读响应体的检查见 [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)。
+每增加一层都会引入契约。SSE 需要可读事件流；CoSec 需要其 token 与刷新端点。安装客户端不会创造这些服务端能力。流提取对可读响应体的检查见 [packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)。
 
 Wow 客户端、其 React Hook、生成器和数据视图组件已迁往 Wow 仓库，见[已迁出的包](./package-boundaries.md#packages-that-moved-to-the-wow-repository)。
 

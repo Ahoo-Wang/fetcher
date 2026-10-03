@@ -32,6 +32,7 @@ pnpm --filter @ahoo-wang/fetcher-storage clean
 ```
 src/
   keyStorage.ts          — KeyStorage interface and implementations (localStorage, sessionStorage)
+  storageEventCodec.ts   — Internal cross-tab wire codec for KeyStorage events (not exported)
   inMemoryStorage.ts     — In-memory storage fallback for non-browser environments
   serializer.ts          — Serialization/deserialization for storage values
   env.ts                 — Environment detection (browser vs. server)

@@ -11,13 +11,13 @@ description: '客户端与聊天补全 — Fetcher 5.0.0'
 
 ## 客户端契约
 
-| API                                               | 输入/默认值                                                                 | 返回/效果                                                                     |
-| ------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                        | 持有 readonly fetcher 和 chat；创建带 Authorization: Bearer apiKey 的 Fetcher |
-| `OpenAIOptions`                                   | 继承 BaseURLCapable，两字段必填                                             | 仅为类型，不校验 key                                                          |
-| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                    | 类 basePath 为 `chat`                                                         |
-| `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                    |
-| `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                           | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor        |
+| API                                               | 输入/默认值                                                                                             | 返回/效果                                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                                                    | 持有 readonly fetcher 和 chat；用其余选项和 Authorization: Bearer apiKey 创建 Fetcher |
+| `OpenAIOptions`                                   | 必填 `baseURL`、`apiKey`；可加其他 `FetcherOptions`（`timeout`、`fetch`、`headers`、`interceptors` 等） | 仅为类型，不校验 key；`apiKey` 覆盖 `headers` 里的 `Authorization`                    |
+| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                                                | 类 basePath 为 `chat`                                                                 |
+| `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST                             | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                            |
+| `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                                                       | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor                |
 
 字面量 `stream: true` 返回流；`false` 或无 stream 属性返回 ChatResponse。boolean 或宽类型 ChatRequest 返回响应/流联合，因此调用处应保留字面量或收窄请求。可选的第二个参数是 `AbortSignal`：中止它会取消请求，流式时还会取消连接。除此之外没有单次调用的选项参数。
 

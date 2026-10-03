@@ -28,7 +28,7 @@ These methods do not check HTTP status, clone responses, or cache conversions. C
 
 ## Fetcher integration {#extractors}
 
-`EventStreamResultExtractor` returns `exchange.requiredResponse.requiredEventStream()`. `JsonEventStreamResultExtractor` returns `requiredJsonEventStream()` with **no termination detector** and any data type. For `[DONE]` or typed application protocols, supply a custom `ResultExtractor` calling `requiredJsonEventStream<DATA>(detector)`.
+`EventStreamResultExtractor` returns `exchange.requiredResponse.requiredEventStream()`. `JsonEventStreamResultExtractor` returns `requiredJsonEventStream()` with **no termination detector** and any data type. For `[DONE]` or typed application protocols, use `jsonEventStreamResultExtractor<DATA>(detector)`, which builds the same extractor around `requiredJsonEventStream<DATA>(detector)`: the terminating event is neither parsed nor yielded, and a stream that ends without it errors with `EventStreamIncompleteError`.
 
 Fetcher status validation finishes before extraction; malformed body/content errors at extraction or iteration must be caught by the caller. Request completion returning a stream does not mean the stream has finished.
 
@@ -62,8 +62,9 @@ console.assert(chunks.join('') === 'hello');
 | Symbol                                                                              | Implementation                                                                                                                                                  |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="eventstreamconverterror"></a>`EventStreamConvertError`                       | [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)                               |
-| <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)                   |
-| <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L65)                   |
+| <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)                   |
+| <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L68)                   |
+| <a id="jsoneventstreamresultextractor-factory"></a>`jsonEventStreamResultExtractor` | [eventStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L88)                   |
 | <a id="eventstreamincompleteerror"></a>`EventStreamIncompleteError`                 | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
 | <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
 | <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |

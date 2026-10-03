@@ -12,9 +12,10 @@
  */
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import type { JwtCompositeToken } from './jwtToken.js';
-import { RefreshSessionChangedError } from './jwtTokenManager.js';
+import { TOKEN_SESSION_ATTRIBUTE } from './constants.js';
+import { RefreshSessionChangedError } from './errors.js';
 
-export const TOKEN_SESSION_ATTRIBUTE = 'CoSec-Token-Session';
+export { TOKEN_SESSION_ATTRIBUTE } from './constants.js';
 
 export function isSameTokenSession(
   expectedToken: JwtCompositeToken | null,
@@ -26,6 +27,24 @@ export function isSameTokenSession(
       currentToken !== null &&
       typeof expectedToken.sessionId === 'string' &&
       expectedToken.sessionId === currentToken.sessionId)
+  );
+}
+
+/**
+ * Whether two tokens are the same stored token: the same object, or the same
+ * session with the same JWTs, as re-reading storage yields (a legacy record
+ * is parsed into a new object each time).
+ */
+export function isSameToken(
+  expectedToken: JwtCompositeToken,
+  currentToken: JwtCompositeToken | null,
+): boolean {
+  return (
+    expectedToken === currentToken ||
+    (currentToken !== null &&
+      expectedToken.sessionId === currentToken.sessionId &&
+      expectedToken.token.accessToken === currentToken.token.accessToken &&
+      expectedToken.token.refreshToken === currentToken.token.refreshToken)
   );
 }
 

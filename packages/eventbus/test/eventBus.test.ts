@@ -12,8 +12,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { TypeEventBusSupplier } from '../src';
-import { EventBus } from '../src';
+import type { CrossTabMessageHandler, TypeEventBusSupplier } from '../src';
+import { BroadcastTypedEventBus, EventBus } from '../src';
 import { SerialTypedEventBus } from '../src';
 
 describe('EventBus', () => {
@@ -73,12 +73,41 @@ describe('EventBus', () => {
     expect(supplier).toHaveBeenCalledTimes(2);
   });
 
-  it('should destroy all buses', () => {
+  it('should destroy all buses', async () => {
     const bus = new EventBus<{ test: string }>(supplier);
     const handler = { name: 'h1', order: 1, handle: vi.fn() };
     bus.on('test', handler);
+    const typed = vi.mocked(supplier).mock.results[0].value;
+    const destroy = vi.spyOn(typed, 'destroy');
     bus.destroy();
-    // Since destroy clears the map, emitting should not work
-    expect(bus.emit('test', 'event')).toBeUndefined();
+    expect(destroy).toHaveBeenCalledOnce();
+    // Destroy forgets the buses: a later emit gets a fresh one.
+    await bus.emit('test', 'event');
+    expect(handler.handle).not.toHaveBeenCalled();
+    expect(supplier).toHaveBeenCalledTimes(2);
+  });
+
+  it('broadcasts an emit for a type nothing here has subscribed to', async () => {
+    const postMessage = vi.fn();
+    const bus = new EventBus<{ test: string }>(
+      type =>
+        new BroadcastTypedEventBus({
+          delegate: new SerialTypedEventBus(type),
+          messenger: {
+            postMessage,
+            close() {},
+            set onmessage(_: CrossTabMessageHandler) {},
+          },
+        }),
+    );
+    await bus.emit('test', 'event');
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith('event');
+    bus.destroy();
+  });
+
+  it('does not create a bus to remove a handler', () => {
+    const bus = new EventBus<{ test: string }>(supplier);
+    expect(bus.off('test', 'missing')).toBe(false);
+    expect(supplier).not.toHaveBeenCalled();
   });
 });

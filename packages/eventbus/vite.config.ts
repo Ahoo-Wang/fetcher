@@ -23,14 +23,6 @@ export default defineConfig({
       fileName: format =>
         format === 'es' ? 'index.es.js' : `index.${format}.cjs`,
     },
-    rollupOptions: {
-      external: ['@ahoo-wang/fetcher'],
-      output: {
-        globals: {
-          '@ahoo-wang/fetcher': 'Fetcher',
-        },
-      },
-    },
   },
   plugins: [
     dts({

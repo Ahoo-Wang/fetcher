@@ -124,6 +124,6 @@ Handler names are unique; a second registration with the same name returns false
 
 See [storage lifecycle](../../reference/storage/key-storage), [serialization and environment](../../reference/storage/serialization-and-runtime), [event delivery](../../reference/eventbus/events-and-delivery), and [broadcast messengers](../../reference/eventbus/broadcast-and-messengers).
 
-[keyStorage.ts:247](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L247) selects the default local bus, which `destroy()` closes.
+[keyStorage.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L124) selects the default local bus, which `destroy()` closes.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).

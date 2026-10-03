@@ -30,7 +30,6 @@ import {
   resolveTimeout,
   type RequestHeaders,
   type UrlParams,
-  type UrlTemplateResolver,
 } from '@ahoo-wang/fetcher';
 import type { ApiMetadata } from './apiDecorator.js';
 import type { EndpointMetadata } from './endpointDecorator.js';
@@ -42,33 +41,54 @@ import { ParameterType } from './parameterDecorator.js';
 import { EndpointReturnType } from './endpointReturnTypeCapable.js';
 
 /**
- * RFC 6570 `{name}` path-template placeholders, e.g. `{userId}` in
- * `/users/{userId}`.
+ * Endpoints {@link warnInferredPathNameMismatch} is done with: it warned, or
+ * every inferred `@path()` name matched a placeholder. Keyed by the endpoint
+ * metadata, which every per-instance FunctionMetadata of one decorated method
+ * shares.
  */
+const checkedEndpoints = new WeakSet<object>();
+
 /**
- * Warns when a path template placeholder has no path parameter. fetcher then
- * fails with `Missing required path parameter`, unless an interceptor supplies
- * it; the usual cause is a minifier renaming the parameter an unnamed
- * `@path()` inferred its name from.
+ * Warns, once per endpoint, when a `@path()` parameter whose name was inferred
+ * from the method source (not given explicitly) matches no placeholder of the
+ * path template. That is the minification hazard: a minifier renamed the
+ * parameter, so it no longer binds `{userId}`. Placeholders with no parameter
+ * at all are not reported; an interceptor may fill them (e.g. `{tenantId}`).
+ * A plain-object argument is spread into its keys, so its name does not
+ * matter and that call does not warn.
  */
-function warnUnboundPathPlaceholders(
+function warnInferredPathNameMismatch(
+  metadata: FunctionMetadata,
+  args: any[],
   templatePath: string,
-  pathParams: Record<string, unknown>,
-  resolver: UrlTemplateResolver,
 ): void {
-  if (!templatePath) return;
-  const unbound = resolver
-    .extractPathParams(templatePath)
-    .filter(name => !(name in pathParams));
-  if (unbound.length > 0) {
-    console.warn(
-      `[fetcher-decorator] Path template "${templatePath}" has placeholder(s) ` +
-        `${unbound.join(', ')} with no matching path parameter, so resolving ` +
-        `the URL fails unless an interceptor supplies it. ` +
-        `This usually means the parameter name was changed by a minifier; ` +
-        `pass the name explicitly, e.g. @path('${unbound[0]}').`,
+  if (!templatePath || checkedEndpoints.has(metadata.endpoint)) return;
+  const inferred = [...metadata.parameters.values()].filter(
+    param => param.type === ParameterType.PATH && !param.explicit && param.name,
+  );
+  if (inferred.length > 0) {
+    const placeholders =
+      metadata.fetcher.urlBuilder.urlTemplateResolver.extractPathParams(
+        templatePath,
+      );
+    const mismatched = inferred.filter(
+      param => !placeholders.includes(param.name!),
     );
+    if (mismatched.length > 0) {
+      const misbound = mismatched.find(param => {
+        const value = args[param.index];
+        return value !== undefined && value !== null && !isPlainObject(value);
+      });
+      if (!misbound) return;
+      console.warn(
+        `[fetcher-decorator] ${metadata.name}: the @path() parameter ` +
+          `"${misbound.name}" was named from the method source and matches ` +
+          `no placeholder of "${templatePath}". This usually means a ` +
+          `minifier renamed it; pass the name explicitly, e.g. @path('name').`,
+      );
+    }
   }
+  checkedEndpoints.add(metadata.endpoint);
 }
 
 /** An object literal or `Object.create(null)`: the only objects spread into keys. */
@@ -311,7 +331,7 @@ export class FunctionMetadata implements NamedCapable {
           body = value;
           break;
         case ParameterType.REQUEST:
-          parameterRequest = this.processRequestParam(value);
+          parameterRequest = value || {};
           break;
         case ParameterType.ATTRIBUTE:
           this.processAttributeParam(funParameter, value, attributes);
@@ -340,12 +360,10 @@ export class FunctionMetadata implements NamedCapable {
     delete mergedRequest.path;
     mergedRequest.url = this.resolvePath(parameterPath);
 
-    // Minify safety: the placeholders of the fetcher's template style against
-    // the path parameters after every layer (including @request) merged.
-    warnUnboundPathPlaceholders(
+    warnInferredPathNameMismatch(
+      this,
+      args,
       parameterPath || this.endpoint.path || '',
-      mergedRequest.urlParams?.path ?? {},
-      this.fetcher.urlBuilder.urlTemplateResolver,
     );
 
     return {
@@ -411,20 +429,6 @@ export class FunctionMetadata implements NamedCapable {
     for (const [name, headerValue] of entries) {
       setHeader(headers, name, formatHeader(headerValue));
     }
-  }
-
-  private processRequestParam(value: any): ParameterRequest {
-    if (!value) {
-      return {};
-    }
-
-    const request = value as ParameterRequest;
-    // 确保请求对象中的属性被正确保留
-    return {
-      ...request,
-      headers: request.headers || {},
-      urlParams: request.urlParams || { path: {}, query: {} },
-    };
   }
 
   /**

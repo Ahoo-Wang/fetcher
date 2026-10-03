@@ -17,10 +17,7 @@ import {
   KeyStorage,
   typedIdentitySerializer,
 } from '@ahoo-wang/fetcher-storage';
-import {
-  BroadcastTypedEventBus,
-  SerialTypedEventBus,
-} from '@ahoo-wang/fetcher-eventbus';
+import { storageEventBus } from './storageEventBus.js';
 
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
@@ -40,13 +37,7 @@ export class DeviceIdStorage extends KeyStorage<string> {
   }: DeviceIdStorageOptions = {}) {
     super({
       key,
-      // The default bus channel must be derived from the actual key so that
-      // storages for different keys never cross-talk over the same channel.
-      eventBus:
-        eventBus ??
-        new BroadcastTypedEventBus({
-          delegate: new SerialTypedEventBus(key),
-        }),
+      eventBus: storageEventBus(key, eventBus),
       ...reset,
       serializer: typedIdentitySerializer(),
     });

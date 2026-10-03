@@ -52,7 +52,7 @@ src/
 
 ## Dependencies
 
-- `@ahoo-wang/fetcher` — core HTTP client (for Fetcher types, not runtime dependency)
+- `@ahoo-wang/fetcher` — core HTTP client (peer; used at runtime for `FetcherError` and the content-type constants)
 
 ## Code Style
 

@@ -18,11 +18,11 @@ import {
   getHeader,
   type ResponseInterceptor,
 } from '@ahoo-wang/fetcher';
-import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from './cosecRequestInterceptor.js';
 import {
-  assertTokenSession,
+  IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
   TOKEN_SESSION_ATTRIBUTE,
-} from './refreshSession.js';
+} from './constants.js';
+import { assertTokenSession } from './refreshSession.js';
 import {
   AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
   type AuthorizationInterceptorOptions,

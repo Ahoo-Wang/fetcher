@@ -6,10 +6,10 @@
 ## 安装
 
 ```bash
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
+pnpm add @ahoo-wang/fetcher-eventbus
 ```
 
-Peer 依赖为 `@ahoo-wang/fetcher`。
+无依赖。
 
 ## 示例
 

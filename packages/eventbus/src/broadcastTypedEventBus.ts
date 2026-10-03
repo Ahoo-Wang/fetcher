@@ -17,6 +17,12 @@ import type { CrossTabMessenger } from './messengers/index.js';
 import { createCrossTabMessenger } from './messengers/index.js';
 
 /**
+ * Buses whose destroy() closed the messenger, so emit() no longer posts. Kept
+ * outside the instance so a frozen bus can still be destroyed.
+ */
+const closedBuses = new WeakSet<object>();
+
+/**
  * Configuration options for BroadcastTypedEventBus
  *
  * @template EVENT - The event type this bus will handle
@@ -168,22 +174,32 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * Emits an event locally and broadcasts it to other browser contexts
    *
    * This method first processes the event through the local delegate bus,
-   * allowing all registered local handlers to process it. Then, if successful,
-   * the event is broadcasted to other tabs/windows through the messenger.
+   * allowing all registered local handlers to process it, then posts it to
+   * other tabs/windows through the messenger.
    *
-   * Note: If broadcasting fails (e.g., due to messenger errors), the local
-   * emission is still completed and a warning is logged to console.
+   * Handler errors do not reach the caller: AbstractTypedEventBus delegates
+   * (SerialTypedEventBus, ParallelTypedEventBus) log them and continue.
+   *
+   * After destroy(), the event is still handled locally but not posted.
    *
    * @param event - The event data to emit and broadcast
-   * @returns Promise that resolves when local processing is complete
-   * @throws Propagates any errors from local event processing
+   * @returns Promise that resolves when local processing is complete and the
+   *   message is posted
+   * @throws Rejects, after local handlers have run, when the
+   *   messageTransformer fails to serialize the event or the messenger fails
+   *   to post it (a non-cloneable event on a BroadcastChannel throws
+   *   DataCloneError, say). With `fallbackSerialize`, a failed post is retried
+   *   once with its replacement message, and rejects only if that fails too.
    */
   async emit(event: EVENT): Promise<void> {
     const transformer = this.messageTransformer;
     const beforeDispatch = transformer?.serializeBeforeDispatch === true;
     const preparedMessage =
-      transformer && beforeDispatch ? transformer.serialize(event) : undefined;
+      transformer && beforeDispatch && !closedBuses.has(this)
+        ? transformer.serialize(event)
+        : undefined;
     await this.delegate.emit(event);
+    if (closedBuses.has(this)) return;
     const message = beforeDispatch
       ? preparedMessage
       : transformer
@@ -228,12 +244,13 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    *
    * This method closes the messenger connection, preventing further
    * cross-tab communication. Local event handling continues to work
-   * through the delegate bus. After calling destroy(), the bus should
-   * not be used for broadcasting operations.
+   * through the delegate bus: a later emit() runs local handlers and posts
+   * nothing.
    *
    * Note: This does not remove event handlers or affect local event processing.
    */
   destroy(): void {
+    closedBuses.add(this);
     this.messenger.close();
   }
 }

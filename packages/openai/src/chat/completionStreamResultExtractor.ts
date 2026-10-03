@@ -11,8 +11,8 @@
  * limitations under the License.
  */
 
-import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
-import '@ahoo-wang/fetcher-eventstream';
+import type { ResultExtractor } from '@ahoo-wang/fetcher';
+import { jsonEventStreamResultExtractor } from '@ahoo-wang/fetcher-eventstream';
 import type {
   JsonServerSentEventStream,
   ServerSentEvent,
@@ -74,6 +74,4 @@ export const DoneDetector: TerminateDetector = (event: ServerSentEvent) => {
  */
 export const CompletionStreamResultExtractor: ResultExtractor<
   JsonServerSentEventStream<ChatResponse>
-> = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.requiredJsonEventStream(DoneDetector);
-};
+> = jsonEventStreamResultExtractor<ChatResponse>(DoneDetector);

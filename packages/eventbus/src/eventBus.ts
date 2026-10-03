@@ -54,12 +54,7 @@ export class EventBus<Events extends Record<EventType, unknown>> {
     type: Key,
     handler: EventHandler<Events[Key]>,
   ): boolean {
-    let bus = this.buses.get(type);
-    if (!bus) {
-      bus = this.typeEventBusSupplier(type);
-      this.buses.set(type, bus);
-    }
-    return bus?.on(handler) ?? false;
+    return this.bus(type).on(handler);
   }
 
   /**
@@ -77,16 +72,30 @@ export class EventBus<Events extends Record<EventType, unknown>> {
   /**
    * Emits an event for a specific event type
    *
+   * The type's bus is created on first use, so an emit reaches the bus even
+   * when nothing in this context has subscribed: a BroadcastTypedEventBus
+   * supplier still broadcasts it to other tabs.
+   *
    * @template Key - The event type
    * @param type - The event type to emit
    * @param event - The event data
-   * @returns Promise if the underlying bus is async, void otherwise
+   * @returns Promise that resolves when the type's bus has handled the event
    */
   emit<Key extends EventType>(
     type: Key,
     event: Events[Key],
   ): void | Promise<void> {
-    return this.buses.get(type)?.emit(event);
+    return this.bus(type).emit(event);
+  }
+
+  /** Returns the bus for the type, creating it with the supplier on first use. */
+  private bus(type: EventType): TypedEventBus<unknown> {
+    let bus = this.buses.get(type);
+    if (!bus) {
+      bus = this.typeEventBusSupplier(type);
+      this.buses.set(type, bus);
+    }
+    return bus;
   }
 
   /**

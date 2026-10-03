@@ -47,7 +47,6 @@ export class EventStreamIncompleteError extends FetcherError {
   constructor() {
     super('The event stream ended before its terminating event');
     this.name = 'EventStreamIncompleteError';
-    Object.setPrototypeOf(this, EventStreamIncompleteError.prototype);
   }
 }
 

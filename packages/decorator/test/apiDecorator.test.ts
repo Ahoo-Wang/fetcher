@@ -569,7 +569,7 @@ describe('apiDecorator', () => {
   });
 
   describe('buildRequestExecutor', () => {
-    it('should cache the executor by method name and return the same instance', () => {
+    it('should use the function metadata as is when the instance has no apiMetadata', () => {
       const testApi = new TestApi();
       const functionMetadata = new FunctionMetadata(
         'getUsers',
@@ -578,10 +578,9 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const first = buildRequestExecutor(testApi, functionMetadata);
-      const second = buildRequestExecutor(testApi, functionMetadata);
+      const executor = buildRequestExecutor(testApi, functionMetadata);
 
-      expect(second).toBe(first);
+      expect((executor as any).metadata).toBe(functionMetadata);
     });
 
     it('should merge target apiMetadata over function apiMetadata', () => {
@@ -608,7 +607,7 @@ describe('apiDecorator', () => {
       });
     });
 
-    it('should cache executors off the instance and rebuild them when apiMetadata is replaced', () => {
+    it('should not store executors on the instance and should follow a replaced apiMetadata', () => {
       const testApi: any = new TestApi();
       const functionMetadata = new FunctionMetadata(
         'newMethod',
@@ -617,14 +616,14 @@ describe('apiDecorator', () => {
         new Map(),
       );
 
-      const executor = buildRequestExecutor(testApi, functionMetadata);
+      buildRequestExecutor(testApi, functionMetadata);
 
-      expect(Object.keys(testApi)).not.toContain('requestExecutors');
-      expect(buildRequestExecutor(testApi, functionMetadata)).toBe(executor);
+      expect(Object.keys(testApi)).toEqual(['nonFunctionProperty']);
       testApi.apiMetadata = { basePath: '/replaced' };
-      expect(buildRequestExecutor(testApi, functionMetadata)).not.toBe(
-        executor,
-      );
+      expect(
+        (buildRequestExecutor(testApi, functionMetadata) as any).metadata.api
+          .basePath,
+      ).toBe('/replaced');
     });
   });
 });
