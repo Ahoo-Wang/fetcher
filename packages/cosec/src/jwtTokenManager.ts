@@ -31,10 +31,33 @@ import {
   isSameToken,
   isSameTokenSession,
 } from './refreshSession.js';
-import { RefreshSessionChangedError, RefreshTokenError } from './errors.js';
+import {
+  InvalidRefreshResponseError,
+  RefreshSessionChangedError,
+  RefreshTokenError,
+  RefreshUnavailableError,
+} from './errors.js';
 import { withRefreshLock } from './refreshLock.js';
 
-export { RefreshSessionChangedError, RefreshTokenError } from './errors.js';
+export {
+  RefreshSessionChangedError,
+  RefreshTokenError,
+  RefreshUnavailableError,
+} from './errors.js';
+
+/**
+ * Whether the refresh endpoint rejected the refresh token: it answered with a
+ * 4xx (read from the `ExchangeError` the refresh client rejects with, so a
+ * custom TokenRefresher signals a rejection the same way) or with a body that
+ * is not a composite token.
+ */
+function isRefreshRejected(error: unknown): boolean {
+  if (error instanceof InvalidRefreshResponseError) return true;
+  const status = (
+    error as { exchange?: { response?: { status?: unknown } } } | undefined
+  )?.exchange?.response?.status;
+  return typeof status === 'number' && status >= 400 && status < 500;
+}
 
 function isCompositeToken(token: unknown): token is CompositeToken {
   return (
@@ -140,9 +163,7 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
             if (!isSameToken(jwtToken, currentToken)) return currentToken;
             // A malformed response must not be stored as the session token.
             if (!isCompositeToken(newToken)) {
-              throw new Error(
-                'The refresh response has no accessToken and refreshToken.',
-              );
+              throw new InvalidRefreshResponseError();
             }
             const refreshedToken = new JwtCompositeToken(
               newToken,
@@ -176,6 +197,11 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
               throw new RefreshSessionChangedError(error);
             }
             if (isSameToken(jwtToken, currentToken)) {
+              // Only the server rejecting the refresh token ends the session;
+              // a failure to reach it (offline, timeout, 5xx) keeps it.
+              if (!isRefreshRejected(error)) {
+                throw new RefreshUnavailableError(jwtToken, error);
+              }
               this.tokenStorage.remove();
             }
             throw new RefreshTokenError(jwtToken, error);

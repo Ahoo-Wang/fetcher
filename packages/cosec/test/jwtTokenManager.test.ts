@@ -4,6 +4,7 @@ import {
   JwtTokenManager,
   RefreshSessionChangedError,
   RefreshTokenError,
+  RefreshUnavailableError,
 } from '../src';
 import { TokenStorage } from '../src';
 import type { TokenRefresher, CompositeToken } from '../src';
@@ -142,7 +143,10 @@ describe('JwtTokenManager', () => {
     const jwtCompositeToken = new JwtCompositeToken(compositeToken);
     tokenStorage.set(jwtCompositeToken);
 
-    const error = new Error('Refresh failed');
+    // The server rejects the refresh token (a 4xx).
+    const error = Object.assign(new Error('Refresh failed'), {
+      exchange: { response: { status: 401 } },
+    });
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 
     // Act & Assert
@@ -151,6 +155,30 @@ describe('JwtTokenManager', () => {
     );
 
     expect(tokenStorage.get()).toBeNull();
+  });
+
+  it.each([
+    ['a network failure', new TypeError('Failed to fetch')],
+    ['a timeout or other error without a response', new Error('timeout')],
+    [
+      'a 5xx answer',
+      Object.assign(new Error('unavailable'), {
+        exchange: { response: { status: 502 } },
+      }),
+    ],
+  ])('keeps the token when refresh fails with %s', async (_name, error) => {
+    const jwtCompositeToken = new JwtCompositeToken({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    tokenStorage.set(jwtCompositeToken);
+    vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
+
+    const failure = await jwtTokenManager.refresh().catch(e => e);
+    expect(failure).toBeInstanceOf(RefreshUnavailableError);
+    expect(failure.cause).toBe(error);
+    expect(failure.token).toBe(jwtCompositeToken);
+    expect(tokenStorage.get()).toBe(jwtCompositeToken);
   });
 
   it('should clear refreshInProgress after successful refresh', async () => {
@@ -182,7 +210,10 @@ describe('JwtTokenManager', () => {
       refreshToken: 'refresh-token',
     };
 
-    const error = new Error('Refresh failed');
+    // The server rejects the refresh token (a 4xx).
+    const error = Object.assign(new Error('Refresh failed'), {
+      exchange: { response: { status: 401 } },
+    });
     tokenStorage.setCompositeToken(compositeToken);
     vi.mocked(tokenRefresher.refresh).mockRejectedValueOnce(error);
 

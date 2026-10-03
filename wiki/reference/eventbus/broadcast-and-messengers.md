@@ -7,20 +7,20 @@ description: 'Broadcast buses and messengers — @ahoo-wang/fetcher-eventbus 5.0
 
 `BroadcastTypedEventBus<EVENT>` decorates a local `TypedEventBus<EVENT>` with cross-context delivery. The transport is notification-only: there is no acknowledgment, remote completion wait, replay, or delivery guarantee.
 
-Keep the delegate when constructing a broadcast bus so its handlers can be cleaned up separately. A supplied messenger is closed by `destroy()` too; sharing that messenger with an unrelated bus transfers overlapping ownership and can terminate the other consumer. Use a separate messenger per independently owned broadcast bus.
+Keep the delegate when constructing a broadcast bus so its handlers can be cleaned up separately. `destroy()` closes only a messenger the bus created. A messenger passed in `options.messenger` belongs to the caller: `destroy()` detaches the bus from it (its `onmessage` is replaced by a no-op) and leaves it open, so close it yourself once nothing else uses it. Because a messenger has one `onmessage`, still give each independently owned broadcast bus its own messenger.
 
 ## Broadcast options and flow {#broadcast}
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` requires `delegate`. Its `type` and `handlers` come from the delegate; `on`/`off` forward to it. Default messenger is `createCrossTabMessenger('_broadcast_:' + delegate.type)`; construction throws `Error('Messenger setup failed')` if none is available.
 
-| Option/member                             | Default                    | Contract                                                                                                                  |
-| ----------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                                                                          |
-| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                                                                    |
-| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                                                                     |
-| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery.                                              |
-| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.                                                        |
-| `destroy()`                               | —                          | Closes messenger only; does not destroy delegate or remove its handlers. Later emits run local handlers and post nothing. |
+| Option/member                             | Default                    | Contract                                                                                                                                                                                       |
+| ----------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                                                                                                                                               |
+| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                                                                                                                                         |
+| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                                                                                                                                          |
+| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery.                                                                                                                   |
+| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.                                                                                                                             |
+| `destroy()`                               | —                          | Closes the messenger it created, or only detaches a supplied one (left open for its owner); does not destroy delegate or remove its handlers. Later emits run local handlers and post nothing. |
 
 `emit` awaits the local delegate first, then posts the message (with optional pre-serialization). Outbound serialization/post failures reject emit; local delivery may already have happened. A post that throws (DataCloneError for a non-cloneable event on a BroadcastChannel, say) rejects unless `fallbackSerialize` is set and its retry succeeds. After `destroy()`, emit skips serialization and posting and resolves once local delivery completes. A pre-serialization throw prevents local delivery. Incoming messages deserialize and emit only on the delegate, so they are not rebroadcast; decode/delegate rejections are caught and warned. The mutable `messageTransformer` affects later operations.
 
@@ -64,6 +64,7 @@ if (messenger) {
   } finally {
     bus.destroy();
     delegate.destroy();
+    messenger.close();
   }
 }
 ```

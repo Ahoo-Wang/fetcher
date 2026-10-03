@@ -65,6 +65,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `RefreshToken`                                   | [Tokens and refresh](tokens-and-refresh#refreshtoken)                                                       |
 | `RefreshTokenError`                              | [Tokens and refresh](tokens-and-refresh#refreshtokenerror)                                                  |
 | `RefreshTokenStatusCapable`                      | [Tokens and refresh](tokens-and-refresh#refreshtokenstatuscapable)                                          |
+| `RefreshUnavailableError`                        | [Tokens and refresh](tokens-and-refresh#refreshunavailableerror)                                            |
 | `RequestTrust`                                   | [Interceptors and attribution](interceptors-and-attribution#requesttrust)                                   |
 | `RequestTrustCapable`                            | [Interceptors and attribution](interceptors-and-attribution#requesttrustcapable)                            |
 | `ResourceAttributionOptions`                     | [Interceptors and attribution](interceptors-and-attribution#resourceattributionoptions)                     |

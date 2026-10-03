@@ -12,7 +12,11 @@
  */
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types.js';
-import { RefreshSessionChangedError, RefreshTokenError } from './errors.js';
+import {
+  RefreshSessionChangedError,
+  RefreshTokenError,
+  RefreshUnavailableError,
+} from './errors.js';
 import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
 
 export { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
@@ -111,6 +115,8 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
     const notification = exchange.attributes?.get(this.name);
     if (
       exchange.error instanceof RefreshSessionChangedError ||
+      // A refresh that could not reach the server keeps the session.
+      exchange.error instanceof RefreshUnavailableError ||
       notification === true
     ) {
       return;

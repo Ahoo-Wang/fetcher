@@ -19,7 +19,7 @@ description: >
 - Handler errors are caught and logged with `console.warn`; `emit()` never rejects because of a handler.
 - `once: true` handlers are removed before dispatch, so they run at most once even with overlapping emits.
 - `createCrossTabMessenger()` tries `BroadcastChannelMessenger`, then `StorageMessenger`, then returns `undefined`; without any messenger the `BroadcastTypedEventBus` constructor throws. `StorageMessenger` payloads must survive `JSON.stringify`.
-- `BroadcastTypedEventBus.destroy()` only closes the messenger; call `destroy()` on the delegate to drop its handlers.
+- `BroadcastTypedEventBus.destroy()` stops cross-tab traffic but leaves the delegate's handlers; call `destroy()` on the delegate to drop them. It closes only a messenger the bus created — a messenger passed in `options.messenger` is detached and left open, so close it yourself.
 
 ## Minimal example
 

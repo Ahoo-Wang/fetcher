@@ -142,13 +142,26 @@ describe('BroadcastTypedEventBus', () => {
     expect(mockMessenger.postMessage).toHaveBeenCalledWith('event');
   });
 
-  it('should destroy by closing messenger', () => {
+  it('closes the messenger it created on destroy', () => {
+    const bus = new BroadcastTypedEventBus({ delegate });
+    expect(createCrossTabMessengerMock).toHaveBeenCalled();
+    bus.destroy();
+    expect(mockMessenger.close).toHaveBeenCalled();
+  });
+
+  it('detaches but leaves open a messenger the caller passed in', async () => {
     const bus = new BroadcastTypedEventBus({
       delegate,
       messenger: mockMessenger,
     });
+    const handler = { name: 'h', order: 0, handle: vi.fn() };
+    bus.on(handler);
+    const receive = mockMessenger.onmessage;
     bus.destroy();
-    expect(mockMessenger.close).toHaveBeenCalled();
+    expect(mockMessenger.close).not.toHaveBeenCalled();
+    expect(mockMessenger.onmessage).not.toBe(receive);
+    await mockMessenger.onmessage('after destroy');
+    expect(handler.handle).not.toHaveBeenCalled();
   });
 
   it('transforms wire messages while preserving local events and decoded delivery', async () => {

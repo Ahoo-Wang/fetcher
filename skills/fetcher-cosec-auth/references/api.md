@@ -97,7 +97,13 @@ new CoSecConfigurer({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(token),
       });
-      if (!response.ok) throw new Error(`Refresh failed: ${response.status}`);
+      if (!response.ok) {
+        // A 4xx at `exchange.response.status` means the refresh token was
+        // rejected (sign out); anything else keeps the session.
+        throw Object.assign(new Error(`Refresh failed: ${response.status}`), {
+          exchange: { response },
+        });
+      }
       return response.json(); // must be { accessToken, refreshToken }
     },
   },
@@ -353,7 +359,9 @@ interceptors pass the originating exchange; direct calls can omit it.
 
 - Concurrent refreshes of the same current token instance share one refresher call; a replacement session starts its own.
 - On success the result is stored as a new `JwtCompositeToken` with the storage's `earlyPeriod` and the same `sessionId`.
-- On failure, the manager first re-reads storage (`tokenStorage.reload()`): when another tab has already refreshed the same session (its one-time refresh token made ours fail) and stored the successor, that token is used. Otherwise the stored token is removed only if it is still the token that started the refresh, and `RefreshTokenError` (with `.token`) is thrown.
+- On failure, the manager first re-reads storage (`tokenStorage.reload()`): when another tab has already refreshed the same session (its one-time refresh token made ours fail) and stored the successor, that token is used. Otherwise, if storage still holds the token that started the refresh:
+  - The refresh endpoint rejected the refresh token — the error carries a 4xx at `error.exchange.response.status` (the `ExchangeError`/`HttpStatusValidationError` the refresh client rejects with; a custom `TokenRefresher` signals a rejection the same way), or the response is not a composite token: the token is removed and `RefreshTokenError` (with `.token`, `.cause`) is thrown, which `onUnauthorized` receives.
+  - Any other failure — network error, timeout, abort, 5xx, an error without a response: the token is kept and `RefreshUnavailableError` (with `.token`, `.cause`) is thrown. `onUnauthorized` is not called, the user stays signed in, and a later request refreshes again.
 - If the session changes (sign-out, `signIn`, another user) while refreshing, `RefreshSessionChangedError` rejects the original request; it is not sent or retried as the new user and does not trigger `onUnauthorized`.
 - If another tab already stored a successor for the same session, the pending refresh (or a late 401 for an older token) reuses it without refreshing again.
 - A request started with no token records an anonymous session; a later login cannot replay it with the new session.
@@ -495,7 +503,7 @@ fetcher.interceptors.response.use(
 2. Skips (lets the 401 continue) when the token is not refreshable and no newer token from the same session exists
 3. Calls `tokenManager.refresh(exchange)`, which reuses a known successor from the same session or refreshes the current token
 4. Removes the managed Authorization header and retries — at most once per exchange (`AUTHORIZATION_RESPONSE_MAX_RETRY` = 1)
-5. On refresh failure: the manager reuses a successor another tab stored for the same session; otherwise it clears only the original, unchanged session and throws `RefreshTokenError`. A failure of the retried request itself propagates without clearing the freshly refreshed token
+5. On refresh failure: the manager reuses a successor another tab stored for the same session; otherwise, for the original, unchanged session, a rejected refresh token (4xx or malformed response) clears it and throws `RefreshTokenError`, and any other failure keeps it and throws `RefreshUnavailableError`. A failure of the retried request itself propagates without clearing the freshly refreshed token
 6. The retry replays the whole request phase (new `CoSec-Request-Id`, re-sent fetch) and only the response interceptors up to this one; later response interceptors (status validation, body readers) run once on the fresh response. The error phase is not replayed: when the retry fails, error interceptors run once and `error.exchange.error` is the retry's own error (for example `HttpStatusValidationError`), not a nested `ExchangeError`
 
 ### Skip Token Refresh for Specific Requests
@@ -583,7 +591,7 @@ fetcher.interceptors.error.use(
 
 **Triggers on:** `exchange.response.status === 401` or `exchange.error instanceof RefreshTokenError`,
 at most once per exchange, with one notification shared by requests whose
-token refresh failed together. `RefreshSessionChangedError` never notifies.
+token refresh failed together. `RefreshSessionChangedError` and `RefreshUnavailableError` (refresh could not reach the server; session kept) never notify.
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` only disables refresh; it does not
 suppress normal 401 notifications.
 
@@ -658,33 +666,34 @@ const data = await fetcher.get('/api/protected-resource');
 
 ## Key Classes and Exports
 
-| Class / Export                                                                           | Purpose                                                                              |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `CoSecConfigurer` / `CoSecConfig`                                                        | Declarative configuration for all CoSec features                                     |
-| `CoSecHeaders` / `ResponseCodes`                                                         | Header name constants / 401 and 403 status constants                                 |
-| `JwtToken<Payload>`                                                                      | Parse JWT with typed payload and expiration check                                    |
-| `JwtCompositeToken`                                                                      | Access/refresh token pair with status checks and `sessionId`                         |
-| `JwtCompositeTokenSerializer`                                                            | Serialize/deserialize composite tokens                                               |
-| `CoSecJwtPayload` / `JwtPayload`                                                         | JWT payload types (tenantId, roles, policies, attributes)                            |
-| `CompositeToken`                                                                         | `{ accessToken, refreshToken }` exchanged with the refresher                         |
-| `JwtTokenManager`                                                                        | Token lifecycle management with dedup refresh                                        |
-| `TokenRefresher` / `CoSecTokenRefresher`                                                 | Refresh contract / built-in implementation using Fetcher POST                        |
-| `TokenStorage`                                                                           | JWT token persistence with cross-tab sync (`'cosec-token'`)                          |
-| `DeviceIdStorage`                                                                        | Device ID persistence and generation (`'cosec-device-id'`)                           |
-| `SpaceIdStorage`                                                                         | Space ID persistence (`'cosec-space-id'`)                                            |
-| `DEFAULT_COSEC_TOKEN_KEY` / `DEFAULT_COSEC_DEVICE_ID_KEY` / `DEFAULT_COSEC_SPACE_ID_KEY` | Default storage keys                                                                 |
-| `parseJwtPayload` / `isTokenExpired`                                                     | Low-level JWT utilities for custom token logic                                       |
-| `idGenerator` / `NanoIdGenerator`                                                        | nanoid-based ID generator used for request, device, and session IDs                  |
-| `AuthorizationRequestInterceptor`                                                        | Adds Bearer token to requests                                                        |
-| `AuthorizationResponseInterceptor`                                                       | Handles 401 and retries once with a fresh token                                      |
-| `CoSecRequestInterceptor`                                                                | Adds CoSec headers (appId, deviceId, requestId, spaceId)                             |
-| `ResourceAttributionRequestInterceptor`                                                  | Fills `{tenantId}`/`{ownerId}` URL path params                                       |
-| `UnauthorizedErrorInterceptor`                                                           | Custom 401 error handling                                                            |
-| `ForbiddenErrorInterceptor`                                                              | Custom 403 error handling                                                            |
-| `SpaceIdProvider`                                                                        | Space resolution interface                                                           |
-| `DefaultSpaceIdProvider` / `NoneSpaceIdProvider`                                         | Predicate + storage resolution / always-null default                                 |
-| `RefreshTokenError`                                                                      | Thrown when token refresh fails (extends `FetcherError`, has `.token`)               |
-| `RefreshSessionChangedError`                                                             | Stops a refresh request after its session changes, without unauthorized side effects |
-| `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`                                                     | `'Ignore-Refresh-Token'`; attribute key to skip auto-refresh for a request           |
-| `RequestTrust` / `RequestTrustCapable` / `sameOriginTrust` / `isTrustedRequest`          | Decide which absolute request URLs carry credentials (`isTrusted`)                   |
-| `AuthorizeResult` / `AuthorizeResults`                                                   | Authorization result type and constants (ALLOW, EXPLICIT_DENY, …)                    |
+| Class / Export                                                                           | Purpose                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CoSecConfigurer` / `CoSecConfig`                                                        | Declarative configuration for all CoSec features                                                                                                                          |
+| `CoSecHeaders` / `ResponseCodes`                                                         | Header name constants / 401 and 403 status constants                                                                                                                      |
+| `JwtToken<Payload>`                                                                      | Parse JWT with typed payload and expiration check                                                                                                                         |
+| `JwtCompositeToken`                                                                      | Access/refresh token pair with status checks and `sessionId`                                                                                                              |
+| `JwtCompositeTokenSerializer`                                                            | Serialize/deserialize composite tokens                                                                                                                                    |
+| `CoSecJwtPayload` / `JwtPayload`                                                         | JWT payload types (tenantId, roles, policies, attributes)                                                                                                                 |
+| `CompositeToken`                                                                         | `{ accessToken, refreshToken }` exchanged with the refresher                                                                                                              |
+| `JwtTokenManager`                                                                        | Token lifecycle management with dedup refresh                                                                                                                             |
+| `TokenRefresher` / `CoSecTokenRefresher`                                                 | Refresh contract / built-in implementation using Fetcher POST                                                                                                             |
+| `TokenStorage`                                                                           | JWT token persistence with cross-tab sync (`'cosec-token'`)                                                                                                               |
+| `DeviceIdStorage`                                                                        | Device ID persistence and generation (`'cosec-device-id'`)                                                                                                                |
+| `SpaceIdStorage`                                                                         | Space ID persistence (`'cosec-space-id'`)                                                                                                                                 |
+| `DEFAULT_COSEC_TOKEN_KEY` / `DEFAULT_COSEC_DEVICE_ID_KEY` / `DEFAULT_COSEC_SPACE_ID_KEY` | Default storage keys                                                                                                                                                      |
+| `parseJwtPayload` / `isTokenExpired`                                                     | Low-level JWT utilities for custom token logic                                                                                                                            |
+| `idGenerator` / `NanoIdGenerator`                                                        | nanoid-based ID generator used for request, device, and session IDs                                                                                                       |
+| `AuthorizationRequestInterceptor`                                                        | Adds Bearer token to requests                                                                                                                                             |
+| `AuthorizationResponseInterceptor`                                                       | Handles 401 and retries once with a fresh token                                                                                                                           |
+| `CoSecRequestInterceptor`                                                                | Adds CoSec headers (appId, deviceId, requestId, spaceId)                                                                                                                  |
+| `ResourceAttributionRequestInterceptor`                                                  | Fills `{tenantId}`/`{ownerId}` URL path params                                                                                                                            |
+| `UnauthorizedErrorInterceptor`                                                           | Custom 401 error handling                                                                                                                                                 |
+| `ForbiddenErrorInterceptor`                                                              | Custom 403 error handling                                                                                                                                                 |
+| `SpaceIdProvider`                                                                        | Space resolution interface                                                                                                                                                |
+| `DefaultSpaceIdProvider` / `NoneSpaceIdProvider`                                         | Predicate + storage resolution / always-null default                                                                                                                      |
+| `RefreshTokenError`                                                                      | Thrown when the refresh endpoint rejects the refresh token (4xx or malformed response); session removed, `onUnauthorized` notified (extends `FetcherError`, has `.token`) |
+| `RefreshUnavailableError`                                                                | Thrown when the refresh cannot complete (network, timeout, abort, 5xx); session kept, no `onUnauthorized` (extends `FetcherError`, has `.token`, `.cause`)                |
+| `RefreshSessionChangedError`                                                             | Stops a refresh request after its session changes, without unauthorized side effects                                                                                      |
+| `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY`                                                     | `'Ignore-Refresh-Token'`; attribute key to skip auto-refresh for a request                                                                                                |
+| `RequestTrust` / `RequestTrustCapable` / `sameOriginTrust` / `isTrustedRequest`          | Decide which absolute request URLs carry credentials (`isTrusted`)                                                                                                        |
+| `AuthorizeResult` / `AuthorizeResults`                                                   | Authorization result type and constants (ALLOW, EXPLICIT_DENY, …)                                                                                                         |

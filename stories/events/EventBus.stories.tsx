@@ -101,6 +101,8 @@ async function runScenario(scenario: Scenario): Promise<string> {
   await bus.emit('update');
   bus.destroy();
   delegate.destroy();
+  // destroy() closes only a messenger the bus created; this one is ours.
+  messenger.close();
   return `posted: ${String(messenger.posted)} · closed: ${messenger.closed}`;
 }
 
