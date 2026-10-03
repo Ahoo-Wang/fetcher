@@ -23,9 +23,10 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
   version it prints — never a guessed one.
 - fetcher 6.0.0 is released after that Wow release. Confirm with
   `npm view @ahoo-wang/fetcher dist-tags`.
-- The Wow packages declare fetcher peers `^5.1.0 || ^6` (confirm with
-  `npm view @ahoo-wang/wow-client peerDependencies`), so they can be adopted on
-  5.1.3 before upgrading fetcher. `@ahoo-wang/wow-react` does **not** depend on
+- The Wow packages declare a fetcher peer range that covers the latest 5.x
+  (confirm with `npm view @ahoo-wang/wow-client peerDependencies`, and check it
+  also covers `^6` before upgrading fetcher), so they can be adopted on 5.x
+  before upgrading fetcher. `@ahoo-wang/wow-react` does **not** depend on
   `@ahoo-wang/fetcher-react`: it has its own request state, and its hooks keep
   their own API (the fetcher-react redesign does not apply to them).
 - 6.0 makes no breaking API change to `@ahoo-wang/fetcher`,
