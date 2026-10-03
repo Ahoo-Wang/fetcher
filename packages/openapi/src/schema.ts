@@ -145,4 +145,41 @@ export interface Schema extends Extensible {
 
   // External documentation
   externalDocs?: ExternalDocumentation;
+
+  // JSON Schema 2020-12 keywords that OpenAPI 3.1 schemas may use. All are
+  // optional; a 3.0 document simply leaves them out. A sibling `$ref` is not
+  // declared here: `'$ref' in schema` tells a Reference apart from a Schema.
+
+  // Identification and annotation
+  $id?: string;
+  $anchor?: string;
+  $dynamicAnchor?: string;
+  $comment?: string;
+  $defs?: Record<string, Schema | Reference>;
+  /** Replaces the deprecated `example` in 3.1. */
+  examples?: any[];
+
+  // String content
+  contentMediaType?: string;
+  contentEncoding?: string;
+  contentSchema?: Schema | Reference;
+
+  // Array applicators
+  prefixItems?: Array<Schema | Reference>;
+  contains?: Schema | Reference;
+  minContains?: number;
+  maxContains?: number;
+  unevaluatedItems?: boolean | Schema | Reference;
+
+  // Object applicators
+  patternProperties?: Record<string, Schema | Reference>;
+  propertyNames?: Schema | Reference;
+  dependentRequired?: Record<string, string[]>;
+  dependentSchemas?: Record<string, Schema | Reference>;
+  unevaluatedProperties?: boolean | Schema | Reference;
+
+  // Conditional applicators
+  if?: Schema | Reference;
+  then?: Schema | Reference;
+  else?: Schema | Reference;
 }

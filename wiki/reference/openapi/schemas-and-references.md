@@ -21,7 +21,7 @@ Use `Schema` for payload shape and `Components` to name reusable definitions. Op
 | Composition | allOf/anyOf/oneOf arrays, not one Schema/Reference                                                                                                          |
 | Metadata    | discriminator, xml and externalDocs                                                                                                                         |
 
-`SchemaType` includes string, number, integer, boolean, array, object, null. This supports selected 3.0 and 3.1 notation together (`nullable`, type arrays, `$schema`, const, numeric exclusive bounds); it is not a complete JSON Schema 2020-12 model. There is no boolean Schema alternative, `$defs`, prefixItems, or unevaluatedProperties field.
+`SchemaType` includes string, number, integer, boolean, array, object, null. This supports 3.0 and 3.1 notation together (`nullable`, type arrays, `$schema`, const, numeric exclusive bounds) and, all optional, the JSON Schema 2020-12 keywords 3.1 schemas use: `$id`, `$anchor`, `$dynamicAnchor`, `$comment`, `$defs`, `examples`, `contentMediaType`/`contentEncoding`/`contentSchema`, `prefixItems`, `contains`/`minContains`/`maxContains`, `unevaluatedItems`, `patternProperties`, `propertyNames`, `dependentRequired`, `dependentSchemas`, `unevaluatedProperties` and `if`/`then`/`else`. It is still not a complete 2020-12 model: there is no boolean Schema alternative, and a sibling `$ref` is not declared on Schema, because `'$ref' in value` is how code tells a Reference from a Schema. `OpenAPI.paths` stays required, although 3.1 allows a document with only components or webhooks; pass `paths: {}` for one.
 
 ## References and components
 
