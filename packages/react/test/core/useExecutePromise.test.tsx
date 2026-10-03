@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useLayoutEffect } from 'react';
 import { act, render, renderHook, waitFor } from '@testing-library/react';
 import { useExecutePromise } from '../../src';
 
@@ -210,6 +210,27 @@ describe('useExecutePromise', () => {
       const { execute } = state;
       useEffect(() => {
         execute(async () => 'mounted');
+      }, [execute]);
+      return null;
+    }
+    render(
+      <StrictMode>
+        <Probe />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(latest?.status).toBe('success'));
+    expect(latest?.result).toBe('mounted');
+  });
+
+  it('settles an execution started in a layout effect under StrictMode', async () => {
+    let latest: ReturnType<typeof useExecutePromise<string>> | undefined;
+    const supplier = vi.fn(async () => 'mounted');
+    function Probe() {
+      const state = useExecutePromise<string>();
+      latest = state;
+      const { execute } = state;
+      useLayoutEffect(() => {
+        execute(supplier);
       }, [execute]);
       return null;
     }

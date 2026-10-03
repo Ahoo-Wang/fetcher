@@ -126,7 +126,13 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
 
   const execute = useCallback(
     async (supplier: PromiseSupplier<R>): Promise<PromiseState<R, E>> => {
-      if (disposedRef.current) return idleState();
+      if (disposedRef.current) {
+        // StrictMode replays layout effects before passive ones, so an
+        // execution from a replayed layout effect sees the hook disposed
+        // until the replay finishes, within the same task.
+        await Promise.resolve();
+        if (disposedRef.current) return idleState();
+      }
       cancel();
       const controller = new AbortController();
       controllerRef.current = controller;
