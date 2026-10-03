@@ -12,11 +12,8 @@
  */
 
 import type { FetchExchange } from '@ahoo-wang/fetcher';
-import {
-  DEFAULT_INTERCEPTOR_ORDER_STEP,
-  setHeader,
-  type RequestInterceptor,
-} from '@ahoo-wang/fetcher';
+import { setHeader, type RequestInterceptor } from '@ahoo-wang/fetcher';
+import { COSEC_REQUEST_INTERCEPTOR_ORDER } from './constants.js';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
 import { CoSecHeaders } from './types.js';
 import { idGenerator } from './idGenerator.js';
@@ -87,54 +84,10 @@ export interface CoSecRequestOptions
  */
 export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
-/**
- * The execution order for the CoSecRequestInterceptor.
- *
- * The order is Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP, so
- * the interceptor runs among the first request interceptors: before
- * AuthorizationRequestInterceptor (one step later), RequestBodyInterceptor
- * (Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP), URL resolution
- * and the actual HTTP request.
- *
- * @remarks
- * - Position: Before RequestBodyInterceptor
- * - Position: Before FetchInterceptor
- * - Value: Number.MIN_SAFE_INTEGER + 1000
- *
- * @example
- * ```typescript
- * const interceptor = new CoSecRequestInterceptor(options);
- * console.log(interceptor.order); // -9007199254740990
- * ```
- */
-export const COSEC_REQUEST_INTERCEPTOR_ORDER =
-  Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP;
-
-/**
- * Attribute key used to mark requests that should skip token refresh.
- *
- * When this attribute is set to true on a request exchange, the
- * AuthorizationRequestInterceptor will skip the automatic token refresh
- * for that specific request. This is useful for operations where
- * token refresh would cause issues, such as logout requests.
- *
- * @remarks
- * Set this attribute on the exchange before the AuthorizationRequestInterceptor runs:
- * ```typescript
- * exchange.attributes.set(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true);
- * ```
- *
- * @example
- * ```typescript
- * // Skip refresh during logout
- * const logoutExchange = await fetcher.createRequest('/logout', {
- *   method: 'POST'
- * }).getExchange();
- * logoutExchange.attributes.set(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true);
- * await fetcher.fetch(logoutExchange);
- * ```
- */
-export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
+export {
+  COSEC_REQUEST_INTERCEPTOR_ORDER,
+  IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
+} from './constants.js';
 
 /**
  * Request interceptor that automatically adds CoSec authentication headers to outgoing requests.

@@ -31,7 +31,7 @@ description: '服务与端点 — @ahoo-wang/fetcher-decorator 5.0.0'
 | `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                   |
 | `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                     |
 
-`ApiMetadataCapable.apiMetadata` 支持实例配置。`buildRequestExecutor` 将实例元数据浅展开覆盖装饰器元数据，并按实例与方法名缓存执行器（缓存不在实例上）。把 `apiMetadata` 替换为新对象后，下次调用即生效；原地修改已缓存的对象不会生效。端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
+`ApiMetadataCapable.apiMetadata` 支持实例配置。`buildRequestExecutor` 每次调用都将实例元数据浅展开覆盖装饰器元数据，不做缓存，因此替换或原地修改 `apiMetadata` 都在下次调用生效。端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
 
 装饰器默认返回已解析 JSON，而 `Fetcher.get` 默认返回 Response。HEAD/204 或原始响应选择 `ResultExtractors.Response`；诊断场景使用 `returnType: EndpointReturnType.EXCHANGE` 并声明 `Promise<FetchExchange>`。钩子及失败见[执行过程](./execution.md)。
 
@@ -72,7 +72,7 @@ void loadUser;
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | <a id="apimetadata"></a>`ApiMetadata`                       | [apiDecorator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L41)             |
 | <a id="apimetadatacapable"></a>`ApiMetadataCapable`         | [apiDecorator.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L84)             |
-| <a id="api"></a>`api`                                       | [apiDecorator.ts:259](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L259)           |
+| <a id="api"></a>`api`                                       | [apiDecorator.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L239)           |
 | <a id="pathcapable"></a>`PathCapable`                       | [endpointDecorator.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L6)     |
 | <a id="endpointmetadata"></a>`EndpointMetadata`             | [endpointDecorator.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L22)   |
 | <a id="methodendpointmetadata"></a>`MethodEndpointMetadata` | [endpointDecorator.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L34)   |

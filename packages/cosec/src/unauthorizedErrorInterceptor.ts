@@ -12,17 +12,10 @@
  */
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types.js';
-import {
-  RefreshSessionChangedError,
-  RefreshTokenError,
-} from './jwtTokenManager.js';
+import { RefreshSessionChangedError, RefreshTokenError } from './errors.js';
+import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
 
-/**
- * The name identifier for the UnauthorizedErrorInterceptor.
- * Used for interceptor registration and identification in the interceptor chain.
- */
-export const UNAUTHORIZED_ERROR_INTERCEPTOR_NAME =
-  'UnauthorizedErrorInterceptor';
+export { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
 
 /**
  * The execution order for the UnauthorizedErrorInterceptor.

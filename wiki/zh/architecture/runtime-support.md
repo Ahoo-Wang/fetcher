@@ -15,7 +15,7 @@ description: 检查平台能力，并在共享客户端前界定可变身份状�
 | 仓库开发    | Node `>=22.12.0`、pnpm `10.34.5`                                     | 使用仓库工具链构建和测试                                     |
 | React       | peer 为 React `^19.0.0`；仓库开发与测试使用 React/ReactDOM `^19.3.0` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18 |
 
-要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41)、[pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38)。
+要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[package.json:41](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L41)、[pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)。
 
 ## 只在预期身份作用域内共享配置
 

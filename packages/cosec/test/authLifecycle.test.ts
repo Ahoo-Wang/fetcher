@@ -315,6 +315,8 @@ describe('authentication lifecycle', () => {
   it.each(['success', 'failure'] as const)(
     'deduplicates replacement-session refresh independently of old refresh %s',
     async outcome => {
+      // Without Web Locks: the two refreshes run side by side in this tab.
+      vi.stubGlobal('navigator', {});
       const original = storage.get()!.token;
       const replacement = token('replacement');
       const refreshed = token('replacement-refreshed');

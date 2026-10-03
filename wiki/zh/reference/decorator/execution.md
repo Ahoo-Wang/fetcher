@@ -13,7 +13,7 @@ description: '元数据与执行生命周期 — @ahoo-wang/fetcher-decorator 5.
 
 `new RequestExecutor(target: any, metadata: FunctionMetadata)` 与 `execute(args: any[]): Promise<any>` 按下列顺序执行：
 
-1. 解析 Fetcher，把参数合并到 request/attributes。
+1. 解析一次 Fetcher，把参数合并到 request/attributes。第 3、5 步与 `Fetcher.exchange` 一致，钩子插在两者之间。
 2. 在 `DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__'` 和 `DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__'` 下保存目标及元数据。
 3. 使用选定提取器调用 `fetcher.resolveExchange`。
 4. 等待可选 `ExecuteLifeCycle.beforeExecute(exchange)`。
@@ -43,7 +43,7 @@ description: '元数据与执行生命周期 — @ahoo-wang/fetcher-decorator 5.
 
 `API_METADATA_KEY` 在构造器上存类元数据；`ENDPOINT_METADATA_KEY`、`PARAMETER_METADATA_KEY` 在原型/属性上存方法和参数元数据。它们是导出的 Symbol，不是可用 `Symbol(...)` 重建的稳定字符串键。
 
-`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` 在模块级 WeakMap 中按实例与方法缓存执行器，不向实例添加字段，并把实例 `apiMetadata` 浅合并到类元数据之上。把 `target.apiMetadata` 替换为新对象后，下次调用会重建执行器。此公开接口供生成器/扩展使用，普通用户直接调用装饰方法。`api` 遍历原型链，每个名称只绑定最近的字符串命名函数，在保留继承元数据查询的同时，把执行器安装到装饰类。装饰类重写且未加自身端点装饰器的方法保留其实现。脱离实例调用已绑定方法（`const { list } = service; list()`）会抛出指明类名与方法名的 `TypeError`；请先 bind，或在服务上调用。
+`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` 每次调用都新建执行器，不向实例添加字段，并把实例 `apiMetadata` 浅合并到类元数据之上，因此替换或原地修改 `target.apiMetadata` 都在下次调用生效。不做缓存，重写端点与经 `super.method()` 调用的父类端点各自发送自己的请求。此公开接口供生成器/扩展使用，普通用户直接调用装饰方法。`api` 遍历原型链，每个名称（字符串或 Symbol）只绑定最近的函数，在保留继承元数据查询的同时，把执行器安装到装饰类。装饰类重写且未加自身端点装饰器的方法保留其实现。脱离实例调用已绑定方法（`const { list } = service; list()`）会抛出指明类名与方法名的 `TypeError`；请先 bind，或在服务上调用。
 
 下面在独立客户端替换网络拦截器，以无服务方式记录解析调用。这是测试设置，不是生产重试机制。
 
@@ -93,12 +93,12 @@ console.assert((await new Health().check()).ok);
 | 符号                                                                            | 实现                                                                                                                                      |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="api_metadata_key"></a>`API_METADATA_KEY`                                 | [apiDecorator.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L91)                           |
-| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:193](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L193)                         |
+| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:188](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L188)                         |
 | <a id="endpoint_metadata_key"></a>`ENDPOINT_METADATA_KEY`                       | [endpointDecorator.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L32)                 |
 | <a id="endpointreturntype"></a>`EndpointReturnType`                             | [endpointReturnTypeCapable.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L14) |
 | <a id="endpointreturntypecapable"></a>`EndpointReturnTypeCapable`               | [endpointReturnTypeCapable.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L19) |
 | <a id="executelifecycle"></a>`ExecuteLifeCycle`                                 | [executeLifeCycle.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts#L23)                   |
-| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L88)                   |
+| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L108)                 |
 | <a id="decorator_target_attribute_key"></a>`DECORATOR_TARGET_ATTRIBUTE_KEY`     | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | <a id="decorator_metadata_attribute_key"></a>`DECORATOR_METADATA_ATTRIBUTE_KEY` | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | <a id="requestexecutor"></a>`RequestExecutor`                                   | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |

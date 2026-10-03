@@ -90,7 +90,9 @@ export class RequestExecutor {
    * @returns A Promise that resolves to the extracted result. The return type depends on:
    *          - EndpointReturnType.EXCHANGE: Returns the FetchExchange object directly
    *          - Otherwise: Returns the result of exchange.extractResult() (e.g., Response, parsed JSON)
-   * @throws Error if the request fails during execution or if lifecycle hooks/interceptors throw
+   * @throws Error if the request fails during execution or if lifecycle hooks/interceptors throw.
+   *         `afterExecute` runs only when the interceptor chain completes; it
+   *         is skipped when `beforeExecute` or the chain throws.
    *
    * @example
    * ```typescript
@@ -124,6 +126,9 @@ export class RequestExecutor {
     const resultExtractor = this.metadata.resolveResultExtractor();
     const endpointReturnType = this.metadata.resolveEndpointReturnType();
 
+    // Mirrors Fetcher.exchange (resolveExchange, then interceptors.exchange)
+    // with the lifecycle hooks in between; a change to Fetcher.exchange must
+    // be mirrored here.
     const exchange = fetcher.resolveExchange(exchangeInit.request, {
       resultExtractor: resultExtractor,
       attributes: exchangeInit.attributes,
@@ -135,7 +140,7 @@ export class RequestExecutor {
     }
     // Process through interceptor chain
     await fetcher.interceptors.exchange(exchange);
-    // Call afterExecute lifecycle hook if target implements ExecuteLifeCycle
+    // Not reached when the chain throws: afterExecute sees completed exchanges only.
     if (executeLifeCycle.afterExecute) {
       await executeLifeCycle.afterExecute(exchange);
     }

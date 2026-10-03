@@ -33,7 +33,11 @@ export interface ExecuteLifeCycle {
   /**
    * Called after the FetchExchange is processed by interceptors.
    * Users can inspect or modify the exchange after processing at this point,
-   * such as handling response data, logging results, or performing cleanup.
+   * such as handling response data or logging results.
+   *
+   * Not called when `beforeExecute` or the interceptor chain throws (for
+   * example a network error no error interceptor handled), so it is not a
+   * `finally`: do not rely on it for cleanup.
    *
    * @param exchange - The FetchExchange object representing the request and response
    */

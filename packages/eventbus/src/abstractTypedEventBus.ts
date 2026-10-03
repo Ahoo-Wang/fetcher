@@ -21,7 +21,9 @@ export abstract class AbstractTypedEventBus<
   abstract type: EventType;
 
   /**
-   * Gets a copy of all registered event handlers, sorted by order
+   * Gets a copy of all registered event handlers, in dispatch order: sorted by
+   * order on a SerialTypedEventBus, registration order on a
+   * ParallelTypedEventBus
    */
   get handlers(): EventHandler<EVENT>[] {
     return [...this.eventHandlers];
@@ -31,6 +33,10 @@ export abstract class AbstractTypedEventBus<
     this.eventHandlers = [];
   }
 
+  /**
+   * Runs one handler, logging (not propagating) any error it throws or
+   * rejects with, so one failing handler never fails emit().
+   */
   protected async handleEvent(
     handler: EventHandler<EVENT>,
     event: EVENT,

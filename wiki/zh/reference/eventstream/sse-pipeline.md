@@ -11,7 +11,7 @@ description: 'SSE 解析管线 — @ahoo-wang/fetcher-eventstream 5.0.0'
 
 ## 转换阶段 {#pipeline}
 
-`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null，否则抛 `EventStreamConvertError(response, 'Response body is null')`。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
+`toServerSentEventStream(response: Response): ServerSentEventStream` 要求正文非 null 且未被读取或锁定，否则抛 `EventStreamConvertError`（`'Response body is null'` 或 `'Response body is already used'`；对同一响应转换两次会得到这个错误，而不是裸 `TypeError`）。管线为 `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`。直接转换器不检查状态和 Content-Type；管线会锁定正文，不能同时独立读取。
 
 | API                              | 输入 → 输出                            | 配置                                               |
 | -------------------------------- | -------------------------------------- | -------------------------------------------------- |
@@ -63,7 +63,7 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | 符号                                                                        | 实现                                                                                                                                                    |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="serversenteventstream"></a>`ServerSentEventStream`                   | [eventStreamConverter.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L31)                       |
-| <a id="toserversenteventstream"></a>`toServerSentEventStream`               | [eventStreamConverter.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L127)                     |
+| <a id="toserversenteventstream"></a>`toServerSentEventStream`               | [eventStreamConverter.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L125)                     |
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |

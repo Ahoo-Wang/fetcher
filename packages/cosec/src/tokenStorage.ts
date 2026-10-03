@@ -16,10 +16,8 @@ import type { CompositeToken } from './tokenRefresher.js';
 import type { CoSecJwtPayload, EarlyPeriodCapable } from './jwts.js';
 import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import {
-  BroadcastTypedEventBus,
-  SerialTypedEventBus,
-} from '@ahoo-wang/fetcher-eventbus';
+import { storageEventBus } from './storageEventBus.js';
+import { setRefreshLockName } from './refreshLock.js';
 
 /**
  * Default key used for storing CoSec tokens in storage.
@@ -89,19 +87,17 @@ export class TokenStorage
     serializer ??= new JwtCompositeTokenSerializer(earlyPeriod);
     super({
       key,
-      // The default bus channel must be derived from the actual key so that
-      // storages for different keys never cross-talk over the same channel.
-      eventBus:
-        eventBus ??
-        new BroadcastTypedEventBus({
-          delegate: new SerialTypedEventBus(key),
-        }),
+      eventBus: storageEventBus(key, eventBus),
       ...reset,
       serializer,
     });
     sharedTokenSerializers.set(this.eventBus, serializer);
     if (!eventBus) this.ownEventBus();
     this.earlyPeriod = earlyPeriod;
+    // Only tabs sharing the browser's localStorage race on a refresh. A
+    // server process holds many users' storages under the same key; a
+    // process-wide lock there would queue every user's refresh behind one.
+    if (isSharedAcrossTabs(reset.storage)) setRefreshLockName(this, key);
   }
 
   /**
@@ -147,5 +143,15 @@ export class TokenStorage
       return null;
     }
     return this.get()?.access.payload ?? null;
+  }
+}
+
+function isSharedAcrossTabs(storage: Storage | undefined): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return (storage ?? window.localStorage) === window.localStorage;
+  } catch {
+    // localStorage is unavailable (e.g. a sandboxed frame): nothing is shared.
+    return false;
   }
 }

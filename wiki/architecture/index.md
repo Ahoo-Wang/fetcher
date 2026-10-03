@@ -21,7 +21,7 @@ Start with the layer that solves your current problem. `Fetcher` sends HTTP requ
 
 Use the [HTTP guides](../guides/http/index.md) for ordinary endpoints, [service guides](../guides/services/index.md) when endpoint declarations repeat, and [React guides](../guides/react/index.md) when components need request state.
 
-Each added layer has a contract. SSE needs a readable event stream; CoSec needs its token and refresh endpoints. Installing a client does not create those server capabilities. Stream extraction checks for a readable body in [packages/eventstream/src/eventStreamResultExtractor.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L38).
+Each added layer has a contract. SSE needs a readable event stream; CoSec needs its token and refresh endpoints. Installing a client does not create those server capabilities. Stream extraction checks for a readable body in [packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41).
 
 The Wow client, its React hooks, the generator and the data-view components moved to the Wow repository; see [packages that moved](./package-boundaries.md#packages-that-moved-to-the-wow-repository).
 

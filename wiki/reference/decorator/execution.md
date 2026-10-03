@@ -13,7 +13,7 @@ Choose `beforeExecute` to add per-call exchange attributes or select an extracto
 
 `new RequestExecutor(target: any, metadata: FunctionMetadata)` and `execute(args: any[]): Promise<any>` implement this sequence:
 
-1. Resolve the Fetcher and merge arguments into request/attributes.
+1. Resolve the Fetcher once and merge arguments into request/attributes. Steps 3 and 5 mirror `Fetcher.exchange`, with the hooks in between.
 2. Store the target and metadata under `DECORATOR_TARGET_ATTRIBUTE_KEY = '__decorator_target__'` and `DECORATOR_METADATA_ATTRIBUTE_KEY = '__decorator_metadata__'`.
 3. Call `fetcher.resolveExchange` with the selected result extractor.
 4. Await optional `ExecuteLifeCycle.beforeExecute(exchange)`.
@@ -43,7 +43,7 @@ Both hooks return `void | Promise<void>`. Before runs before body/URL intercepto
 
 `API_METADATA_KEY` stores class metadata on the constructor. `ENDPOINT_METADATA_KEY` and `PARAMETER_METADATA_KEY` store method and parameter metadata on prototype/property. These are exported Symbols, not stable string keys to recreate with `Symbol(...)`.
 
-`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` caches one executor per instance and method in a module-level WeakMap, so no field is added to the instance, and shallow-merges the instance's `apiMetadata` over the class metadata. Replacing `target.apiMetadata` with a new object rebuilds the executor on the next call. It is public for generators/extensions; normal users call decorated methods. `api` walks the prototype chain and binds the closest string-named function once per name, preserving inherited metadata lookup while installing executors on the decorated class. A method the decorated class overrides without its own endpoint decorator keeps its implementation. Calling a bound method without its instance (`const { list } = service; list()`) throws a `TypeError` that names the class and method; bind it or call it on the service.
+`buildRequestExecutor(target, defaultFunctionMetadata): RequestExecutor` builds a fresh executor for each call, adds no field to the instance, and shallow-merges the instance's `apiMetadata` over the class metadata, so replacing or mutating `target.apiMetadata` takes effect on the next call. Nothing is cached, so an overriding endpoint and the parent endpoint it reaches through `super.method()` each send their own request. It is public for generators/extensions; normal users call decorated methods. `api` walks the prototype chain and binds the closest function once per name (string or symbol), preserving inherited metadata lookup while installing executors on the decorated class. A method the decorated class overrides without its own endpoint decorator keeps its implementation. Calling a bound method without its instance (`const { list } = service; list()`) throws a `TypeError` that names the class and method; bind it or call it on the service.
 
 The following example records resolved calls without a server by replacing the network interceptor on an isolated client. This is a test arrangement, not a production retry mechanism.
 
@@ -93,12 +93,12 @@ console.assert((await new Health().check()).ok);
 | Symbol                                                                          | Implementation                                                                                                                            |
 | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="api_metadata_key"></a>`API_METADATA_KEY`                                 | [apiDecorator.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L91)                           |
-| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:193](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L193)                         |
+| <a id="buildrequestexecutor"></a>`buildRequestExecutor`                         | [apiDecorator.ts:188](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L188)                         |
 | <a id="endpoint_metadata_key"></a>`ENDPOINT_METADATA_KEY`                       | [endpointDecorator.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L32)                 |
 | <a id="endpointreturntype"></a>`EndpointReturnType`                             | [endpointReturnTypeCapable.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L14) |
 | <a id="endpointreturntypecapable"></a>`EndpointReturnTypeCapable`               | [endpointReturnTypeCapable.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointReturnTypeCapable.ts#L19) |
 | <a id="executelifecycle"></a>`ExecuteLifeCycle`                                 | [executeLifeCycle.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/executeLifeCycle.ts#L23)                   |
-| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L88)                   |
+| <a id="functionmetadata"></a>`FunctionMetadata`                                 | [functionMetadata.ts:108](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/functionMetadata.ts#L108)                 |
 | <a id="decorator_target_attribute_key"></a>`DECORATOR_TARGET_ATTRIBUTE_KEY`     | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | <a id="decorator_metadata_attribute_key"></a>`DECORATOR_METADATA_ATTRIBUTE_KEY` | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | <a id="requestexecutor"></a>`RequestExecutor`                                   | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |

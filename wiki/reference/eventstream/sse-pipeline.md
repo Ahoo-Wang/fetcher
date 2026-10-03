@@ -11,7 +11,7 @@ Use the direct converter when the caller deliberately accepts the body as SSE ev
 
 ## Conversion stages {#pipeline}
 
-`toServerSentEventStream(response: Response): ServerSentEventStream` requires a non-null body, otherwise throws `EventStreamConvertError(response, 'Response body is null')`. It connects `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`. This direct converter does not validate status or content type. The body becomes locked by the pipeline and cannot be independently read at the same time.
+`toServerSentEventStream(response: Response): ServerSentEventStream` requires a non-null body that has not been read or locked, otherwise throws `EventStreamConvertError` (`'Response body is null'` or `'Response body is already used'`, so converting the same response twice fails with this error rather than a bare `TypeError`). It connects `response.body → TextDecoderStream('utf-8') → TextLineTransformStream(false) → ServerSentEventTransformStream`. This direct converter does not validate status or content type. The body becomes locked by the pipeline and cannot be independently read at the same time.
 
 | API                              | Input → output                               | Configuration                                                   |
 | -------------------------------- | -------------------------------------------- | --------------------------------------------------------------- |
@@ -63,7 +63,7 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | Symbol                                                                      | Implementation                                                                                                                                          |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="serversenteventstream"></a>`ServerSentEventStream`                   | [eventStreamConverter.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L31)                       |
-| <a id="toserversenteventstream"></a>`toServerSentEventStream`               | [eventStreamConverter.ts:127](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L127)                     |
+| <a id="toserversenteventstream"></a>`toServerSentEventStream`               | [eventStreamConverter.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L125)                     |
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |

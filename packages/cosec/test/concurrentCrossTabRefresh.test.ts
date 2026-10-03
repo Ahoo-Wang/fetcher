@@ -34,6 +34,9 @@ describe('concurrent cross-tab refresh completion', () => {
   ] as const)(
     'handles another tab completing %s before the local refresh %s',
     async (operation, outcome) => {
+      // Without Web Locks, so the other tab can complete while ours is still
+      // refreshing (with them it waits: see refreshLock.test.ts).
+      vi.stubGlobal('navigator', {});
       const key = `cosec-concurrent-${crypto.randomUUID()}`;
       const backing = new InMemoryStorage();
       const first = new TokenStorage({ key, storage: backing });

@@ -595,6 +595,77 @@ describe('FunctionMetadata', () => {
     warnSpy.mockRestore();
   });
 
+  it('should not warn about placeholders an interceptor fills when every @path() is named explicitly', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // The Wow + cosec shape: {tenantId}/{ownerId} come from an interceptor.
+    new FunctionMetadata(
+      'load',
+      {},
+      { method: HttpMethod.GET, path: '/t/{tenantId}/o/{ownerId}/x/{id}' },
+      new Map([
+        [0, { type: ParameterType.PATH, name: 'id', index: 0, explicit: true }],
+      ]),
+    ).resolveExchangeInit(['1']);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('should not warn when an inferred @path() name matches a placeholder', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    new FunctionMetadata(
+      'load',
+      {},
+      { method: HttpMethod.GET, path: '/t/{tenantId}/x/{id}' },
+      new Map([[0, { type: ParameterType.PATH, name: 'id', index: 0 }]]),
+    ).resolveExchangeInit(['1']);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('should not warn when an unnamed @path() receives a plain object spread into its keys', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    new FunctionMetadata(
+      'load',
+      {},
+      { method: HttpMethod.GET, path: '/x/{id}' },
+      new Map([[0, { type: ParameterType.PATH, name: 'params', index: 0 }]]),
+    ).resolveExchangeInit([{ id: '1' }]);
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('should warn about a minified @path() name only once per endpoint', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const endpoint = { method: HttpMethod.GET, path: '/users/{userId}' };
+    const parameters = new Map([
+      [0, { type: ParameterType.PATH, name: 'e', index: 0 }],
+    ]);
+
+    // Per-instance copies share the endpoint metadata.
+    new FunctionMetadata(
+      'getUser',
+      {},
+      endpoint,
+      parameters,
+    ).resolveExchangeInit(['1']);
+    new FunctionMetadata(
+      'getUser',
+      {},
+      endpoint,
+      parameters,
+    ).resolveExchangeInit(['2']);
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain('"e"');
+    warnSpy.mockRestore();
+  });
+
   it('should not warn when @request supplies the path parameter', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

@@ -21,6 +21,13 @@ export type CrossTabMessageHandler = (message: any) => void;
  *
  * Provides a unified API for different cross-tab communication mechanisms
  * like BroadcastChannel, StorageEvent, SharedWorker, etc.
+ *
+ * A message never reaches the messenger that posted it, but implementations
+ * differ for other messengers on the same channel in the same tab:
+ * BroadcastChannelMessenger delivers to them too (BroadcastChannel reaches
+ * every other channel object, same document included), while StorageMessenger
+ * does not (a `storage` event never fires in the document that wrote the
+ * value), so it only reaches other tabs and windows.
  */
 export interface CrossTabMessenger {
   /**

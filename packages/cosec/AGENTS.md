@@ -48,6 +48,11 @@ src/
   resourceAttributionRequestInterceptor.ts  — Resource attribution interceptor
   requestTrust.ts                           — Which request URLs may carry credentials (isTrusted, sameOriginTrust)
   types.ts                                  — Type definitions
+  constants.ts                              — Shared attribute/name/order constants (re-exported from their original modules)
+  errors.ts                                 — RefreshTokenError, RefreshSessionChangedError (re-exported from jwtTokenManager)
+  refreshSession.ts                         — Token-session checks shared by the interceptors (internal)
+  refreshLock.ts                            — Cross-tab refresh Web Lock (internal)
+  storageEventBus.ts                        — Default cross-tab event bus of the CoSec storages (internal)
   index.ts                                  — Barrel export
   stories/                                  — Storybook stories
 ```

@@ -13,7 +13,10 @@
 
 import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
 import type { ServerSentEventStream } from './eventStreamConverter.js';
-import type { JsonServerSentEventStream } from './jsonServerSentEventTransformStream.js';
+import type {
+  JsonServerSentEventStream,
+  TerminateDetector,
+} from './jsonServerSentEventTransformStream.js';
 
 /**
  * ServerSentEventStream result extractor for Fetcher HTTP client.
@@ -64,6 +67,27 @@ export const EventStreamResultExtractor: ResultExtractor<
  */
 export const JsonEventStreamResultExtractor: ResultExtractor<
   JsonServerSentEventStream<any>
-> = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.requiredJsonEventStream();
-};
+> = jsonEventStreamResultExtractor();
+
+/**
+ * Creates a JSON event stream result extractor that ends at the event
+ * `terminateDetector` recognizes, such as OpenAI's `data: [DONE]`. The
+ * terminating event is not parsed or yielded, and a stream that ends without
+ * it errors with `EventStreamIncompleteError`.
+ *
+ * @template DATA - The expected type of the JSON data in the server-sent events
+ * @param terminateDetector - Recognizes the event that ends the stream; without it the stream ends with the body
+ *
+ * @example
+ * ```typescript
+ * const stream = await fetcher.post<JsonServerSentEventStream<Chunk>>('/stream', { body }, {
+ *   resultExtractor: jsonEventStreamResultExtractor(event => event.data === '[DONE]'),
+ * });
+ * ```
+ */
+export function jsonEventStreamResultExtractor<DATA = any>(
+  terminateDetector?: TerminateDetector,
+): ResultExtractor<JsonServerSentEventStream<DATA>> {
+  return (exchange: FetchExchange) =>
+    exchange.requiredResponse.requiredJsonEventStream<DATA>(terminateDetector);
+}

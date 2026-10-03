@@ -11,15 +11,15 @@ Await `emit` when subsequent local work depends on listener completion. This is 
 
 ## Event and subscription contracts {#subscriptions}
 
-`EventType = string`. `EventHandler<EVENT>` requires `name: string` and `handle(event): void | Promise<void>`; optional `order` defaults to zero in serial sorting, and optional `once` defaults to false. `TypedEventBus<EVENT>` exposes `type`, `handlers`, `on`, `off`, `emit`, and `destroy`.
+`EventType = string`. `EventHandler<EVENT>` requires `name: string` and `handle(event): void | Promise<void>`; optional `order` defaults to zero in serial sorting, and optional `once` defaults to false. These fields match `NamedCapable` and `OrderedCapable` of `@ahoo-wang/fetcher`, but are declared here: the package has no dependencies. `TypedEventBus<EVENT>` exposes `type`, `handlers`, `on`, `off`, `emit`, and `destroy`.
 
-| Method        | Result                  | Contract                                                            |
-| ------------- | ----------------------- | ------------------------------------------------------------------- |
-| `on(handler)` | `boolean`               | False if a handler with the same name already exists.               |
-| `off(name)`   | `boolean`               | False if absent; removal affects subsequent emits.                  |
-| `handlers`    | `EventHandler<EVENT>[]` | Array copy, containing the original handler objects.                |
-| `emit(event)` | `Promise<void>`         | Await handler completion according to the selected strategy.        |
-| `destroy()`   | `void`                  | Local buses clear handlers; no terminal-state guard prevents reuse. |
+| Method        | Result                  | Contract                                                                                                                  |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `on(handler)` | `boolean`               | False if a handler with the same name already exists.                                                                     |
+| `off(name)`   | `boolean`               | False if absent; removal affects subsequent emits.                                                                        |
+| `handlers`    | `EventHandler<EVENT>[]` | Array copy in dispatch order (serial: by `order`; parallel: registration order), containing the original handler objects. |
+| `emit(event)` | `Promise<void>`         | Await handler completion according to the selected strategy.                                                              |
+| `destroy()`   | `void`                  | Local buses clear handlers; no terminal-state guard prevents reuse.                                                       |
 
 Each emit snapshots its handler array and removes all `once` handlers before calling any handler. Thus concurrent/reentrant emits do not deliver the same once registration twice. Adding/removing subscriptions during delivery does not change that delivery's snapshot.
 
@@ -31,7 +31,7 @@ Both extend `AbstractTypedEventBus<EVENT>`. Its protected `handleEvent` catches 
 
 ## Multi-event routing {#routing}
 
-`new EventBus<Events>(typeEventBusSupplier: TypeEventBusSupplier)` lazily creates a bus only on `on(type, handler)`. `TypeEventBusSupplier` is `(type: EventType) => TypedEventBus<unknown>`. `off(type, name)` returns false if no bus exists. `emit(type, event): void | Promise<void>` is a no-op/undefined if nobody has created that type's bus; it does not buffer events. `destroy()` invokes every created bus's destroy and clears the map. Keys are generic strings, so use a fixed event map and correct event names rather than treating the types as runtime validation.
+`new EventBus<Events>(typeEventBusSupplier: TypeEventBusSupplier)` lazily creates a type's bus on its first `on(type, handler)` or `emit(type, event)`. `TypeEventBusSupplier` is `(type: EventType) => TypedEventBus<unknown>`. `off(type, name)` returns false, without creating a bus, if none exists. `emit(type, event)` returns the bus's emit promise; it does not buffer events, so an emit before any subscription reaches no local handler, but a broadcast supplier still posts it to other tabs. `destroy()` invokes every created bus's destroy and clears the map; a later `on` or `emit` creates a fresh bus. Keys are generic strings, so use a fixed event map and correct event names rather than treating the types as runtime validation.
 
 `NameGenerator.generate(prefix): string` is implemented by `DefaultNameGenerator`: a per-instance counter produces `prefix_1`, `prefix_2`, etc. `nameGenerator` is a shared instance. Generated names identify local registrations; they are not globally unique IDs.
 
@@ -69,10 +69,10 @@ bus.destroy();
 | <a id="namegenerator"></a>`NameGenerator`                 | [nameGenerator.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L17)                 |
 | <a id="defaultnamegenerator"></a>`DefaultNameGenerator`   | [nameGenerator.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L24)                 |
 | <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L41)                 |
-| <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L33) |
-| <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L34)     |
+| <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L34) |
+| <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L38)     |
 | <a id="typedeventbus"></a>`TypedEventBus`                 | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                 |
-| <a id="eventtype"></a>`EventType`                         | [types.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L17)                                 |
-| <a id="eventhandler"></a>`EventHandler`                   | [types.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L19)                                 |
+| <a id="eventtype"></a>`EventType`                         | [types.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L14)                                 |
+| <a id="eventhandler"></a>`EventHandler`                   | [types.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/types.ts#L22)                                 |
 
 [Package index](./index.md)

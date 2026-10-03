@@ -29,10 +29,10 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 | `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本未变时保留缓存对象；键不存在时返回默认值。                                |
 | `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                    |
 | `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                            |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数调用 `off(handler.name)`。                                                                                |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数仅在该名称下注册的仍是此处理器时将其移除。                                                                |
 | `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。 |
 
-`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，但返回的移除函数仍指向该名称。销毁拥有的总线前自行解绑外部监听器。
+`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。实例内部的缓存监听器先于所有其他监听器执行（order 为 `Number.MIN_SAFE_INTEGER`），因此慢监听器不会让较旧事件覆盖较新的缓存值。销毁拥有的总线前自行解绑外部监听器。
 
 后端读写、JSON 解析、序列化失败同步传出；通知失败后不会回滚写入。emit 拒绝会被捕获并 `console.warn`，普通串行处理器失败则已由总线隔离。非空缓存不会因直接修改后端而刷新；调用 `reload()` 重新读取。`get()` 返回对象引用，修改引用不会自动持久化。
 
@@ -68,12 +68,12 @@ settings.destroy();
 
 ## 公开符号与源码 {#symbols}
 
-| 符号                                                      | 实现                                                                                                        |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L27)   |
-| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
-| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
-| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218) |
+| 符号                                                      | 实现                                                                                                      |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28) |
+| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36) |
+| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38) |
+| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91) |
 
 [包索引](./index.md)

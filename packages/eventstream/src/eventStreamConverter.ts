@@ -67,8 +67,6 @@ export class EventStreamConvertError extends FetcherError {
   ) {
     super(errorMsg, cause);
     this.name = 'EventStreamConvertError';
-    // Restore prototype chain for proper inheritance
-    Object.setPrototypeOf(this, EventStreamConvertError.prototype);
   }
 }
 
@@ -129,6 +127,14 @@ export function toServerSentEventStream(
 ): ServerSentEventStream {
   if (!response.body) {
     throw new EventStreamConvertError(response, 'Response body is null');
+  }
+  // A body can be read once: a second conversion would fail with a bare
+  // TypeError from the locked stream.
+  if (response.bodyUsed || response.body.locked) {
+    throw new EventStreamConvertError(
+      response,
+      'Response body is already used',
+    );
   }
 
   return (

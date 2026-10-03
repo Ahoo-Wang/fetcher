@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { JwtTokenManager, RefreshTokenError } from '../src';
+import { FetcherError } from '@ahoo-wang/fetcher';
+import {
+  JwtTokenManager,
+  RefreshSessionChangedError,
+  RefreshTokenError,
+} from '../src';
 import { TokenStorage } from '../src';
 import type { TokenRefresher, CompositeToken } from '../src';
 import { JwtCompositeToken } from '../src';
@@ -225,5 +230,51 @@ describe('JwtTokenManager', () => {
 
     // Act & Assert
     expect(jwtTokenManager.isRefreshable).toBe(false);
+  });
+
+  it.each([
+    ['nothing', undefined],
+    ['a string', 'new-token'],
+    ['no refresh token', { accessToken: 'new-access-token' }],
+    ['a non-string access token', { accessToken: 1, refreshToken: 'r' }],
+  ])(
+    'rejects a refresh response with %s instead of storing it',
+    async (_, response) => {
+      tokenStorage.signIn({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+      });
+      const original = tokenStorage.get();
+      vi.mocked(tokenRefresher.refresh).mockResolvedValueOnce(response as any);
+
+      const error = await jwtTokenManager.refresh().catch(e => e);
+
+      expect(error).toBeInstanceOf(RefreshTokenError);
+      expect(error.token).toBe(original);
+      expect(tokenStorage.get()).toBeNull();
+      expect(mockStorage.setItem).toHaveBeenCalledTimes(1);
+    },
+  );
+});
+
+describe('refresh errors', () => {
+  it('keeps subclasses recognisable', () => {
+    class AppRefreshTokenError extends RefreshTokenError {}
+    class AppSessionChangedError extends RefreshSessionChangedError {}
+    const token = new JwtCompositeToken({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+
+    const refreshError = new AppRefreshTokenError(token);
+    const sessionError = new AppSessionChangedError();
+
+    expect(refreshError).toBeInstanceOf(AppRefreshTokenError);
+    expect(refreshError).toBeInstanceOf(RefreshTokenError);
+    expect(refreshError).toBeInstanceOf(FetcherError);
+    expect(refreshError.name).toBe('RefreshTokenError');
+    expect(sessionError).toBeInstanceOf(AppSessionChangedError);
+    expect(sessionError).toBeInstanceOf(RefreshSessionChangedError);
+    expect(sessionError.name).toBe('RefreshSessionChangedError');
   });
 });

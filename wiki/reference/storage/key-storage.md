@@ -29,10 +29,10 @@ Choose the backend and event bus independently: sharing a backend does not share
 | `reload()`             | `T \| null`                          | Read the backend again, bypassing the cache (for a value another tab may have written before its event arrived). Keeps the cached object when the stored text is unchanged; returns the default when the key is absent.            |
 | `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                                                                                                      |
 | `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                                                                                          |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; returned function calls `off(handler.name)`.                                                                                                                                       |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; the returned function removes this handler only while it is still the one registered under its name.                                                                               |
 | `destroy()`            | `void`                               | Remove this instance's internal cache listener and close the bus this instance created (the default bus, or one a subclass marks with the protected `ownEventBus()`). Does not delete the key or close a bus passed in `eventBus`. |
 
-`StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: duplicate names are rejected by the underlying bus, while the returned remover still targets that name. Unsubscribe external listeners yourself before destroying the owning bus.
+`StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: a duplicate name is rejected by the underlying bus and its returned remover does nothing, so it never removes the listener that holds the name. The instance's internal cache listener runs before every other listener (order `Number.MIN_SAFE_INTEGER`), so a slow listener never lets an older event overwrite a newer cached value. Unsubscribe external listeners yourself before destroying the owning bus.
 
 Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations; call `reload()` to re-read it. `get()` returns object references; mutating one does not automatically persist it.
 
@@ -68,12 +68,12 @@ settings.destroy();
 
 ## Public symbols and source {#symbols}
 
-| Symbol                                                    | Implementation                                                                                              |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L27)   |
-| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:163](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L163) |
-| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:165](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L165) |
-| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:179](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L179) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:218](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L218) |
+| Symbol                                                    | Implementation                                                                                            |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28) |
+| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36) |
+| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38) |
+| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52) |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91) |
 
 [Package index](./index.md)

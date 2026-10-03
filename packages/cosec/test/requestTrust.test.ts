@@ -99,10 +99,9 @@ describe('request trust', () => {
     await fetcher.get('/users');
     await fetcher.get('https://cdn.example.com/file');
     await fetcher.get('https://elsewhere.example.com/file');
+    // Once per request: the decision is kept on the exchange.
     expect(isTrusted.mock.calls.map(([url]) => url)).toEqual([
       'https://cdn.example.com/file',
-      'https://cdn.example.com/file',
-      'https://elsewhere.example.com/file',
       'https://elsewhere.example.com/file',
     ]);
     expect(sent['https://cdn.example.com/file'].get('authorization')).toMatch(
@@ -111,5 +110,27 @@ describe('request trust', () => {
     expect(
       sent['https://elsewhere.example.com/file'].has('authorization'),
     ).toBe(false);
+  });
+
+  it('keeps the credentials of a trusted relative URL on the 401 retry', async () => {
+    // The retry sees the URL already resolved against the baseURL; a
+    // predicate that lists only extra origins must not drop the token there.
+    const isTrusted = vi.fn((url: string) =>
+      url.startsWith('https://files.partner.com/'),
+    );
+    const fetcher = configured(isTrusted);
+    const authorizations: (string | null)[] = [];
+    vi.stubGlobal('fetch', async (_url: string, init: RequestInit) => {
+      const headers = new Headers(init.headers as HeadersInit);
+      authorizations.push(headers.get('authorization'));
+      return new Response('{}', {
+        status: authorizations.length === 1 ? 401 : 200,
+      });
+    });
+    const response = await fetcher.get('/users');
+    expect(response.status).toBe(200);
+    expect(authorizations).toHaveLength(2);
+    expect(authorizations[1]).toMatch(/^Bearer /);
+    expect(isTrusted).not.toHaveBeenCalled();
   });
 });

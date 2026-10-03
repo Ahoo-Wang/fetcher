@@ -31,7 +31,7 @@ Use legacy TypeScript decorators to replace service methods with Fetcher request
 | `returnType?`                 | Endpoint, API, then `EndpointReturnType.RESULT`.                                                        |
 | `attributes?`                 | API entries followed by endpoint entries, then argument attributes.                                     |
 
-`ApiMetadataCapable.apiMetadata` enables instance configuration. `buildRequestExecutor` shallow-spreads instance metadata over decorator metadata and caches the executor per instance and method name, outside the instance. Replacing `apiMetadata` with a new object takes effect on the next call; mutating the cached object in place does not. Endpoint metadata still takes precedence. Shallow merging means an instance header object replaces the class header object before endpoint/request merging.
+`ApiMetadataCapable.apiMetadata` enables instance configuration. `buildRequestExecutor` shallow-spreads instance metadata over decorator metadata on every call and caches nothing, so replacing `apiMetadata` or mutating it in place takes effect on the next call. Endpoint metadata still takes precedence. Shallow merging means an instance header object replaces the class header object before endpoint/request merging.
 
 The default decorated return is parsed JSON, unlike `Fetcher.get`, which defaults to Response. For HEAD/204 or raw responses choose `ResultExtractors.Response`; for diagnostics use `returnType: EndpointReturnType.EXCHANGE` and annotate `Promise<FetchExchange>`. See [execution](./execution.md) for hooks and failures.
 
@@ -72,7 +72,7 @@ void loadUser;
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | <a id="apimetadata"></a>`ApiMetadata`                       | [apiDecorator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L41)             |
 | <a id="apimetadatacapable"></a>`ApiMetadataCapable`         | [apiDecorator.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L84)             |
-| <a id="api"></a>`api`                                       | [apiDecorator.ts:259](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L259)           |
+| <a id="api"></a>`api`                                       | [apiDecorator.ts:239](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/apiDecorator.ts#L239)           |
 | <a id="pathcapable"></a>`PathCapable`                       | [endpointDecorator.ts:6](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L6)     |
 | <a id="endpointmetadata"></a>`EndpointMetadata`             | [endpointDecorator.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L22)   |
 | <a id="methodendpointmetadata"></a>`MethodEndpointMetadata` | [endpointDecorator.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/endpointDecorator.ts#L34)   |

@@ -11,13 +11,13 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 
 ## Client contract
 
-| API                                               | Input/default                                                                       | Return/effect                                                                     |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `OpenAI(options)`                                 | Required `baseURL: string` and `apiKey: string`; no default endpoint                | Owns readonly fetcher and chat; creates Fetcher with Authorization: Bearer apiKey |
-| `OpenAIOptions`                                   | Extends BaseURLCapable, both fields required                                        | Type only; keys are not validated                                                 |
-| `ChatClient(apiMetadata?)`                        | Optional decorator ApiMetadata, e.g. `{ fetcher }`                                  | Uses class basePath `chat`                                                        |
-| `ChatClient.completions<T>(chatRequest, signal?)` | Required ChatRequest, optional AbortSignal; POST `/completions` under chat basePath | Promise of ChatResponse or JSON SSE stream based on stream flag                   |
-| `ChatClient.beforeExecute(exchange)`              | FetchExchange; called by decorator runtime                                          | void; truthy request.body.stream selects CompletionStreamResultExtractor          |
+| API                                               | Input/default                                                                                                    | Return/effect                                                                                           |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `OpenAI(options)`                                 | Required `baseURL: string` and `apiKey: string`; no default endpoint                                             | Owns readonly fetcher and chat; creates Fetcher with the other options and Authorization: Bearer apiKey |
+| `OpenAIOptions`                                   | Required `baseURL`, `apiKey`; plus any other `FetcherOptions` (`timeout`, `fetch`, `headers`, `interceptors`, …) | Type only; keys are not validated; `apiKey` overrides an `Authorization` header                         |
+| `ChatClient(apiMetadata?)`                        | Optional decorator ApiMetadata, e.g. `{ fetcher }`                                                               | Uses class basePath `chat`                                                                              |
+| `ChatClient.completions<T>(chatRequest, signal?)` | Required ChatRequest, optional AbortSignal; POST `/completions` under chat basePath                              | Promise of ChatResponse or JSON SSE stream based on stream flag                                         |
+| `ChatClient.beforeExecute(exchange)`              | FetchExchange; called by decorator runtime                                                                       | void; truthy request.body.stream selects CompletionStreamResultExtractor                                |
 
 `stream: true` inferred as a literal returns a stream; `false` or no stream property returns ChatResponse. A boolean or broad ChatRequest returns the response/stream union, so preserve literals or narrow your request at the call site. The optional second argument is an `AbortSignal`: aborting it cancels the request and, for a stream, the connection. There is no other per-call options argument.
 

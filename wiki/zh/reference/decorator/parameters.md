@@ -34,13 +34,13 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 `getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。实现按顶层逗号分割（默认值、字符串和注释中的逗号与括号不会分割），并去掉类型与默认值。解构参数得到 `''`，使后续名称保持原索引；剩余参数得到去掉 `...` 的名称。压缩后的名称不是稳定契约。
 
-`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。按 fetcher 的 `urlTemplateStyle` 读取路径模板，若合并所有层（含 `@request`）后某占位符没有路径参数，会输出警告；除非拦截器补上该值，解析 URL 会以 `Missing required path parameter` 失败。
+`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。未命名 `@path()` 的推断名称若不匹配路径模板（按 fetcher 的 `urlTemplateStyle` 读取）的任何占位符，每个端点只输出一次警告：这正是压缩器改名参数的表现。纯对象参数（展开为键）不会警告。没有参数的占位符不报告，因为拦截器可能补上（cosec 补 `{tenantId}`/`{ownerId}`）；若无人补上，解析 URL 会以 `Missing required path parameter` 失败。
 
 ## 取消与继承元数据 {#cancellation}
 
 `AbortSignal` 或 `AbortController` 参数在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 或 controller 与 Fetcher timeout 同时生效，先触发者生效，详见[取消](../fetcher/errors-and-cancellation.md)。
 
-继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。未加自身端点装饰器的重写方法保留自己的实现，`@api` 不会用父类的请求替换它。类绑定遍历继承的字符串命名方法，Symbol 命名和静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
+继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。未加自身端点装饰器的重写方法保留自己的实现，`@api` 不会用父类的请求替换它。类绑定遍历继承的字符串与 Symbol 命名方法，静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
 
 ## 完整示例 {#example}
 

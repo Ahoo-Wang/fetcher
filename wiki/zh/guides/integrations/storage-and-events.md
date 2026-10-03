@@ -124,6 +124,6 @@ export function watchTheme(onTheme: (theme: string) => void) {
 
 参见[存储生命周期](../../reference/storage/key-storage)、[序列化与环境](../../reference/storage/serialization-and-runtime)、[事件投递](../../reference/eventbus/events-and-delivery)及[广播 messenger](../../reference/eventbus/broadcast-and-messengers)。
 
-[keyStorage.ts:247](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L247) 选择默认本地总线，`destroy()` 会关闭它。
+[keyStorage.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L124) 选择默认本地总线，`destroy()` 会关闭它。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。

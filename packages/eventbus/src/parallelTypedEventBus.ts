@@ -18,7 +18,8 @@ import { AbstractTypedEventBus } from './abstractTypedEventBus.js';
  * Parallel implementation of TypedEventBus
  *
  * Provides an in-memory event bus that executes event handlers in parallel.
- * Supports ordering and once-only execution of handlers.
+ * Supports once-only execution of handlers. Handlers are started in
+ * registration order; their `order` is ignored.
  *
  * @template EVENT - The type of events this bus handles
  *
@@ -74,7 +75,7 @@ export class ParallelTypedEventBus<EVENT> extends AbstractTypedEventBus<EVENT> {
   /**
    * Adds an event handler if not already present
    *
-   * Handlers are sorted by their order property after addition.
+   * Handlers keep registration order; `order` is not used by this bus.
    *
    * @param handler - The event handler to add
    * @returns true if the handler was added, false if a handler with the same name already exists

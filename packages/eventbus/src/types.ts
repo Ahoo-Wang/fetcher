@@ -11,12 +11,25 @@
  * limitations under the License.
  */
 
-import type { OrderedCapable } from '@ahoo-wang/fetcher';
-import { type NamedCapable } from '@ahoo-wang/fetcher';
-
 export type EventType = string;
 
-export interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
+/**
+ * A handler registered with a TypedEventBus.
+ *
+ * `name` and `order` match `NamedCapable` and `OrderedCapable` from
+ * `@ahoo-wang/fetcher`, declared here so this package has no dependency on it.
+ */
+export interface EventHandler<EVENT> {
+  /** Unique name of the handler on its bus; `off(name)` removes it. */
+  name: string;
+
+  /**
+   * Run order on a SerialTypedEventBus: lower values run first, equal values
+   * keep registration order. Defaults to 0. ParallelTypedEventBus ignores it.
+   */
+  order?: number;
+
+  /** Removes the handler after the first event dispatched to it. */
   once?: boolean;
 
   handle(event: EVENT): void | Promise<void>;
