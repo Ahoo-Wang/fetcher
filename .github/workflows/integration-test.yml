@@ -60,3 +60,23 @@ jobs:
 
       - name: Test
         run: pnpm test:it
+
+  # The one check branch protection requires from this workflow. Matrix jobs
+  # skipped by scope report unexpanded names, and a job whose dependency fails
+  # reports "skipped", which a required check counts as passing; this job
+  # always runs and fails unless every job it needs succeeded or was skipped.
+  gate:
+    name: Integration gate
+    needs: [changes, integration-test]
+    if: always()
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every needed job succeeded or was skipped by scope
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "needs: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done
