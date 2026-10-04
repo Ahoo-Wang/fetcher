@@ -67,7 +67,8 @@ test('stable versioning and publishing exclude view-engine', () => {
     });
     assert.equal(
       readFileSync(log, 'utf8'),
-      'publish packages/fetcher/ --access public --no-git-checks\n',
+      // 6.x owns `latest`: a 5.x patch is published under `release-5`.
+      'publish packages/fetcher/ --access public --no-git-checks --tag release-5\n',
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });
