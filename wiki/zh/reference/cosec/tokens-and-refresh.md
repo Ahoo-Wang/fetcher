@@ -1,6 +1,6 @@
 ---
 title: 'Token 与刷新'
-description: 'Token 与刷新 — Fetcher 5.0.0'
+description: 'Token 与刷新 — Fetcher 6.0.0'
 ---
 
 # Token 与刷新

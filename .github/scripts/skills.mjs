@@ -37,10 +37,13 @@ export const FORMER_PACKAGES = new Set([
   '@ahoo-wang/fetcher-viewer',
   '@ahoo-wang/fetcher-view-engine',
 ]);
-/** Replacements in the Wow repository, not on npm yet. */
+/** Replacements in the Wow repository, on npm from Wow 9.2.0. */
 export const EXTERNAL_PACKAGE = /^@ahoo-wang\/wow-[a-z-]*$/;
-/** The migration skill must say the Wow packages are not published yet. */
-export const NOT_ON_NPM = /not (?:yet )?(?:on npm|published)|not on npm yet/i;
+/**
+ * The migration skill must name the first Wow version whose fetcher peer
+ * range accepts fetcher 6 (9.2.1; 9.2.0 required `^5.1.5`).
+ */
+export const WOW_ACCEPTS_FETCHER_6 = /\b9\.2\.1\b/;
 export const DESCRIPTION_MAX_WORDS = 60;
 export const DESCRIPTION_MAX_CHARS = 1024;
 /**
@@ -713,10 +716,14 @@ export function skillProblems(root) {
       }
     }
 
-    if (skill === MIGRATION_SKILL && mentionsExternal && !NOT_ON_NPM.test(body))
+    if (
+      skill === MIGRATION_SKILL &&
+      mentionsExternal &&
+      !WOW_ACCEPTS_FETCHER_6.test(body)
+    )
       report(
         'SKILL.md',
-        'names @ahoo-wang/wow-* but never says they are not on npm yet',
+        'names @ahoo-wang/wow-* but never says Wow 9.2.1 is the first to accept fetcher 6',
       );
   }
 

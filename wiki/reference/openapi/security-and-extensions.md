@@ -1,6 +1,6 @@
 ---
 title: 'Security and extensions'
-description: 'Security and extensions — Fetcher 5.0.0'
+description: 'Security and extensions — Fetcher 6.0.0'
 ---
 
 # Security and extensions

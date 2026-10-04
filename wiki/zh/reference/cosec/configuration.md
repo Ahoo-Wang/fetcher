@@ -1,6 +1,6 @@
 ---
 title: 'CoSec 配置'
-description: 'CoSec 配置 — Fetcher 5.0.0'
+description: 'CoSec 配置 — Fetcher 6.0.0'
 ---
 
 # CoSec 配置

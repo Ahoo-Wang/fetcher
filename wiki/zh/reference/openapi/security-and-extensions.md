@@ -1,6 +1,6 @@
 ---
 title: '安全与扩展'
-description: '安全与扩展 — Fetcher 5.0.0'
+description: '安全与扩展 — Fetcher 6.0.0'
 ---
 
 # 安全与扩展

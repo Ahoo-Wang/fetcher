@@ -1,6 +1,6 @@
 ---
 title: 'Tokens and refresh'
-description: 'Tokens and refresh — Fetcher 5.0.0'
+description: 'Tokens and refresh — Fetcher 6.0.0'
 ---
 
 # Tokens and refresh

@@ -25,7 +25,7 @@ pageClass: reference-index-page
 | [wow](./wow/index.md)（5.x）               | 命令与查询       | 9      |
 | [viewer](./viewer/index.md)（5.x，已冻结） | 数据视图与持久化 | 8      |
 
-标注 5.x 的包只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，Wow 与生成器位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）；Viewer 已冻结，由尚未发布的 `@ahoo-wang/wow-view-engine` 接替。
+标注 5.x 的包只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，Wow 与生成器位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）；npm 上的后继包是 `@ahoo-wang/wow-client`、`@ahoo-wang/wow-react` 与 `@ahoo-wang/wow-generator`（Wow 9.2.1 及以上兼容 fetcher 6）。Viewer 已冻结，由同样已发布到 npm 的 `@ahoo-wang/wow-view-engine` 接替。
 
 ## 如何使用参考
 

@@ -1,7 +1,7 @@
 ---
 prev: false
 title: 'Openai 参考'
-description: 'Openai 参考 — Fetcher 5.0.0'
+description: 'Openai 参考 — Fetcher 6.0.0'
 ---
 
 # Openai 参考

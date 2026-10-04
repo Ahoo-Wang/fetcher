@@ -1,7 +1,7 @@
 ---
 prev: false
 title: 'Cosec reference'
-description: 'Cosec reference — Fetcher 5.0.0'
+description: 'Cosec reference — Fetcher 6.0.0'
 ---
 
 # Cosec reference

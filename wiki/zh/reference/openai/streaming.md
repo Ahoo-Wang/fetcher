@@ -1,6 +1,6 @@
 ---
 title: '流式聊天补全'
-description: '流式聊天补全 — Fetcher 5.0.0'
+description: '流式聊天补全 — Fetcher 6.0.0'
 ---
 
 # 流式聊天补全

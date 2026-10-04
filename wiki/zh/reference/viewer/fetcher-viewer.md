@@ -6,7 +6,7 @@ description: 'FetcherViewer 远端集成 — @ahoo-wang/fetcher-viewer 5.0.0'
 # FetcherViewer 远端集成
 
 ::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），尚未发布。两者模型与 API 不同，迁移需要适配。
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 FetcherViewer 连接三个远端资源：视图定义、可见保存视图，以及 definition.dataUrl 的分页数据。挂载前配置默认 Fetcher 的服务/认证；后端必须实现 `viewer` 限界上下文端点，不是仅传 URL 的通用表格。

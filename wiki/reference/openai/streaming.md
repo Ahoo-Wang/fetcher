@@ -1,6 +1,6 @@
 ---
 title: 'Streaming chat completions'
-description: 'Streaming chat completions — Fetcher 5.0.0'
+description: 'Streaming chat completions — Fetcher 6.0.0'
 ---
 
 # Streaming chat completions

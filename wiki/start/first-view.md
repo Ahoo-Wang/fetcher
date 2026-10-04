@@ -6,10 +6,10 @@ description: Build a local Ant Design Viewer table on the 5.x line; its successo
 # Your first data view
 
 ::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), which is not published yet. The two use different models and APIs, so migration requires adaptation.
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
-Fetcher main ships no data-view component. Until the Wow view engine publishes, existing consumers build tables with the 5.x Ant Design Viewer below; a new table can also compose [React request state](../guides/react/index.md) with the table component your application already uses.
+Fetcher main ships no data-view component. Existing 5.x consumers build tables with the Ant Design Viewer below; new work targets `@ahoo-wang/wow-view-engine` (see [wow.ahoo.me](https://wow.ahoo.me)), or a new table can also compose [React request state](../guides/react/index.md) with the table component your application already uses.
 
 ## Ant Design Viewer path
 

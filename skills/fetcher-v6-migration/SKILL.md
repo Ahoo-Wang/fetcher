@@ -10,25 +10,25 @@ description: >
 
 ## 1. Check what is published — never assume
 
-The replacements (`@ahoo-wang/wow-client`, `@ahoo-wang/wow-react`, `@ahoo-wang/wow-generator`) are **not on npm yet**; they ship with Wow's first stable release, and fetcher 6.0 ships after that. Before recommending any install, run:
+The replacements (`@ahoo-wang/wow-client`, `@ahoo-wang/wow-react`, `@ahoo-wang/wow-generator`, and `@ahoo-wang/wow-view-engine` superseding `fetcher-viewer`) are on npm from Wow 9.2.0, Wow's first stable release. Only **9.2.1 or later** accepts fetcher 6 (peer range `^5.1.5 || ^6.0.0`; 9.2.0 required `^5.1.5`). Docs: https://wow.ahoo.me. Before recommending any install, confirm the current versions:
 
 ```sh
 npm view @ahoo-wang/fetcher dist-tags
-npm view @ahoo-wang/wow-client version   # a 404 means: not published yet
+npm view @ahoo-wang/wow-client version peerDependencies   # use 9.2.1 or later
 ```
 
-Never write `pnpm add @ahoo-wang/wow-*` into a plan, script or manifest until that command returns a version, and never invent one.
+Use the version that command prints (at least 9.2.1 when fetcher 6 is the target), never an invented one.
 
 ## 2. Detect usages
 
 Run the checklist in `references/api.md` (grep patterns for manifests, imports, scripts, generated code and the fetcher-react hook API). Classify the project:
 
-| Found                                                                     | Decision                                                                                                                                                    |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-viewer`, or any data-monitor hook                     | **Stay on 5.x** (`^5.1.3`). No 6.x replacement exists.                                                                                                      |
-| `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-generator`, Wow query hooks | Replacements not on npm yet → **stay on 5.x**, move to 5.1.3 and prepare. Once published → switch to the Wow packages on 5.1.3 first, then upgrade fetcher. |
-| `@ahoo-wang/fetcher-react` hooks (any of them)                            | Upgrade, and **rewrite the hook calls** (section 3b) — they no longer type-check or behave the same.                                                        |
-| none of the above                                                         | **Upgrade** every `@ahoo-wang/fetcher*` to `^6.0.0` once 6.0.0 is on npm; no code changes beyond the **Changed** checks in `references/api.md`.             |
+| Found                                                                     | Decision                                                                                                                                                                               |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-viewer`, or any data-monitor hook                     | **Stay on 5.x** (`^5.1.3`). No drop-in 6.x replacement: `@ahoo-wang/wow-view-engine` supersedes `fetcher-viewer` with a different model and API, and the data-monitor hooks have none. |
+| `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-generator`, Wow query hooks | Move to the latest 5.x (the Wow peer range needs `^5.1.5`), **switch to the Wow packages (9.2.1 or later) first**, then upgrade fetcher.                                               |
+| `@ahoo-wang/fetcher-react` hooks (any of them)                            | Upgrade, and **rewrite the hook calls** (section 3b) — they no longer type-check or behave the same.                                                                                   |
+| none of the above                                                         | **Upgrade** every `@ahoo-wang/fetcher*` to `^6.0.0` once 6.0.0 is on npm; no code changes beyond the **Changed** checks in `references/api.md`.                                        |
 
 Removed from `@ahoo-wang/fetcher-react` in 6.0:
 
@@ -43,7 +43,7 @@ Removed from `@ahoo-wang/fetcher-react` in 6.0:
 ## 3. Rewrite, in this order
 
 1. Pin `@ahoo-wang/fetcher-react@5.1.3` — the first version whose `@ahoo-wang/fetcher-wow` peer is optional, and the first with the `/fetcher` subpath.
-2. Only when the Wow packages are published: remove `@ahoo-wang/fetcher-wow` and `@ahoo-wang/fetcher-generator`, add the Wow packages at the version `npm view` reported, and move imports (`references/api.md` has the diffs). Their fetcher peer range covers the latest 5.x, so the app keeps working on 5.x; check that it also covers `^6` before step 3 with `npm view @ahoo-wang/wow-client peerDependencies`.
+2. Remove `@ahoo-wang/fetcher-wow` and `@ahoo-wang/fetcher-generator`, add the Wow packages at the version `npm view` reported (9.2.1 or later), and move imports (`references/api.md` has the diffs). From 9.2.1 their fetcher peer range is `^5.1.5 || ^6.0.0` (move the `@ahoo-wang/fetcher*` packages to `^5.1.5` first), so the app keeps working on 5.x and is ready for step 4; confirm with `npm view @ahoo-wang/wow-client peerDependencies`.
 3. Replace the `fetcher-generator` command with `wow-generator` (`fetcher-generator` stays an alias until Wow v10), then **regenerate** clients: code generated earlier imports `@ahoo-wang/fetcher-wow`; the new generator emits `@ahoo-wang/wow-client`. If regeneration is impossible, rewrite that import.
 4. Upgrade the remaining `@ahoo-wang/fetcher*` packages to `^6.0.0` together, and rewrite fetcher-react hook calls (3b).
 5. Verify: type-check, run tests, and re-run the grep checklist until it finds nothing.
