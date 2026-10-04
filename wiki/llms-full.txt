@@ -231,8 +231,8 @@ See the [repository HTTP example](../examples/http.md) for repository-specific v
 
 # Your first data view
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Fetcher main ships no data-view component. Existing 5.x consumers build tables with the Ant Design Viewer below; new work targets `@ahoo-wang/wow-view-engine` (see [wow.ahoo.me](https://wow.ahoo.me)), or a new table can also compose [React request state](../guides/react/index.md) with the table component your application already uses.
@@ -292,7 +292,7 @@ Choose the task you need to complete. New to Fetcher? [Start with a runnable res
 - [Service clients](./services/index.md): Use direct Fetcher calls for a few endpoints. Decorators require a compatible TypeScript compiler; generation requires a complete OpenAPI document and a compile step. Neither creates backend routes.
 - [Streaming data](./streaming/index.md): Your runtime needs Fetch, Response bodies, and ReadableStream. The server must emit SSE frames; a normal JSON response is not an event stream. Keep a caller-owned cancellation signal for long-lived reads.
 - [React data flow](./react/index.md): Start in an existing React application with the declared peer dependencies. The runnable React example supplies a deterministic backend fixture; production routes remain application-owned.
-- [Ant Design Viewer (5.x only, frozen)](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
+- [Ant Design Viewer (deprecated, 5.x only)](./viewer/index.md): Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
 - [Platform integrations](./integrations/index.md): Wow (5.x only) and CoSec require compatible server protocols, authentication and application-specific routes. Storage and local events can be used without a platform server. Confirm the chosen package peers before installing.
 
 For a working baseline use [complete examples](../examples/index.md). For ownership and adoption tradeoffs use [architecture](../architecture/index.md).
@@ -1346,8 +1346,8 @@ See [promise lifecycle](../../reference/react/promise-and-query-state.md), [HTTP
 
 # Data view tasks
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Start with local data in a React application with Viewer peers. View displays one view; Viewer also manages a view collection. Your data adapter applies queries and owns persistence.
@@ -1366,8 +1366,8 @@ Start with local data in a React application with Viewer peers. View displays on
 
 # Render local rows in a Viewer
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 ## Prerequisites
@@ -1406,8 +1406,8 @@ Continue with [pagination and sorting](./pagination-and-sorting.md), [models and
 
 # Make pagination and sorting change rows
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 ## Prerequisites
@@ -1443,8 +1443,8 @@ See [table contracts](../../reference/viewer/tables-and-cells.md), [query sortin
 
 # Filter the displayed data
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 ## Prerequisites
@@ -1478,8 +1478,8 @@ Continue with [saving filters in a view](./saved-views.md), [filter reference](.
 
 # Save and restore view state
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 ## Prerequisites
@@ -1520,8 +1520,8 @@ See [saved-view reference](../../reference/viewer/saved-views.md), [storage inte
 
 # Connect remote rows to a Viewer
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Create a React page that renders a saved default view, loads data and responds to paging/sorting. `Viewer` owns presentation state; your application supplies data and persistence callbacks.
@@ -2144,7 +2144,7 @@ The Wow-coupled packages left this repository before 6.0. Their last releases fr
 | `@ahoo-wang/fetcher-wow`                        | `@ahoo-wang/wow-client` in the Wow repository, [`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) | 5.x: [Wow guide](../guides/integrations/wow.md), [Wow reference](../reference/wow/index.md); from 6.0: [wow.ahoo.me](https://wow.ahoo.me)                             |
 | Wow query hooks in `@ahoo-wang/fetcher-react`   | `@ahoo-wang/wow-react` in the Wow repository                                                                          | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                                    |
 | `@ahoo-wang/fetcher-generator`                  | `@ahoo-wang/wow-generator` in the Wow repository (CLI `wow-generator`; alias `fetcher-generator` until Wow v10)       | 5.x: [generated client](../guides/services/generated-client.md), [generator reference](../reference/generator/index.md); from 6.0: [wow.ahoo.me](https://wow.ahoo.me) |
-| `@ahoo-wang/fetcher-viewer`, data-monitor hooks | Frozen in 5.x; superseded by `@ahoo-wang/wow-view-engine` in the Wow repository                                       | 5.x: [Viewer guides](../guides/viewer/index.md), [Viewer reference](../reference/viewer/index.md)                                                                     |
+| `@ahoo-wang/fetcher-viewer`, data-monitor hooks | Deprecated on npm, frozen in 5.x; replaced by `@ahoo-wang/wow-view-engine` (Wow 9.2+)                                 | 5.x: [Viewer guides](../guides/viewer/index.md), [Viewer reference](../reference/viewer/index.md)                                                                     |
 
 The Wow packages are on npm from Wow 9.2.0, their first stable release, and accept fetcher 6 from Wow 9.2.1 (peer range `^5.1.5 || ^6.0.0`). To move a 5.x application to 6.0, switch to the Wow packages (9.2.1 or later) first, then upgrade fetcher; `@ahoo-wang/fetcher-viewer` consumers stay on the 5.1.x releases above until they migrate to `@ahoo-wang/wow-view-engine`.
 
@@ -2345,7 +2345,7 @@ Start with [HTTP requests](../guides/http/requests.md), then use [declarative cl
 
 ## Data views
 
-Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` (View, Viewer, FetcherViewer) is frozen in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)); its [guides](../guides/viewer/index.md) and [reference](../reference/viewer/index.md) remain for existing consumers. It is superseded by `@ahoo-wang/wow-view-engine` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6; see [wow.ahoo.me](https://wow.ahoo.me)). For a new table today, compose [React request state](../guides/react/index.md) with the table component your application already uses, and keep filtering, sorting and pagination in your data service.
+Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` (View, Viewer, FetcherViewer) is deprecated on npm and frozen in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)); its [guides](../guides/viewer/index.md) and [reference](../reference/viewer/index.md) remain for existing consumers. It is superseded by `@ahoo-wang/wow-view-engine` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6; see [wow.ahoo.me](https://wow.ahoo.me)). For a new table today, compose [React request state](../guides/react/index.md) with the table component your application already uses, and keep filtering, sorting and pagination in your data service.
 
 ## Service-specific integrations
 
@@ -2635,8 +2635,8 @@ Keep Vite's generated `index.html`, then run `pnpm dev` and open the URL it prin
 
 # Local Viewer example
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 This browser example uses four users and no backend. The application filters and sorts the full dataset, then slices the requested page. `Viewer` receives the resulting `{ list, total }`; it does not transform the supplied rows for you.
@@ -3007,20 +3007,20 @@ Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at t
 
 Each package has an entry page and focused reference topics. Choose the responsibility first, then the API family. Complex packages have deeper navigation; small packages stay compact.
 
-| Package                                   | Responsibility             | Topics |
-| ----------------------------------------- | -------------------------- | ------ |
-| [fetcher](./fetcher/index.md)             | HTTP requests              | 6      |
-| [decorator](./decorator/index.md)         | Declarative services       | 3      |
-| [eventbus](./eventbus/index.md)           | Event delivery             | 2      |
-| [eventstream](./eventstream/index.md)     | SSE consumption            | 3      |
-| [storage](./storage/index.md)             | Stored values              | 2      |
-| [openapi](./openapi/index.md)             | OpenAPI type contracts     | 3      |
-| [generator](./generator/index.md) (5.x)   | Generated clients          | 5      |
-| [openai](./openai/index.md)               | Chat and token streams     | 2      |
-| [cosec](./cosec/index.md)                 | Authentication and refresh | 3      |
-| [react](./react/index.md)                 | Component request state    | 7      |
-| [wow](./wow/index.md) (5.x)               | Commands and queries       | 9      |
-| [viewer](./viewer/index.md) (5.x, frozen) | Data views and persistence | 8      |
+| Package                                       | Responsibility             | Topics |
+| --------------------------------------------- | -------------------------- | ------ |
+| [fetcher](./fetcher/index.md)                 | HTTP requests              | 6      |
+| [decorator](./decorator/index.md)             | Declarative services       | 3      |
+| [eventbus](./eventbus/index.md)               | Event delivery             | 2      |
+| [eventstream](./eventstream/index.md)         | SSE consumption            | 3      |
+| [storage](./storage/index.md)                 | Stored values              | 2      |
+| [openapi](./openapi/index.md)                 | OpenAPI type contracts     | 3      |
+| [generator](./generator/index.md) (5.x)       | Generated clients          | 5      |
+| [openai](./openai/index.md)                   | Chat and token streams     | 2      |
+| [cosec](./cosec/index.md)                     | Authentication and refresh | 3      |
+| [react](./react/index.md)                     | Component request state    | 7      |
+| [wow](./wow/index.md) (5.x)                   | Commands and queries       | 9      |
+| [viewer](./viewer/index.md) (5.x, deprecated) | Data views and persistence | 8      |
 
 Packages marked 5.x apply only to the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, Wow and the generator live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)); their npm successors are `@ahoo-wang/wow-client`, `@ahoo-wang/wow-react` and `@ahoo-wang/wow-generator` (Wow 9.2.1 or later accepts fetcher 6). Viewer is frozen and superseded by `@ahoo-wang/wow-view-engine`, also on npm.
 
@@ -13514,8 +13514,8 @@ This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github
 
 # Viewer
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Viewer supplies Ant Design filter, table and saved-view UI. Begin with the component matching who owns the rows and saved views. A local table does not require a Wow backend; FetcherViewer requires the defined remote protocol.
@@ -13564,8 +13564,8 @@ The file lives on the `5.x` branch, where `@ahoo-wang/fetcher-viewer` is maintai
 
 # View and Viewer composition
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Choose View for a filter/table/pagination surface with supplied rows. Choose Viewer to add saved-view selection and a top toolbar. Choose [FetcherViewer](./fetcher-viewer) only when the service implements the package's remote definition/view endpoints.
@@ -13786,8 +13786,8 @@ export interface ViewerProps<RecordType>
 
 # Models and state ownership
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 A ViewDefinition describes the fields and available filters for a data endpoint; ViewState describes one saved arrangement of that definition. The root package's model is `ViewDefinition`/`ViewState`; an unrelated view-engine package is not part of this API.
@@ -14417,8 +14417,8 @@ export function format(str: string, ...args: any[]): string;
 
 # Filters and editable panels
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 Viewer filters currently produce legacy Wow Condition objects. They do not emit the new FilterExpression format. A FilterValue wraps `{condition}`, while a FilterState retains the UI operator and raw value even when that value is not a valid query.
@@ -15200,8 +15200,8 @@ export function currentTimeZone(): string;
 
 # Tables, columns and cells
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 `ViewTable<RecordType>` maps FieldDefinition and ViewColumn to Ant Design columns and receives an array of records. It does not paginate/query the server. Required props are fields, columns, dataSource, enableRowSelection and viewTableSetting (false or settings); optional attributes forwards table props, tableSize defaults middle.
@@ -16027,8 +16027,8 @@ export interface ViewTableStateReturn {
 
 # Saved-view panels and persistence callbacks
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 The saved-view components are UI building blocks around ViewState. A mutation callback requests persistence; the success callback acknowledges that the application has completed it. Do not call success before the write is confirmed if closing the editor would hide a failed save.
@@ -16236,8 +16236,8 @@ export interface ViewManageModalProps {
 
 # FetcherViewer remote integration
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 FetcherViewer connects three remote resources: a viewer definition, its visible saved views, and paged data from the definition's dataUrl. Configure the default Fetcher for your service/authentication before mounting. The backend must implement the `viewer` bounded-context endpoints; this is not a generic URL-only grid.
@@ -16839,8 +16839,8 @@ export interface FetcherViewerProps<RecordType>
 
 # Registries, inputs and fullscreen button
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 `TypedComponentRegistry<Type,Props>` stores React FunctionComponents by a type key. `create(entries = [])` constructs and registers entries. register throws for duplicates; get returns undefined when missing, unregister is a no-op for missing keys, clear empties the registry. types/entries return arrays and size/has inspect current state. Registries are mutable nonreactive objects; registering after a component renders does not itself force a rerender. Register application extensions once before rendering and unregister only registrations you own.
@@ -17085,8 +17085,8 @@ export class TypedComponentRegistry<Type, Props> {
 
 # Toolbar, refresh and locale
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 TopBar combines view actions, filter/panel toggles, row density, refresh, monitor, share and fullscreen controls. Its props include activeView/views/viewerDefinitionId, selected records and mutation callbacks. Buttons use application callbacks; saving is not an implicit local-storage operation.
@@ -17486,8 +17486,8 @@ export interface UseLocaleReturn {
 
 # Complete symbol index
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 | Symbol                                    | Topic                                                                                                |
@@ -17985,8 +17985,8 @@ Ada
 
 # 第一个数据视图
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 Fetcher main 不提供数据视图组件。存量 5.x 项目用下面的 Ant Design Viewer 搭建表格；新项目使用 `@ahoo-wang/wow-view-engine`（见 [wow.ahoo.me](https://wow.ahoo.me)），新表格也可以把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来。
@@ -18044,7 +18044,7 @@ Fetcher main 不提供数据视图组件。存量 5.x 项目用下面的 Ant Des
 - [服务客户端](./services/index.md)：少量端点可以直接调用 Fetcher。装饰器需要兼容的 TypeScript 编译器；生成客户端需要完整 OpenAPI 文档与编译步骤。两者都不会创建后端路由。
 - [流式消费](./streaming/index.md)：运行环境需要 Fetch、Response body 和 ReadableStream。服务端必须输出 SSE 帧；普通 JSON 响应不是事件流。长时间读取需要由调用者持有取消信号。
 - [React 数据流](./react/index.md)：从已具备声明 peer 依赖的 React 应用开始。可运行 React 示例提供确定性后端夹具；生产路由仍归应用负责。
-- [Ant Design Viewer（仅 5.x，已冻结）](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
+- [Ant Design Viewer（已弃用，仅 5.x）](./viewer/index.md)：在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
 - [平台集成](./integrations/index.md)：Wow（仅 5.x）与 CoSec 需要兼容的服务端协议、认证和应用路由。存储与本地事件不需要平台服务。安装前核对所选包的 peer 依赖。
 
 使用[完整示例](../examples/index.md)获得可执行基线；通过[架构与选型](../architecture/index.md)理解资源归属与采用代价。
@@ -19088,8 +19088,8 @@ const load = () =>
 
 # 数据视图任务
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 在具备 Viewer peer 依赖的 React 应用中从本地数据开始。View 展示单个视图；Viewer 还管理视图集合。数据适配层执行查询，持久化归应用所有。
@@ -19108,8 +19108,8 @@ const load = () =>
 
 # 用 Viewer 渲染本地行
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 ## 前提
@@ -19148,8 +19148,8 @@ const load = () =>
 
 # 让分页与排序真正改变行
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 ## 前提
@@ -19185,8 +19185,8 @@ const load = () =>
 
 # 过滤展示数据
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 ## 前提
@@ -19220,8 +19220,8 @@ const load = () =>
 
 # 保存并恢复视图状态
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 ## 前提
@@ -19262,8 +19262,8 @@ localStorage 适配器可在一个浏览器配置内持久化，但不提供服�
 
 # 连接 Viewer 远端行数据
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 创建一个 React 页面，渲染默认视图、加载数据并响应分页/排序。Viewer 管理展示状态，应用提供数据和持久化回调。
@@ -19882,7 +19882,7 @@ OpenAPI 类型本身既不发送请求，也不验证输入。作为开发依赖
 | `@ahoo-wang/fetcher-wow`                      | Wow 仓库 [`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) 中的 `@ahoo-wang/wow-client` | 5.x：[Wow 指南](../guides/integrations/wow.md)、[Wow 参考](../reference/wow/index.md)；6.0 起：[wow.ahoo.me](https://wow.ahoo.me)                    |
 | `@ahoo-wang/fetcher-react` 中的 Wow 查询 Hook | Wow 仓库中的 `@ahoo-wang/wow-react`                                                                          | [wow.ahoo.me](https://wow.ahoo.me)                                                                                                                   |
 | `@ahoo-wang/fetcher-generator`                | Wow 仓库中的 `@ahoo-wang/wow-generator`（CLI `wow-generator`；`fetcher-generator` 别名保留到 Wow v10）       | 5.x：[生成客户端](../guides/services/generated-client.md)、[生成器参考](../reference/generator/index.md)；6.0 起：[wow.ahoo.me](https://wow.ahoo.me) |
-| `@ahoo-wang/fetcher-viewer`、数据监控 Hook    | 冻结在 5.x；由 Wow 仓库的 `@ahoo-wang/wow-view-engine` 接替                                                  | 5.x：[Viewer 指南](../guides/viewer/index.md)、[Viewer 参考](../reference/viewer/index.md)                                                           |
+| `@ahoo-wang/fetcher-viewer`、数据监控 Hook    | 已在 npm 弃用，冻结在 5.x；由 `@ahoo-wang/wow-view-engine`（Wow 9.2+）替代                                   | 5.x：[Viewer 指南](../guides/viewer/index.md)、[Viewer 参考](../reference/viewer/index.md)                                                           |
 
 Wow 的 npm 包自首个稳定版 Wow 9.2.0 起发布，自 Wow 9.2.1 起兼容 fetcher 6（peer 范围 `^5.1.5 || ^6.0.0`）。把 5.x 应用迁到 6.0 时，先切换到 Wow 包（9.2.1 及以上），再升级 fetcher；`@ahoo-wang/fetcher-viewer` 的使用者在迁移到 `@ahoo-wang/wow-view-engine` 之前继续使用上述 5.1.x 版本。
 
@@ -20082,7 +20082,7 @@ SSE JSON 转换调用 `JSON.parse`，未处理的转换错误成为流错误，�
 
 ## 数据视图
 
-Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`（View、Viewer、FetcherViewer）冻结在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)）；它的[指南](../guides/viewer/index.md)与[参考](../reference/viewer/index.md)为存量用户保留。接替它的是 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)中的 `@ahoo-wang/wow-view-engine`，自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6；见 [wow.ahoo.me](https://wow.ahoo.me)）。现在新建表格时，把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来，筛选、排序和分页留在数据服务中完成。
+Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`（View、Viewer、FetcherViewer）已在 npm 弃用，并冻结在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)）；它的[指南](../guides/viewer/index.md)与[参考](../reference/viewer/index.md)为存量用户保留。接替它的是 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)中的 `@ahoo-wang/wow-view-engine`，自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6；见 [wow.ahoo.me](https://wow.ahoo.me)）。现在新建表格时，把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来，筛选、排序和分页留在数据服务中完成。
 
 ## 服务专用集成
 
@@ -20370,8 +20370,8 @@ createRoot(document.getElementById('root')!).render(
 
 # 本地 Viewer 示例
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 这个浏览器示例使用四个用户，无需后端。应用先对完整数据集过滤、排序，再截取请求页。`Viewer` 接收计算后的 `{ list, total }`；它不会替你转换传入的行数据。
@@ -20749,7 +20749,7 @@ node --test wiki/test/documentation.test.mjs
 | [cosec](./cosec/index.md)                  | 认证与刷新       | 3      |
 | [react](./react/index.md)                  | 组件请求状态     | 7      |
 | [wow](./wow/index.md)（5.x）               | 命令与查询       | 9      |
-| [viewer](./viewer/index.md)（5.x，已冻结） | 数据视图与持久化 | 8      |
+| [viewer](./viewer/index.md)（5.x，已弃用） | 数据视图与持久化 | 8      |
 
 标注 5.x 的包只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，Wow 与生成器位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）；npm 上的后继包是 `@ahoo-wang/wow-client`、`@ahoo-wang/wow-react` 与 `@ahoo-wang/wow-generator`（Wow 9.2.1 及以上兼容 fetcher 6）。Viewer 已冻结，由同样已发布到 npm 的 `@ahoo-wang/wow-view-engine` 接替。
 
@@ -31243,8 +31243,8 @@ console.log(zh_CN.EQ);
 
 # Viewer
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 Viewer 提供 Ant Design 过滤、表格和保存视图 UI。先根据谁拥有行数据和保存视图选择组件。本地表格不要求 Wow 后端；FetcherViewer 要求既定的远端协议。
@@ -31293,8 +31293,8 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-decorato
 
 # View 与 Viewer 组合
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 View 提供过滤/表格/分页，数据行由你提供；Viewer 增加已保存视图选择和工具栏。服务实现本包远端定义/视图端点时才选择 [FetcherViewer](./fetcher-viewer)。
@@ -31515,8 +31515,8 @@ export interface ViewerProps<RecordType>
 
 # 模型与状态所有权
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 ViewDefinition 描述数据端点的字段和可用过滤器，ViewState 描述该定义的一种已保存布局。根包模型为 `ViewDefinition`/`ViewState`，不相关的 view-engine 包不属于本 API。
@@ -32146,8 +32146,8 @@ export function format(str: string, ...args: any[]): string;
 
 # 过滤器与可编辑面板
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 Viewer 过滤器目前生成旧 Wow Condition，不生成新 FilterExpression。FilterValue 包装 `{condition}`；FilterState 保留 UI operator 和原始 value，即使当前值不是有效查询。
@@ -32929,8 +32929,8 @@ export function currentTimeZone(): string;
 
 # 表格、列与单元格
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 `ViewTable<RecordType>` 将 FieldDefinition/ViewColumn 映射为 Ant Design 列，接收记录数组，不分页或查询服务端。必填 fields、columns、dataSource、enableRowSelection、viewTableSetting（false 或设置）；attributes 可转发表格 props，tableSize 默认 middle。
@@ -33756,8 +33756,8 @@ export interface ViewTableStateReturn {
 
 # 已保存视图面板与持久化回调
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 已保存视图组件围绕 ViewState 提供 UI。mutation 回调请求持久化，success 回调表示应用已完成；如果关闭编辑器会隐藏保存失败，不要在写入确认前调用 success。
@@ -33965,8 +33965,8 @@ export interface ViewManageModalProps {
 
 # FetcherViewer 远端集成
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 FetcherViewer 连接三个远端资源：视图定义、可见保存视图，以及 definition.dataUrl 的分页数据。挂载前配置默认 Fetcher 的服务/认证；后端必须实现 `viewer` 限界上下文端点，不是仅传 URL 的通用表格。
@@ -34568,8 +34568,8 @@ export interface FetcherViewerProps<RecordType>
 
 # 注册表、输入与全屏按钮
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 `TypedComponentRegistry<Type,Props>` 按类型键存储 React FunctionComponent；create(entries = []) 创建并注册。register 遇到重复键抛错，get 缺失时 undefined，unregister 缺失键无操作，clear 清空。types/entries 返回数组，size/has 查询当前状态。注册表可变且不响应式，渲染后注册不会自动重渲染；扩展在渲染前注册一次，只退注册自己拥有的项。
@@ -34814,8 +34814,8 @@ export class TypedComponentRegistry<Type, Props> {
 
 # 工具栏、刷新与本地化
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 TopBar 组合视图操作、过滤/面板开关、行密度、刷新、监控、分享、全屏。props 包含 activeView/views/viewerDefinitionId、选中记录、mutation 回调。按钮调用应用回调，保存不是隐式 localStorage 操作。
@@ -35215,8 +35215,8 @@ export interface UseLocaleReturn {
 
 # 完整符号索引
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 | 符号                                      | 专题                                                                                   |

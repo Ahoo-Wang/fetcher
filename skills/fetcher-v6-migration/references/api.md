@@ -66,14 +66,14 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 
 ## Package mapping
 
-| 5.x package                      | 6.x replacement (Wow repository, on npm from Wow 9.2.0; use 9.2.1+ with fetcher 6)                         |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths   |
-| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                     |
-| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10     |
-| `@ahoo-wang/fetcher-viewer`      | No drop-in replacement; stays on 5.x. Superseded by `@ahoo-wang/wow-view-engine` (different model and API) |
-| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                           |
-| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`                                                 |
+| 5.x package                      | 6.x replacement (Wow repository, on npm from Wow 9.2.0; use 9.2.1+ with fetcher 6)                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths                    |
+| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                                      |
+| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10                      |
+| `@ahoo-wang/fetcher-viewer`      | Deprecated on npm; no drop-in replacement, stays on 5.x. Replaced by `@ahoo-wang/wow-view-engine` (different model and API) |
+| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                                            |
+| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`                                                                  |
 
 The last 5.x versions of `fetcher-wow` and `fetcher-generator` (5.1.3) stay on
 npm and are meant to be deprecated with a pointer to their replacement.

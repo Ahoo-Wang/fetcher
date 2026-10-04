@@ -34,7 +34,7 @@ features:
     link: /guides/react/
     linkText: Learn more
   - title: Data views
-    details: Tables, filters and saved views with the Ant Design Viewer, frozen in the 5.x line; its successor lives in the Wow repository.
+    details: Tables, filters and saved views with the Ant Design Viewer, deprecated and frozen in the 5.x line; it is replaced by `@ahoo-wang/wow-view-engine` (Wow 9.2+).
     link: /start/first-view
     linkText: Learn more
   - title: Architecture and choices

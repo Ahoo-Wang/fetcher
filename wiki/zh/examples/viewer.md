@@ -6,8 +6,8 @@ description: 使用应用持有的状态，对本地数据过滤、排序、分�
 
 # 本地 Viewer 示例
 
-::: warning 仅适用于 5.x（已冻结）
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 冻结在该线上：仅维护现有功能，不再新增功能。接替它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
+::: warning 已弃用（仅适用于 5.x）
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。`@ahoo-wang/fetcher-viewer` 已在 npm 上弃用（所有版本），并冻结在该线上：仅维护现有功能，不再新增功能。替代它的是 Wow 仓库的 `@ahoo-wang/wow-view-engine`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[wow.ahoo.me](https://wow.ahoo.me)），自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。两者模型与 API 不同，迁移需要适配。
 :::
 
 这个浏览器示例使用四个用户，无需后端。应用先对完整数据集过滤、排序，再截取请求页。`Viewer` 接收计算后的 `{ list, total }`；它不会替你转换传入的行数据。
