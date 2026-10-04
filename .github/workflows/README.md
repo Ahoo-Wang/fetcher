@@ -53,6 +53,40 @@ required checks, use current job names: the removed standalone
 At inspection, main had no classic branch protection and an active Copilot rule.
 Recheck repository settings before changing enforcement.
 
+## Required checks on `main` (maintainer setting)
+
+`main` has no required status checks, so a pull request with auto-merge on
+merges before its CI finishes (#1965 did). Branch protection is a repository
+setting the maintainer owns; these are the checks it should require:
+
+| Required check        | Workflow               | Why this one                                                     |
+| --------------------- | ---------------------- | ---------------------------------------------------------------- |
+| `CI gate`             | `ci.yml`               | Unit tests on Node 22 and 24, and combined coverage              |
+| `Storybook gate`      | `build-storybook.yml`  | Storybook build, static verification and both interaction shards |
+| `Integration gate`    | `integration-test.yml` | The required integration run (local JSONPlaceholder server)      |
+| `Engineering Quality` | `quality.yml`          | Lint, format, type and package checks, CI script tests           |
+| `PR Metadata`         | `pr-quality.yml`       | Conventional Commits title and a filled description              |
+
+Require the gates, not the jobs behind them. A matrix job skipped by scope
+reports its name unexpanded (`Node ${{ matrix.node-version }} / …`), so a
+required `Node 22 / core` would never appear on a docs-only pull request and
+would block it; and a job whose dependency failed reports `skipped`, which a
+required check counts as passing. Each gate always runs and fails unless every
+job it needs succeeded or was skipped by scope.
+
+Leave advisory checks optional: `Wow TypeScript against this fetcher`
+(`downstream-wow.yml`), `Integration External`, `Label Pull Request` and the
+`changes / changes` scope jobs. Codecov stays a release admission condition,
+not a merge requirement (it does not report on every pull request).
+
+**Codacy** is neither a merge nor a release check. It stopped analysing this
+repository from 2026-09-28 to 2026-10-04 unnoticed, and when it runs it leaves
+a second `Codacy Static Code Analysis` check `in_progress` forever, so pull
+requests look pending; what it checks overlaps typescript-eslint and the type
+and package checks. Nothing in the repository configures it (no config file or
+badge): to remove it, uninstall the Codacy GitHub App for this repository and
+remove the repository on app.codacy.com.
+
 ## Verification and cost
 
 Local checks:
