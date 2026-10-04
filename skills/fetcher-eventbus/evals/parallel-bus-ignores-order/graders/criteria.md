@@ -7,5 +7,9 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 
 PASS only if the answer does all of these:
 
-1. Says `ParallelTypedEventBus` ignores `order` entirely.
-2. Switches to `SerialTypedEventBus`, which awaits handlers one by one sorted by `order` (lower first).
+1. Says `ParallelTypedEventBus` runs handlers concurrently and ignores `order` entirely.
+2. Switches to `SerialTypedEventBus`, which awaits handlers one by one sorted by `order` (lower first, default 0).
+
+FAIL if the answer does any of these:
+
+- Keeps `ParallelTypedEventBus` and claims a different `order` value, `await` inside the handlers or registration order makes it sequential.

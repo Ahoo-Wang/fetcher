@@ -37,7 +37,7 @@ The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions f
 | `License`               | License information (name, `identifier` (3.1 SPDX expression), url)                                            |
 | `Server`                | Server configuration with URL template variables                                                               |
 | `ServerVariable`        | Variable substitution for server URLs (enum, default, description)                                             |
-| `Paths`                 | Map of API paths to PathItem objects (plus `x-*` keys)                                                         |
+| `Paths`                 | Map of API paths to PathItem objects (plus `x-*` keys); `OpenAPI.paths` is required                            |
 | `PathItem`              | Per-path `get`…`trace` operations, `$ref`, `summary`, `servers`, `parameters`                                  |
 | `Components`            | Reusable components (schemas, responses, parameters, and more; `pathItems` is 3.1)                             |
 | `ComponentTypeMap`      | Maps each `Components` key to its non-reference interface (e.g. `schemas` → `Schema`)                          |
@@ -45,12 +45,7 @@ The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions f
 | `ExternalDocumentation` | External docs link (url, description)                                                                          |
 
 ```typescript
-import type {
-  OpenAPI,
-  Server,
-  ServerVariable,
-  Components,
-} from '@ahoo-wang/fetcher-openapi';
+import type { OpenAPI } from '@ahoo-wang/fetcher-openapi';
 
 const doc: OpenAPI = {
   openapi: '3.0.1',
@@ -59,12 +54,12 @@ const doc: OpenAPI = {
     {
       url: 'https://{env}.example.com/v1',
       variables: {
-        env: { default: 'api', enum: ['api', 'staging'] } as ServerVariable,
+        env: { default: 'api', enum: ['api', 'staging'] },
       },
     },
   ],
   paths: {},
-  components: {} as Components,
+  components: { schemas: {} },
 };
 ```
 
@@ -91,9 +86,11 @@ const doc: OpenAPI = {
 - **Polymorphism:** `discriminator` (Discriminator)
 - **XML:** `xml` (XML)
 - **Docs:** `externalDocs` (ExternalDocumentation)
+- **JSON Schema 2020-12 (3.1, all optional):** `$id`, `$anchor`, `$dynamicAnchor`, `$comment`, `$defs` (`Record<string, Schema | Reference>`), `examples` (any[]); `contentMediaType`, `contentEncoding`, `contentSchema`; `prefixItems` (Array<Schema | Reference>), `contains`, `minContains`, `maxContains`, `unevaluatedItems`; `patternProperties`, `propertyNames`, `dependentRequired` (`Record<string, string[]>`), `dependentSchemas`, `unevaluatedProperties`; `if` / `then` / `else`. Applicators are `Schema | Reference`; `unevaluatedItems` / `unevaluatedProperties` (like `additionalProperties`) also accept a boolean.
+- **No `$ref`:** `Schema` declares no sibling `$ref` (a 3.1 schema with `$ref` plus keywords is not representable), so `'$ref' in value` is how a `Schema | Reference` is told apart.
 
 ```typescript
-import type { Schema, Discriminator } from '@ahoo-wang/fetcher-openapi';
+import type { Schema } from '@ahoo-wang/fetcher-openapi';
 
 const userSchema: Schema = {
   type: 'object',
@@ -138,12 +135,7 @@ const polymorphicSchema: Schema = {
 **Operation properties:** `tags`, `summary`, `description`, `externalDocs`, `operationId`, `parameters`, `requestBody`, `responses` (required), `callbacks`, `deprecated`, `security`, `servers`
 
 ```typescript
-import type {
-  Operation,
-  RequestBody,
-  MediaType,
-  Encoding,
-} from '@ahoo-wang/fetcher-openapi';
+import type { Operation } from '@ahoo-wang/fetcher-openapi';
 
 const createUserOp: Operation = {
   operationId: 'createUser',
@@ -154,7 +146,7 @@ const createUserOp: Operation = {
     content: {
       'application/json': {
         schema: { $ref: '#/components/schemas/CreateUserRequest' },
-      } as MediaType,
+      },
     },
   },
   responses: {
@@ -178,11 +170,11 @@ const createUserOp: Operation = {
 **Parameter properties:** `name` (required), `in` (required), `description`, `required`, `deprecated`, `allowEmptyValue`, `style`, `explode`, `allowReserved`, `schema`, `example`, `examples`, `content`
 
 ```typescript
-import type { Parameter, ParameterLocation } from '@ahoo-wang/fetcher-openapi';
+import type { Parameter } from '@ahoo-wang/fetcher-openapi';
 
 const userIdParam: Parameter = {
   name: 'userId',
-  in: 'path' as ParameterLocation,
+  in: 'path',
   required: true,
   schema: { type: 'integer', minimum: 1 },
   description: 'The user ID',
@@ -196,12 +188,12 @@ const userIdParam: Parameter = {
 | Type        | Description                                                                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------- |
 | `Response`  | Response definition: `description` (required), `headers`, `content`, `links`                          |
-| `Responses` | `default` plus status-code keys, each `Response \| Reference`                                         |
+| `Responses` | `default` plus status-code keys, each `Response \| Reference \| undefined` (plus `x-*` keys)          |
 | `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `description`, `server` |
 | `Example`   | Example object: `summary`, `description`, `value`, `externalValue`                                    |
 
 ```typescript
-import type { Response, Link } from '@ahoo-wang/fetcher-openapi';
+import type { Response } from '@ahoo-wang/fetcher-openapi';
 
 const errorResponse: Response = {
   description: 'Error response',
@@ -217,7 +209,7 @@ const errorResponse: Response = {
     GetOrder: {
       operationId: 'getOrder',
       parameters: { orderId: '$response.body#/id' },
-    } as Link,
+    },
   },
 };
 ```

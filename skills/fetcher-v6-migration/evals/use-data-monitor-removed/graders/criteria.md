@@ -8,7 +8,7 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 PASS only if the answer does all of these:
 
 1. Says the data-monitor hooks were removed from `@ahoo-wang/fetcher-react` in 6.0 with no replacement.
-2. Offers the way out: keep the `@ahoo-wang/fetcher*` packages on 5.x (`^5.1.3`), or remove the data-monitor usage to move to 6.
+2. Offers the way out: keep the `@ahoo-wang/fetcher*` packages on 5.x (`^5.1.5`), or remove the data-monitor usage to move to 6.
 
 FAIL if the answer does any of these:
 

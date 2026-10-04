@@ -7,9 +7,10 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 
 PASS only if the answer does all of these:
 
-1. Types the extensions without `any`, for example `Operation & CommonExtensions` or an explicit interface for `x-internal` and `x-tags`.
+1. Types the extensions without `any`, for example `Operation & CommonExtensions` (imported with `import type` from `@ahoo-wang/fetcher-openapi`) or an explicit interface for `x-internal: boolean` and `x-tags: string[]`.
 2. Filters out operations whose `x-internal` is `true`.
 
 FAIL if the answer does any of these:
 
 - Imports a runtime helper from `@ahoo-wang/fetcher-openapi`; the package has none.
+- Uses extension keys without the `x-` prefix (`internal`, `tags`), or filters on `x-internal` being truthy as a string (`'true'`) instead of the boolean.

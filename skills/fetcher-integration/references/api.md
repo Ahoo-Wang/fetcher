@@ -352,7 +352,7 @@ fetcher.interceptors.error.use({
 });
 ```
 
-This runs before `ValidateStatusInterceptor` (order `MAX_SAFE_INTEGER - 10000`), so the replayed response is still status-validated.
+The token-refresh interceptor runs before `ValidateStatusInterceptor` (order `MAX_SAFE_INTEGER - 10000`), so the replayed response is still status-validated. Both examples re-send with `timeoutFetch(exchange.request)`, which uses the global `fetch`: if the fetcher was built with a `fetch` option, pass the same function as the second argument (`timeoutFetch(exchange.request, myFetch)`).
 
 Recovered responses do not re-enter the response interceptor chain, so validate the retry result before clearing `exchange.error`. This example retries only GET requests and skips caller cancellation; replace `response.ok` with the same predicate as a custom `validateStatus` when needed.
 

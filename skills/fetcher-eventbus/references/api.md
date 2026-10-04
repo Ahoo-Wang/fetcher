@@ -21,6 +21,8 @@
 - [Ecosystem Usage](#ecosystem-usage)
 - [Further Reading](#further-reading)
 
+`@ahoo-wang/fetcher-eventbus` has no dependencies or peers (`pnpm add @ahoo-wang/fetcher-eventbus`); it runs in browsers and Node.
+
 ## Core Concepts
 
 ### TypedEventBus<EVENT> Interface
@@ -28,9 +30,11 @@
 The core contract for all typed event bus implementations:
 
 ```typescript
+type EventType = string;
+
 interface TypedEventBus<EVENT> {
   type: EventType;
-  handlers: EventHandler<EVENT>[];
+  handlers: EventHandler<EVENT>[]; // a copy, in dispatch order
   on(handler: EventHandler<EVENT>): boolean; // false if duplicate name
   off(name: string): boolean;
   emit(event: EVENT): Promise<void>;
@@ -40,13 +44,13 @@ interface TypedEventBus<EVENT> {
 
 ### AbstractTypedEventBus<EVENT>
 
-Abstract base class for all typed event bus implementations. Provides shared handler storage, error-wrapped `handleEvent()`, and `destroy()`. SerialTypedEventBus, ParallelTypedEventBus extend this.
+Abstract base class of `SerialTypedEventBus` and `ParallelTypedEventBus`: protected `eventHandlers` array, a `handlers` getter returning a copy, protected `handleEvent(handler, event)` (awaits the handler, catches and `console.warn`s its error) and `destroy()` (drops all handlers). Subclasses implement `type`, `on`, `off` and `emit`.
 
 ### EventHandler<EVENT>
 
 ```typescript
-interface EventHandler<EVENT> extends NamedCapable, OrderedCapable {
-  name: string; // Unique identifier (prevents duplicates)
+interface EventHandler<EVENT> {
+  name: string; // Unique per bus (a duplicate is rejected by on())
   order?: number; // Execution priority (lower = earlier; default 0)
   handle(event: EVENT): void | Promise<void>;
   once?: boolean; // If true, removed before dispatch and invoked at most once
@@ -77,8 +81,8 @@ import {
   DefaultNameGenerator,
 } from '@ahoo-wang/fetcher-eventbus';
 
-nameGenerator.generate('handler'); // "handler_1"
-nameGenerator.generate('handler'); // "handler_2"
+nameGenerator.generate('handler'); // e.g. "handler_1" (one counter shared module-wide)
+nameGenerator.generate('handler'); // the next number, e.g. "handler_2"
 
 // Or create a dedicated instance:
 const gen = new DefaultNameGenerator();
@@ -159,7 +163,7 @@ await bus.emit('broadcast-message'); // Local + cross-tab
 
 Default messenger: `createCrossTabMessenger()` on channel `_broadcast_:{type}`, where `type` is the delegate's `type`. Pass a custom `messenger` option to override; a passed messenger belongs to the caller — `destroy()` detaches it (replaces its `onmessage` with a no-op) but does not close it. If no messenger is supplied and neither backend is available, the constructor throws `Error('Messenger setup failed')`.
 
-`emit()` awaits the delegate (local handlers) first, then posts. Neither backend echoes a message back to the posting context, so local handlers run exactly once per local `emit()`, and a remote message is dispatched only to the delegate (it is not re-broadcast). `on`/`off`/`handlers` all forward to the delegate.
+`emit()` awaits the delegate (local handlers) first, then posts. After `destroy()`, `emit()` still runs the local handlers but posts nothing, and incoming messages are no longer received. Neither backend echoes a message back to the posting context, so local handlers run exactly once per local `emit()`, and a remote message is dispatched only to the delegate (it is not re-broadcast). `on`/`off`/`handlers` all forward to the delegate.
 
 `BroadcastTypedEventBusOptions<EVENT>` also accepts an optional message conversion:
 
@@ -195,14 +199,18 @@ still be received. Messenger callbacks do not leave rejected promises unhandled.
 Manages multiple named event types with lazy-loaded TypedEventBus instances:
 
 ```typescript
-import { EventBus, SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
+import {
+  EventBus,
+  SerialTypedEventBus,
+  type TypeEventBusSupplier,
+} from '@ahoo-wang/fetcher-eventbus';
 
 type AppEvents = {
   'user:login': { username: string };
   'order:created': { orderId: string };
 };
 
-const supplier = (type: string) => new SerialTypedEventBus(type);
+const supplier: TypeEventBusSupplier = type => new SerialTypedEventBus(type);
 const appBus = new EventBus<AppEvents>(supplier);
 
 appBus.on('user:login', {
@@ -214,23 +222,27 @@ appBus.on('user:login', {
 await appBus.emit('user:login', { username: 'john-doe' });
 ```
 
-The per-type bus is created lazily by the first `on(type, ...)`. `emit()` for a type that never had `on()` called is a silent no-op returning `undefined`. `off()` never destroys the per-type bus; `destroy()` destroys all of them and clears the map.
+`EventBus` is constructed with a `TypeEventBusSupplier` (`(type: EventType) => TypedEventBus<unknown>`). The per-type bus is created on first use — the first `on(type, …)` or `emit(type, …)` — and reused afterwards; emitting a type with no handlers creates its bus and resolves without calling anything. `off(type, name)` returns `false` for an unknown type and never destroys the per-type bus; `destroy()` destroys all of them and clears the map. With a supplier that returns `BroadcastTypedEventBus`, each type gets its own channel.
 
 ## Cross-Tab Messengers
 
 ### CrossTabMessenger Interface
 
 ```typescript
+type CrossTabMessageHandler = (message: any) => void;
+
 interface CrossTabMessenger {
   postMessage(message: any): void;
-  set onmessage(handler: (message: any) => void);
+  set onmessage(handler: CrossTabMessageHandler);
   close(): void;
 }
 ```
 
+Implement it to plug in another transport (a `SharedWorker`, a test double) and pass it as `messenger`.
+
 ### BroadcastChannelMessenger
 
-Uses the native `BroadcastChannel` API for efficient cross-tab messaging.
+Uses the native `BroadcastChannel` API (`new BroadcastChannelMessenger(channelName)`); messages are structured-cloned. In Node the channel is `unref()`ed so it does not keep the process alive.
 
 ```typescript
 import { BroadcastChannelMessenger } from '@ahoo-wang/fetcher-eventbus';
@@ -245,7 +257,7 @@ messenger.close();
 
 ### StorageMessenger
 
-Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Messages are `JSON.stringify`-ed into `{ data, timestamp }` under a per-message key, so payloads must be JSON-safe, and the writing tab does not receive its own messages (native `storage` event semantics). Supports TTL and cleanup. Throws outside a browser environment (no `localStorage`); probe `isStorageEventSupported()` first if that matters. Options also include `storage` (defaults to `localStorage`).
+Uses `localStorage` events as fallback when `BroadcastChannel` is unavailable. It retains the legacy raw channel key format and validates the full timestamp/random suffix to isolate channels, including arbitrary UTF-16 names. Messages are `JSON.stringify`-ed into `{ data, timestamp }` under a per-message key, so payloads must be JSON-safe, and the writing tab does not receive its own messages (native `storage` event semantics). `StorageMessengerOptions` is `{ channelName: string; storage?: Storage /* default localStorage */; ttl?: number /* ms, default 1000 */; cleanupInterval?: number /* ms, default 60000 */ }`; each message is stored as a `StorageMessage` (`{ data, timestamp }`) and removed after `ttl`. The constructor throws outside a browser (no `window`/`localStorage`); probe `isStorageEventSupported()` first if that matters. `close()` stops the cleanup timer, removes this messenger's pending messages and the `storage` listener.
 
 ```typescript
 import { StorageMessenger } from '@ahoo-wang/fetcher-eventbus';

@@ -13,4 +13,6 @@ PASS only if the answer does all of these:
 FAIL if the answer does any of these:
 
 - Treats the plain `fetcher.get(...)` result as the parsed user (no result extractor and no `.json()`).
-- Passes query parameters as an Axios-style `params` option.
+- Passes query parameters as an Axios-style `params` option, or builds the query string by hand and drops `urlParams.query`.
+- Puts `resultExtractor` in the second (request) argument next to `urlParams` instead of the third (options) argument.
+- Interpolates the id into the URL (`` `/users/${id}` ``) instead of filling the `{id}` template through `urlParams.path`.

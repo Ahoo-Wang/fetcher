@@ -1,48 +1,85 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`eventStream`, `jsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`, SSE result extractors and `for await` iteration. Use for a custom SSE endpoint or non-OpenAI token stream. Not for OpenAI/GPT chat completions, even streamed — fetcher-openai-client handles those and their `[DONE]`.
+  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`requiredJsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`-style sentinels, `jsonEventStreamResultExtractor` and `for await` iteration. Use for your own SSE endpoint, a non-OpenAI token stream or an SSE decorator endpoint. For OpenAI-compatible `/chat/completions` (GPT, gateways) use fetcher-openai-client.
 ---
 
 # fetcher-llm-streaming
 
 ## Decisions
 
-- **Prototype helpers vs converters**: `import '@ahoo-wang/fetcher-eventstream'` patches `Response.prototype` (`contentType`, `isEventStream`, `eventStream()`, `requiredEventStream()`, `jsonEventStream()`, `requiredJsonEventStream()`, skipping members that already exist) and polyfills `ReadableStream` async iteration. The standalone converters `toServerSentEventStream(response)` and `toJsonServerSentEventStream(stream, detector)` avoid _calling_ the patched members, but importing them (or anything else from the package) still runs the patch — there is no side-effect-free entry. If `Response.prototype` must stay untouched, do not depend on this package.
-- **Nullable vs required**: `eventStream()` / `jsonEventStream()` return `null` for a non-SSE Content-Type; the `required*` variants throw `EventStreamConvertError` (with `.response`).
-- **OpenAI chat completions** already handle `[DONE]` and typing — use `$fetcher-openai-client` instead of rebuilding it here.
+- **Prototype helpers vs converters**: `import '@ahoo-wang/fetcher-eventstream'` patches `Response.prototype` (`contentType`, `isEventStream`, `eventStream()`, `requiredEventStream()`, `jsonEventStream()`, `requiredJsonEventStream()`, skipping members that already exist) and polyfills `ReadableStream` async iteration. `toServerSentEventStream(response)` / `toJsonServerSentEventStream(stream, detector?)` avoid _calling_ the patched members, but importing anything from the package still runs the patch — there is no side-effect-free entry. A library that must not touch `Response.prototype` cannot depend on this package.
+- **Nullable vs required**: `eventStream()` / `jsonEventStream()` return `null` for a non-SSE Content-Type; the `required*` variants throw `EventStreamConvertError` (with `.response`). A body that is already used or locked also throws `EventStreamConvertError` — a response converts once.
+- **Decorator/`RequestOptions` endpoints**: `jsonEventStreamResultExtractor<T>(detector)` builds the extractor; set it per endpoint (`@post(path, { resultExtractor })`).
+- **OpenAI chat completions** (`/chat/completions`, `[DONE]`, typed chunks) are done by `$fetcher-openai-client`; don't rebuild them here.
 
 ## Gotchas a capable model gets wrong
 
-- There is **no default terminator**. Without a `TerminateDetector`, a `data: [DONE]` line reaches `JSON.parse` and the iteration throws `SyntaxError`. `DoneDetector` lives in `@ahoo-wang/fetcher-openai`, not here.
-- `JsonEventStreamResultExtractor` passes no detector; for `[DONE]` endpoints write a `ResultExtractor` that calls `exchange.requiredResponse.requiredJsonEventStream(detector)`.
-- The SSE extractors are standalone exports of this package, not members of `ResultExtractors` from `@ahoo-wang/fetcher`.
-- Items are `JsonServerSentEvent<T>`: the payload is `event.data`; `id` is `''` when the server sent none and `event` defaults to `'message'`.
-- Errors during iteration are `SyntaxError`, `EventStreamIncompleteError` (a detector was set and the stream ended without the terminating event) or network/stream errors, not `EventStreamConvertError` — handle both around the `for await` loop.
+- There is **no default terminator**. Without a `TerminateDetector`, `data: [DONE]` reaches `JSON.parse` and iteration throws `SyntaxError`. This package exports no `[DONE]` detector — write `e => e.data === '[DONE]'` (`DoneDetector` lives in `@ahoo-wang/fetcher-openai`).
+- The constant `JsonEventStreamResultExtractor` has **no** detector and takes no options; use the factory `jsonEventStreamResultExtractor(detector)` instead. Neither is on `ResultExtractors` from `@ahoo-wang/fetcher`.
+- Items are `JsonServerSentEvent<T>`: the payload is `event.data` (not `event.token`); `id` is `''` when the server sent none; `event` defaults to `'message'`. The detector sees the raw string event before parsing, and the matching event is not yielded.
+- With a detector, a stream that ends without the terminating event errors with `EventStreamIncompleteError` — a cut-off answer is not silently "complete". Mid-stream errors (`SyntaxError`, `EventStreamIncompleteError`, network errors) come from the `for await`, not from the call that returned the `Response`. `break` cancels the connection.
 
-## Minimal example
+## Canonical patterns
 
 ```ts
 import '@ahoo-wang/fetcher-eventstream';
+import { fetcher } from '@ahoo-wang/fetcher';
 import type { TerminateDetector } from '@ahoo-wang/fetcher-eventstream';
-import { fetcher } from './http';
 
-const done: TerminateDetector = e => e.data === '[DONE]';
-const response = await fetcher.post('/generate', { body: { prompt } });
-let text = '';
-for await (const event of response.requiredJsonEventStream<{ token: string }>(
-  done,
-)) {
-  text += event.data.token;
+const untilDone: TerminateDetector = e => e.data === '[DONE]';
+
+export async function generate(prompt: string): Promise<string> {
+  const response = await fetcher.post('/generate', { body: { prompt } });
+  let text = '';
+  for await (const event of response.requiredJsonEventStream<{
+    token: string;
+  }>(untilDone)) {
+    text += event.data.token;
+  }
+  return text;
+}
+```
+
+Declared endpoint (see `$fetcher-decorator-service`):
+
+```ts
+import {
+  api,
+  autoGeneratedError,
+  body,
+  post,
+} from '@ahoo-wang/fetcher-decorator';
+import {
+  jsonEventStreamResultExtractor,
+  type JsonServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
+
+interface Chunk {
+  token: string;
+}
+
+@api('/llm')
+export class LlmApi {
+  @post('/generate', {
+    resultExtractor: jsonEventStreamResultExtractor<Chunk>(
+      e => e.data === '[DONE]',
+    ),
+  })
+  generate(
+    @body() req: { prompt: string },
+  ): Promise<JsonServerSentEventStream<Chunk>> {
+    throw autoGeneratedError(req);
+  }
 }
 ```
 
 ## References
 
-- `references/api.md`: prototype extensions, standalone converters, SSE field parsing rules, termination, result extractors and decorator usage. Load it for exact signatures or custom extractors.
+- `references/api.md`: every export with its signature, SSE parsing rules, error semantics, the transform pipeline and `SafeTransformer`, CommonJS. Load it for raw `ServerSentEvent` streams, custom transformers or exact error behaviour.
 
 ## Related Skills
 
-- $fetcher-openai-client: typed OpenAI chat completions with `[DONE]` handled.
-- $fetcher-decorator-service: streaming endpoints declared with decorators.
+- $fetcher-openai-client: OpenAI-compatible chat completions with `[DONE]` and typing handled.
+- $fetcher-decorator-service: declaring streaming endpoints with decorators.
 - $fetcher-integration: the Fetcher that produces the `Response`.

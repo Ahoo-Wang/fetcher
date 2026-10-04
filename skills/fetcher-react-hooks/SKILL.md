@@ -1,7 +1,7 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Drive React component state from requests with `@ahoo-wang/fetcher-react` 6: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for loading/error state, cancellation, stale-result races, debounced search boxes. Not for upgrading 5.x code or hooks missing after the 6 upgrade — load fetcher-v6-migration.
+  Drive React component state from requests with `@ahoo-wang/fetcher-react` 6: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for loading/error state, cancellation, stale-result races, debounced search boxes, protected routes. Fetcher-level CoSec setup (tokens, refresh): fetcher-cosec-auth. Upgrading 5.x code or hooks missing after 6: fetcher-v6-migration.
 ---
 
 # fetcher-react-hooks
@@ -23,6 +23,7 @@ description: >
 - `useDebouncedQuery` / `useDebouncedFetcherQuery` follow the controlled `query`: the first query runs at once, later changes after `debounce.delay`. They return `pending` (a boolean) and `flush()` (apply the waiting query now). `useDebouncedValue(value, { delay })` debounces any value. `useDebouncedCallback`, `useDebouncedExecutePromise` and `useDebouncedFetcher` instead return `run(...args)`, `cancel()` and `isPending()`.
 - Generated query hooks take `{ query, attributes, autoExecute }` and call `method(query, attributes, abortController)`. Generated execute hooks pass the controller to the method only with `appendAbortController: true`; otherwise `abort()` only drops the state update.
 - `useEventSubscription` subscribes once per `bus` and handler `name`; it calls the latest `handle`, so an inline handler is fine.
+- CoSec in React: wrap the app in `SecurityProvider` with the **same** `TokenStorage` instance the `CoSecConfigurer` uses (a second `new TokenStorage()` keeps its own cache and misses sign-ins until reload). Read `authenticated` / `currentUser` / `signIn` / `signOut` from `useSecurityContext()`. `RouteGuard`'s `onUnauthorized` runs in an effect after commit, so `navigate('/login')` there is safe; never navigate during render. `RefreshableRouteGuard` takes `configurer.tokenManager`.
 
 ## Minimal example
 
@@ -56,6 +57,23 @@ const onSubmit = async () => {
   if (status === 'success') navigate('/done');
   else if (status === 'error') toast(error?.message);
 };
+```
+
+```tsx
+import { useNavigate } from 'react-router';
+import { RouteGuard, SecurityProvider } from '@ahoo-wang/fetcher-react';
+import { tokenStorage } from './http'; // the TokenStorage given to CoSecConfigurer
+
+export function App() {
+  const navigate = useNavigate();
+  return (
+    <SecurityProvider tokenStorage={tokenStorage}>
+      <RouteGuard onUnauthorized={() => navigate('/login')}>
+        <Dashboard />
+      </RouteGuard>
+    </SecurityProvider>
+  );
+}
 ```
 
 ## References

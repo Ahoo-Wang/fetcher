@@ -57,21 +57,31 @@ import {
 Top-level entry point. Creates a `Fetcher` with auth headers and a `ChatClient`:
 
 ```typescript
+export interface OpenAIOptions extends Omit<FetcherOptions, 'baseURL'> {
+  baseURL: string; // required, no default
+  apiKey: string; // required
+}
+
 export class OpenAI {
   public readonly fetcher: Fetcher;
   public readonly chat: ChatClient;
 
   constructor(options: OpenAIOptions) {
+    const { apiKey, headers, ...fetcherOptions } = options;
     this.fetcher = new Fetcher({
-      baseURL: options.baseURL,
-      headers: { Authorization: `Bearer ${options.apiKey}` },
+      ...fetcherOptions,
+      headers: mergeHeaders(headers, { Authorization: `Bearer ${apiKey}` }),
     });
     this.chat = new ChatClient({ fetcher: this.fetcher });
   }
 }
 ```
 
-`OpenAIOptions` is `{ baseURL: string; apiKey: string }` -- both required, there is no default `baseURL`. Requests go to `${baseURL}/chat/completions`, so include the version segment (e.g. `https://api.openai.com/v1`). The API key is sent only as `Authorization: Bearer <apiKey>`. Options are not validated; a wrong key or URL surfaces on the first request.
+- Requests go to `${baseURL}/chat/completions`, so include the version segment (e.g. `https://api.openai.com/v1`).
+- The other `FetcherOptions` fields pass through to the Fetcher: `headers` (default headers on every request), `timeout` (ms), `fetch` (a custom `FetchImplementation`), `validateStatus`, `urlTemplateStyle`, `interceptors`.
+- `apiKey` is sent as `Authorization: Bearer <apiKey>` and replaces any `Authorization` (any case) in `headers`.
+- `interceptors` replaces the whole `InterceptorManager`; the Fetcher then ignores `validateStatus` and `fetch` (they configure the default manager). To add one interceptor, use `openai.fetcher.interceptors.request.use(...)` instead.
+- Options are not validated; a wrong key or URL surfaces on the first request.
 
 **`fetcher` is `readonly`** -- do NOT reassign it. Use interceptors on the existing instance instead.
 
@@ -127,12 +137,27 @@ export const DoneDetector: TerminateDetector = (event: ServerSentEvent) => {
   return event.data === '[DONE]';
 };
 
-// Extracts streaming response as JsonServerSentEventStream
+// jsonEventStreamResultExtractor comes from @ahoo-wang/fetcher-eventstream
 export const CompletionStreamResultExtractor: ResultExtractor<
   JsonServerSentEventStream<ChatResponse>
-> = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.requiredJsonEventStream(DoneDetector);
-};
+> = jsonEventStreamResultExtractor<ChatResponse>(DoneDetector);
+```
+
+Both work without `ChatClient`, e.g. on a plain Fetcher call:
+
+```typescript
+import { fetcher } from '@ahoo-wang/fetcher';
+import type { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import {
+  CompletionStreamResultExtractor,
+  type ChatResponse,
+} from '@ahoo-wang/fetcher-openai';
+
+const stream = await fetcher.post<JsonServerSentEventStream<ChatResponse>>(
+  '/chat/completions',
+  { body: { model: 'gpt-4o-mini', messages: [], stream: true } },
+  { resultExtractor: CompletionStreamResultExtractor },
+);
 ```
 
 ## Types
@@ -218,12 +243,14 @@ const openai = new OpenAI({
 });
 ```
 
-**OpenAI-compatible endpoints (proxy, local)** -- any server that accepts `POST {baseURL}/chat/completions` with a Bearer token and ends streams with `data: [DONE]`. Servers that need a different auth header or query parameters (e.g. `api-version`) need an interceptor on `openai.fetcher`.
+**OpenAI-compatible endpoints (proxy, gateway, local)** -- any server that accepts `POST {baseURL}/chat/completions` with a Bearer token and ends streams with `data: [DONE]`. Fixed extra headers go in `headers`; a value computed per request, or query parameters such as `api-version`, need a request interceptor on `openai.fetcher`.
 
 ```typescript
-const local = new OpenAI({
-  baseURL: 'http://localhost:8000/v1',
-  apiKey: 'not-needed',
+const gateway = new OpenAI({
+  baseURL: 'https://llm-gateway.example.com/v1',
+  apiKey: '<gateway-key>',
+  headers: { 'X-Tenant': 'acme' },
+  timeout: 60_000,
 });
 ```
 
@@ -288,12 +315,12 @@ const response = await chatClient.completions({
 ```typescript
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 
-// Request interceptor
+// Request interceptor: a fresh header value on every request
 openai.fetcher.interceptors.request.use({
-  name: 'log-request',
+  name: 'trace-id',
   order: 0,
   intercept(exchange: FetchExchange): void {
-    console.log('Request:', exchange.request.url);
+    exchange.ensureRequestHeaders()['X-Trace-Id'] = crypto.randomUUID();
   },
 });
 
@@ -309,7 +336,7 @@ openai.fetcher.interceptors.response.use({
 
 ### Error Handling
 
-Use `ExchangeError` from `@ahoo-wang/fetcher`, not Axios-style patterns. A non-2xx status (default `validateStatus`) rejects with `HttpStatusValidationError`, a subclass of `ExchangeError`; the response is on `error.exchange.response`:
+Use `ExchangeError` from `@ahoo-wang/fetcher`, not Axios-style patterns (`error.response.status`). A non-2xx status (default `validateStatus`) rejects with `HttpStatusValidationError` (exported by `@ahoo-wang/fetcher`), a subclass of `ExchangeError`; the response is on `error.exchange.response`. A network failure or timeout also rejects as an `ExchangeError` with no response (for a timeout, `error.cause` is a `FetchTimeoutError`):
 
 ```typescript
 import { ExchangeError } from '@ahoo-wang/fetcher';

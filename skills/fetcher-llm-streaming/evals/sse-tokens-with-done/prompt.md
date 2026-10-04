@@ -6,4 +6,4 @@ max_turns: 8
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-Our /generate endpoint streams SSE lines like data: {"token":"he"} and ends with data: [DONE]. Stream the tokens into a string.
+Our app calls its API with @ahoo-wang/fetcher. The POST /generate endpoint streams SSE lines like data: {"token":"he"} and ends with data: [DONE]. Stream the tokens into a string.

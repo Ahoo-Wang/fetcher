@@ -8,9 +8,11 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 PASS only if the answer does all of these:
 
 1. Checks (or tells the user to check) the current `@ahoo-wang/wow-client` / `@ahoo-wang/wow-react` version or peer range with `npm view` before proposing an install.
-2. Orders the upgrade: move the fetcher packages to the latest 5.x (5.1.3 or later; `^5.1.5` satisfies the Wow peer range), switch from `@ahoo-wang/fetcher-wow` to the Wow packages (`@ahoo-wang/wow-client`, `@ahoo-wang/wow-react`) at 9.2.1 or later first, then upgrade the fetcher packages to 6; and says `usePagedQuery` moves to `@ahoo-wang/wow-react` while `useFetcher` stays in `@ahoo-wang/fetcher-react`.
+2. Orders the upgrade: first move the fetcher packages to the latest 5.x (`^5.1.5`, which the Wow peer range requires), then switch from `@ahoo-wang/fetcher-wow` to `@ahoo-wang/wow-client` and `@ahoo-wang/wow-react` (both at the same version, 9.2.1 or later) while still on 5.x, and only then upgrade every `@ahoo-wang/fetcher*` package to 6 together.
+3. Says `usePagedQuery` moves to `@ahoo-wang/wow-react` while `useFetcher` stays in `@ahoo-wang/fetcher-react`, and that the remaining fetcher-react hook calls are checked with `tsc` against the 6.0 redesign after the bump.
 
 FAIL if the answer does any of these:
 
 - Adds an `@ahoo-wang/wow-*` package without the `npm view` check, pins it below 9.2.1 or to an invented version, or claims the Wow packages are not on npm.
-- Upgrades `@ahoo-wang/fetcher-react` to 6 while `usePagedQuery` is still imported from it.
+- Upgrades `@ahoo-wang/fetcher-react` to 6 while `usePagedQuery` is still imported from it, or upgrades fetcher to 6 before replacing `@ahoo-wang/fetcher-wow`.
+- Stays on `@ahoo-wang/fetcher-wow` (it is deprecated), or upgrades only some `@ahoo-wang/fetcher*` packages to 6 and leaves others on 5.x.

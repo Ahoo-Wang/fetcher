@@ -6,4 +6,4 @@ max_turns: 8
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 
-Persist the user theme in localStorage and keep it in sync across tabs.
+Our app uses the @ahoo-wang/fetcher packages. Persist the user's theme in localStorage so it survives reloads, and keep it in sync across open tabs.
