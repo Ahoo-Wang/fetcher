@@ -1,7 +1,7 @@
 ---
 name: fetcher-llm-streaming
 description: >
-  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`requiredJsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`-style sentinels, `jsonEventStreamResultExtractor` and `for await` iteration. Use for your own SSE endpoint, a non-OpenAI token stream or an SSE decorator endpoint. For OpenAI-compatible `/chat/completions` (GPT, gateways) use fetcher-openai-client.
+  Consume Server-Sent Events and LLM token streams with `@ahoo-wang/fetcher-eventstream`: the `Response.prototype` helpers (`requiredJsonEventStream`), standalone converters, `TerminateDetector` for `[DONE]`-style sentinels, `jsonEventStreamResultExtractor` and `for await` iteration. Use for your own SSE endpoint, a non-OpenAI token stream or an SSE decorator endpoint. Do not load for GPT or OpenAI-compatible chat completions, streamed or not: fetcher-openai-client handles those.
 ---
 
 # fetcher-llm-streaming
