@@ -1,7 +1,8 @@
 name: PR Metadata
 on:
   pull_request:
-    branches: [main]
+    # 5.x too: its ruleset requires this check, like main's.
+    branches: [main, 5.x]
     types: [opened, synchronize, reopened, edited, ready_for_review]
 permissions:
   contents: read
