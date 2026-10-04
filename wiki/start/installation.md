@@ -39,4 +39,4 @@ For an existing React application, follow the [React example peer installation a
 
 ## Packages in the Wow repository
 
-The Wow client, the Wow React hooks, the generator and the data-view components moved to the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript). Their successors are not on npm yet; they ship with Wow's first stable release. Until then use the 5.x line (npm 5.1.x); see [packages that moved](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository).
+The Wow client, the Wow React hooks, the generator and the data-view components moved to the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript). Their successors are on npm from Wow 9.2.0 — `@ahoo-wang/wow-client`, `@ahoo-wang/wow-react`, `@ahoo-wang/wow-generator` and `@ahoo-wang/wow-view-engine` — and from Wow 9.2.1 they accept fetcher 6; see [wow.ahoo.me](https://wow.ahoo.me) and [packages that moved](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository).

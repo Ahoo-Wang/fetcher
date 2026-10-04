@@ -81,15 +81,15 @@ The packages coupled to Wow now live in the
 [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), are
 versioned with Wow, and depend on the fetcher packages above:
 
-| Was                                      | Now                                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-wow`                 | `@ahoo-wang/wow-client`                                                                |
-| Wow query hooks in `fetcher-react`       | `@ahoo-wang/wow-react`                                                                 |
-| `@ahoo-wang/fetcher-generator`           | `@ahoo-wang/wow-generator` (command `wow-generator`)                                   |
-| `@ahoo-wang/fetcher-view-engine`         | `@ahoo-wang/wow-view-engine`                                                           |
-| `@ahoo-wang/fetcher-viewer` (deprecated) | Not moved: frozen on the [`5.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
+| Was                                    | Now                                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-wow`               | `@ahoo-wang/wow-client`                                                                |
+| Wow query hooks in `fetcher-react`     | `@ahoo-wang/wow-react`                                                                 |
+| `@ahoo-wang/fetcher-generator`         | `@ahoo-wang/wow-generator` (command `wow-generator`)                                   |
+| `@ahoo-wang/fetcher-view-engine`       | `@ahoo-wang/wow-view-engine`                                                           |
+| `@ahoo-wang/fetcher-viewer` (5.x only) | Not moved: frozen on the [`5.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
 
-The new packages are published to npm with Wow's first stable release; until then the 5.x line (`5.x` branch, 5.1.x on npm) keeps `@ahoo-wang/fetcher-wow`, the Wow hooks in `@ahoo-wang/fetcher-react` and `@ahoo-wang/fetcher-generator`. `@ahoo-wang/wow-view-engine` is not published until view-engine is declared stable.
+The new packages, `@ahoo-wang/wow-view-engine` included, are on npm from Wow 9.2.0, Wow's first stable release; from Wow 9.2.1 they accept fetcher 6 (peer range `^5.1.5 || ^6.0.0`). To upgrade a 5.x application, switch to the Wow packages (9.2.1 or later) first, then upgrade fetcher. Documentation: [wow.ahoo.me](https://wow.ahoo.me).
 The fetcher 5.x line keeps receiving fixes from the `5.x` branch.
 
 ## Learn and build

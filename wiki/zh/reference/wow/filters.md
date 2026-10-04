@@ -6,7 +6,7 @@ description: '过滤表达式与旧条件 — @ahoo-wang/fetcher-wow 5.0.0'
 # 过滤表达式与旧条件
 
 ::: warning 仅适用于 5.x
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；后继包 `@ahoo-wang/wow-client` 自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。
 :::
 
 使用 `filter.*` 构造以 `op` 判别的 `FilterExpression` 线上格式。根函数 `eq`、`and` 等构造已弃用 `Condition`（operator/value/children/options），仍公开以支持现有服务和 Viewer。不要仅改键名或混合两种树。

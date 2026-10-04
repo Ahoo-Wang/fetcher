@@ -83,9 +83,9 @@ try {
 | `fetcher-react` 里的 Wow 查询 Hook    | `@ahoo-wang/wow-react`                                                     |
 | `@ahoo-wang/fetcher-generator`        | `@ahoo-wang/wow-generator`（命令 `wow-generator`）                         |
 | `@ahoo-wang/fetcher-view-engine`      | `@ahoo-wang/wow-view-engine`                                               |
-| `@ahoo-wang/fetcher-viewer`（已弃用） | 未迁移：冻结在 [`5.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
+| `@ahoo-wang/fetcher-viewer`（仅 5.x） | 未迁移：冻结在 [`5.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/5.x) |
 
-新包随 Wow 的首个稳定版发布到 npm；在此之前，5.x 版本线（`5.x` 分支，npm 上的 5.1.x）继续提供 `@ahoo-wang/fetcher-wow`、`@ahoo-wang/fetcher-react` 里的 Wow Hook 和 `@ahoo-wang/fetcher-generator`。`@ahoo-wang/wow-view-engine` 要等 view-engine 宣布稳定后才发布。
+新包（包括 `@ahoo-wang/wow-view-engine`）自 Wow 首个稳定版 9.2.0 起已发布到 npm；自 Wow 9.2.1 起兼容 fetcher 6（peer 范围 `^5.1.5 || ^6.0.0`）。升级 5.x 应用时，先切换到 Wow 包（9.2.1 及以上），再升级 fetcher。文档见 [wow.ahoo.me](https://wow.ahoo.me)。
 fetcher 5.x 版本线继续从 `5.x` 分支发布修复。
 
 ## 学习与构建

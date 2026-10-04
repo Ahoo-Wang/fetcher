@@ -1,6 +1,6 @@
 ---
 title: 'Interceptors and attribution'
-description: 'Interceptors and attribution — Fetcher 5.0.0'
+description: 'Interceptors and attribution — Fetcher 6.0.0'
 ---
 
 # Interceptors and attribution

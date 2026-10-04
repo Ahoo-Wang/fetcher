@@ -1,6 +1,6 @@
 ---
 title: 'Documents and operations'
-description: 'Documents and operations — Fetcher 5.0.0'
+description: 'Documents and operations — Fetcher 6.0.0'
 ---
 
 # Documents and operations

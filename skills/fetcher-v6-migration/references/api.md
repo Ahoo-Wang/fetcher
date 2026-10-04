@@ -17,16 +17,18 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 
 ## Version facts
 
-- The `@ahoo-wang/wow-*` packages are **not on npm yet**. They are published
-  with Wow's first stable release; Wow and its npm packages share one version
-  number. Confirm with `npm view @ahoo-wang/wow-client version` and use the
-  version it prints — never a guessed one.
-- fetcher 6.0.0 is released after that Wow release. Confirm with
+- The `@ahoo-wang/wow-*` packages (`wow-client`, `wow-react`,
+  `wow-generator`, `wow-view-engine`, `wow-view-store`) are on npm from Wow
+  9.2.0, Wow's first stable release; Wow and its npm packages share one version
+  number. Docs: https://wow.ahoo.me. Confirm with
+  `npm view @ahoo-wang/wow-client version` and use the version it prints —
+  never a guessed one.
+- fetcher 6.0.0 is released after Wow 9.2.1. Confirm with
   `npm view @ahoo-wang/fetcher dist-tags`.
-- The Wow packages declare a fetcher peer range that covers the latest 5.x
-  (confirm with `npm view @ahoo-wang/wow-client peerDependencies`, and check it
-  also covers `^6` before upgrading fetcher), so they can be adopted on 5.x
-  before upgrading fetcher. `@ahoo-wang/wow-react` does **not** depend on
+- From Wow 9.2.1 the Wow packages declare the fetcher peer range
+  `^5.1.5 || ^6.0.0` (9.2.0 declared `^5.1.5` only; confirm with
+  `npm view @ahoo-wang/wow-client peerDependencies`), so they can be adopted on
+  5.x before upgrading fetcher. Use 9.2.1 or later. `@ahoo-wang/wow-react` does **not** depend on
   `@ahoo-wang/fetcher-react`: it has its own request state, and its hooks keep
   their own API (the fetcher-react redesign does not apply to them).
 - 6.0 makes no breaking API change to `@ahoo-wang/fetcher`,
@@ -64,14 +66,14 @@ against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
 
 ## Package mapping
 
-| 5.x package                      | 6.x replacement (Wow repository, not on npm yet)                                                         |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths |
-| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                   |
-| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10   |
-| `@ahoo-wang/fetcher-viewer`      | None in 6.x. Stays on 5.x; `@ahoo-wang/wow-view-engine` supersedes it once declared stable (unpublished) |
-| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                         |
-| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`, unpublished until stable                     |
+| 5.x package                      | 6.x replacement (Wow repository, on npm from Wow 9.2.0; use 9.2.1+ with fetcher 6)                         |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths   |
+| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                     |
+| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10     |
+| `@ahoo-wang/fetcher-viewer`      | No drop-in replacement; stays on 5.x. Superseded by `@ahoo-wang/wow-view-engine` (different model and API) |
+| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                           |
+| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`                                                 |
 
 The last 5.x versions of `fetcher-wow` and `fetcher-generator` (5.1.3) stay on
 npm and are meant to be deprecated with a pointer to their replacement.
@@ -350,8 +352,8 @@ changes; a handler whose `name`, `order` or `once` changes still resubscribes.
 
 ## Rewrites
 
-Apply only after `npm view` shows the Wow packages are published; `<wow-version>`
-is the version it printed.
+`<wow-version>` is the version `npm view @ahoo-wang/wow-client version`
+printed — 9.2.1 or later, the first to accept fetcher 6.
 
 ```sh
 pnpm add @ahoo-wang/fetcher-react@5.1.3

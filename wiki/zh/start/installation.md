@@ -39,4 +39,4 @@ pnpm add -D typescript
 
 ## Wow 仓库中的包
 
-Wow 客户端、Wow React Hook、生成器和数据视图组件已迁往 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。它们的后继包尚未发布到 npm，随 Wow 首个稳定版发布；在此之前使用 5.x 线（npm 5.1.x），见[已迁出的包](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository)。
+Wow 客户端、Wow React Hook、生成器和数据视图组件已迁往 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。后继包 `@ahoo-wang/wow-client`、`@ahoo-wang/wow-react`、`@ahoo-wang/wow-generator` 与 `@ahoo-wang/wow-view-engine` 自 Wow 9.2.0 起已发布到 npm，9.2.1 及以上兼容 fetcher 6；见 [wow.ahoo.me](https://wow.ahoo.me) 与[已迁出的包](../architecture/package-boundaries.md#packages-that-moved-to-the-wow-repository)。

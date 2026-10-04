@@ -1,6 +1,6 @@
 ---
 title: 'Client and chat completions'
-description: 'Client and chat completions — Fetcher 5.0.0'
+description: 'Client and chat completions — Fetcher 6.0.0'
 ---
 
 # Client and chat completions
