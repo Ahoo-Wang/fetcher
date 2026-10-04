@@ -454,9 +454,9 @@ unauthenticated, so `navigate('/login')` there is safe.
 `configurer.tokenManager` — `fallback?`, `refreshing?`) refreshes on mount when
 the access token is expired but refreshable, rendering `refreshing` (default
 `<p>Refreshing...</p>`) meanwhile and `fallback` when nothing is refreshable.
-A refresh error is only logged: after a `RefreshUnavailableError` (server
-unreachable, session kept) it keeps rendering `refreshing` until something
-else re-renders it.
+If the refresh rejects, the error is logged and it renders `fallback` — also
+after a `RefreshUnavailableError` (server unreachable), where the session is
+kept, so a later request can still renew the token.
 
 ```tsx
 import {
