@@ -21,7 +21,7 @@ import {
 } from '@testing-library/react';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type {
   EditorDescriptor,
   FilterValue,
@@ -1004,6 +1004,38 @@ describe('FilterValueEditor', () => {
   });
 
   /**
+   * react-day-picker opens on `month || defaultMonth || today` and never looks
+   * at `selected`, so a filter holding 16 September opened on whatever month
+   * the reader's clock was in — and the suite broke at every month rollover.
+   * A valued calendar opens on its value's month, whatever today is.
+   */
+  it.each([
+    ['a day', { input: 'date', withTime: false }, { from: '2026-09-16' }],
+    [
+      'a range by its start',
+      { input: 'dateRange', range: true, withTime: false },
+      { from: '2026-09-16', to: '2026-11-02' },
+    ],
+  ] as const)(
+    'opens a calendar holding %s on that month, not on today',
+    async (_name, input, bounds) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2027, 0, 15, 12));
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      editor(input, { type: 'absolute', ...bounds } as unknown as FilterValue);
+
+      const user = userEvent.setup();
+      await user.click(screen.getByLabelText('amount'));
+      expect(
+        await screen.findByRole('button', { name: /September 20/ }),
+      ).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /January 20/ })).toBeNull();
+    },
+  );
+
+  /**
    * A date condition that has only just been added asks nothing yet, and an
    * editor that seeded the calendar with `new Date()` said otherwise: the
    * pill read `between · On a date · 9/20/2026, 9:12:55 PM – Pick a date`
@@ -1012,6 +1044,13 @@ describe('FilterValueEditor', () => {
    * already narrowed to everything from this moment on.
    */
   it('does not read the clock for a date nobody has picked', async () => {
+    // A blank calendar opens on today's month: pin today, so the month the
+    // suite runs in does not decide which days are on screen.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 8, 18, 12));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const day = editor({ input: 'dateRange', range: true, withTime: false });
 
     const trigger = screen.getByLabelText('amount');

@@ -95,6 +95,16 @@ export function AbsoluteDate({
     );
   };
 
+  // The month the calendar opens on: the value's own (a single day, or a
+  // range's start, else its end), so a day picked in March is shown in March
+  // and not wherever today happens to be. It is only the starting month, so
+  // the user still pages freely; with nothing picked the calendar opens on
+  // today. react-day-picker opens on `month || defaultMonth || today` and
+  // does not look at `selected`.
+  const opensOn = range
+    ? (parseDay(from.day) ?? parseDay(to.day))
+    : parseDay(from.day);
+
   return (
     <Popover>
       <PopoverTrigger
@@ -123,6 +133,7 @@ export function AbsoluteDate({
             mode="range"
             autoFocus
             selected={{ from: parseDay(from.day), to: parseDay(to.day) }}
+            defaultMonth={opensOn}
             onSelect={selected =>
               put({
                 from: { ...from, day: dayOf(selected?.from) },
@@ -135,6 +146,7 @@ export function AbsoluteDate({
             mode="single"
             autoFocus
             selected={parseDay(from.day)}
+            defaultMonth={opensOn}
             onSelect={selected =>
               put({ from: { ...from, day: dayOf(selected) } })
             }
