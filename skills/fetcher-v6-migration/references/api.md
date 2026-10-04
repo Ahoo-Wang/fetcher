@@ -1,82 +1,67 @@
 # Fetcher 5.x → 6.0 Migration Reference
 
 Source of truth: `docs/releases/v6.0.0.md` in the fetcher repository, checked
-against the v5.1.3 and 6.0 sources of `@ahoo-wang/fetcher-react`.
+against the v5.1.3 and 6.0 sources and against npm.
 
 ## Contents
 
-- [Version facts](#version-facts)
+- [npm facts](#npm-facts)
 - [Package mapping](#package-mapping)
 - [Removed exports of `@ahoo-wang/fetcher-react`](#removed-exports-of-ahoo-wangfetcher-react)
 - [The `@ahoo-wang/fetcher-react` redesign](#the-ahoo-wangfetcher-react-redesign)
 - [Subpaths of `@ahoo-wang/fetcher-react`](#subpaths-of-ahoo-wangfetcher-react)
+- [Behavior changes by package](#behavior-changes-by-package)
 - [Detection checklist](#detection-checklist)
 - [Rewrites](#rewrites)
 - [Generated clients](#generated-clients)
 - [Staying on 5.x](#staying-on-5x)
 
-## Version facts
+## npm facts
 
-- The `@ahoo-wang/wow-*` packages (`wow-client`, `wow-react`,
-  `wow-generator`, `wow-view-engine`, `wow-view-store`) are on npm from Wow
-  9.2.0, Wow's first stable release; Wow and its npm packages share one version
-  number. Docs: https://wow.ahoo.me. Confirm with
-  `npm view @ahoo-wang/wow-client version` and use the version it prints —
-  never a guessed one.
-- fetcher 6.0.0 is released after Wow 9.2.1. Confirm with
-  `npm view @ahoo-wang/fetcher dist-tags`.
-- From Wow 9.2.1 the Wow packages declare the fetcher peer range
-  `^5.1.5 || ^6.0.0` (9.2.0 declared `^5.1.5` only; confirm with
-  `npm view @ahoo-wang/wow-client peerDependencies`), so they can be adopted on
-  5.x before upgrading fetcher. Use 9.2.1 or later. `@ahoo-wang/wow-react` does **not** depend on
-  `@ahoo-wang/fetcher-react`: it has its own request state, and its hooks keep
-  their own API (the fetcher-react redesign does not apply to them).
-- 6.0 makes no breaking API change to `@ahoo-wang/fetcher`,
-  `fetcher-decorator`, `fetcher-eventbus`, `fetcher-eventstream`,
-  `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` or `fetcher-cosec`;
-  the breaking changes are the packages that left and `fetcher-react`, which
-  lost exports and was redesigned around cancellation (see
-  [the redesign](#the-ahoo-wangfetcher-react-redesign)). These
-  packages do receive corrections — see **Changed** (e.g. `@ahoo-wang/fetcher`
-  omits `undefined`/`null` query values, repeats array query parameters,
-  keeps the timeout when a `signal` is passed, sends no default `Content-Type`
-  and rejects a status failure with the `HttpStatusValidationError` itself;
-  `fetcher-decorator` binds an array, `Date` or other non-plain-object argument
-  to its parameter name instead of spreading it, stores a named
-  `@attribute('x')` object whole, and keeps a subclass override that has no
-  endpoint decorator; `fetcher-openapi` requires `Info.title`, `Info.version`
-  and `Response.description` and adds the OpenAPI 3.1 fields;
-  `@ahoo-wang/fetcher-eventstream` drops a final line cut off before its line
-  terminator and, with a terminate detector, errors a stream that ends without
-  the terminating event with `EventStreamIncompleteError` — for
-  `@ahoo-wang/fetcher-openai`, a completion stream that ends before
-  `data: [DONE]`; `fetcher-cosec` adds the `isTrusted` option — by default
-  every request, an absolute URL on another origin included, still carries the
-  token and CoSec headers, so set `isTrusted: sameOriginTrust` — and reads a
-  JWT whose payload is not a JSON object as expired; `destroy()` of
-  `KeyStorage`, `TokenStorage`, `DeviceIdStorage` and `SpaceIdStorage` also
-  closes the event bus the storage created, while a bus passed in `eventBus`
-  stays open; in `fetcher-react`, `RouteGuard` calls `onUnauthorized` in an
-  effect after commit, `useKeyStorage` (and so `useSecurity` and
-  `SecurityProvider`) renders the default during SSR and hydration, and
-  `useLatest` updates its ref after commit) and **Fixed** in the 6.0 release
-  notes (`docs/releases/v6.0.0.md`), for example the CoSec 401 refresh-retry no
-  longer re-running the error phase (#1249), or a tab reusing the token another
-  tab refreshed instead of signing out (`KeyStorage.reload()`).
+Confirm each before recommending an install; use the versions npm prints.
+
+```sh
+npm view @ahoo-wang/fetcher dist-tags
+npm view @ahoo-wang/wow-client version peerDependencies
+npm view @ahoo-wang/wow-react peerDependencies
+npm view @ahoo-wang/fetcher-wow deprecated
+```
+
+- `@ahoo-wang/fetcher` 6.0.0 is published and is `latest`; so are `cosec`,
+  `decorator`, `eventbus`, `eventstream`, `openai`, `openapi`, `react` and
+  `storage` at 6.0.0. Their sibling peers are `^6.0.0`, so they move together.
+- `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-generator` and
+  `@ahoo-wang/fetcher-viewer` are **deprecated on npm** (every version); the
+  deprecation message names the replacement and links Wow's migration guide,
+  https://wow.ahoo.me/guide/typescript/migration. Their last versions stay
+  installable on the 5.x line. `@ahoo-wang/fetcher-view-engine` was never
+  published.
+- The `@ahoo-wang/wow-*` packages (`wow-client`, `wow-react`, `wow-generator`,
+  `wow-view-engine`) are on npm from Wow 9.2.0, Wow's first stable release; Wow
+  and its npm packages share one version number. 9.2.0 required fetcher
+  `^5.1.5`; **from 9.2.1 the fetcher peer range is `^5.1.5 || ^6.0.0`**, so
+  they can be adopted on 5.x before upgrading fetcher. Use 9.2.1 or later.
+- `@ahoo-wang/wow-react` peers `@ahoo-wang/wow-client` with a `~` range: install
+  both at the same version. It does **not** depend on `@ahoo-wang/fetcher-react`:
+  it has its own request state, and its hooks keep their own API (the
+  fetcher-react redesign does not apply to them). It is ESM only.
+- 5.x patches after 6.0 are published under the dist-tag `release-5`, so
+  `latest` stays on 6.x. Until `dist-tags` lists `release-5`, pin `^5.1.5` to
+  stay on 5.x.
+- `@ahoo-wang/fetcher-react` 6 peers `react` `^19.0.0` (5.x needed `^19.3.0`)
+  and no longer peers `@ahoo-wang/fetcher-eventstream`, `react-dom` or
+  `@ahoo-wang/fetcher-wow`.
 
 ## Package mapping
 
-| 5.x package                      | 6.x replacement (Wow repository, on npm from Wow 9.2.0; use 9.2.1+ with fetcher 6)                                          |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths                    |
-| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                                      |
-| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10                      |
-| `@ahoo-wang/fetcher-viewer`      | Deprecated on npm; no drop-in replacement, stays on 5.x. Replaced by `@ahoo-wang/wow-view-engine` (different model and API) |
-| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                                            |
-| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`                                                                  |
-
-The last 5.x versions of `fetcher-wow` and `fetcher-generator` (5.1.3) stay on
-npm and are meant to be deprecated with a pointer to their replacement.
+| 5.x package                      | 6.x replacement (Wow repository; 9.2.1+ with fetcher 6)                                                       |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-wow`         | `@ahoo-wang/wow-client` — same client, renamed; `/query/locale/zh_CN` and `/query/locale/en_US` subpaths      |
+| Wow hooks in `fetcher-react`     | `@ahoo-wang/wow-react` (ESM only), same hook names; does not depend on `fetcher-react`                        |
+| `@ahoo-wang/fetcher-generator`   | `@ahoo-wang/wow-generator` — command `wow-generator`; `fetcher-generator` stays an alias until Wow v10        |
+| `@ahoo-wang/fetcher-viewer`      | No drop-in replacement; stays on 5.x. `@ahoo-wang/wow-view-engine` replaces it with a different model and API |
+| Data-monitor hooks               | None. Remove them or stay on 5.x                                                                              |
+| `@ahoo-wang/fetcher-view-engine` | Never published; continues as `@ahoo-wang/wow-view-engine`                                                    |
 
 ## Removed exports of `@ahoo-wang/fetcher-react`
 
@@ -216,7 +201,7 @@ relied on the old default of not auto-executing needs `autoExecute: false` or
 
 **Upgrade check**: run `tsc`; then search for `propagateError`, `reset(`,
 `request.abortController`, and tests that assert `idle` on the first render of
-an auto-executing query (checklist step 9 below).
+an auto-executing query (checklist step 6 below).
 
 ## Subpaths of `@ahoo-wang/fetcher-react`
 
@@ -231,9 +216,188 @@ integration, so importing from them keeps those peers out of the bundle. No
 migration step requires moving to the subpaths; the root entry still exports
 everything that remained.
 
+## Behavior changes by package
+
+6.0 keeps the API of these packages but changes behavior that `tsc` does not
+catch. Check every package the project uses.
+
+### `@ahoo-wang/fetcher`
+
+- **Status errors are thrown as is.** A request rejected by the status check
+  rejects with the `HttpStatusValidationError` itself (an `ExchangeError`).
+  `error.cause instanceof HttpStatusValidationError` no longer matches; test
+  `error instanceof HttpStatusValidationError` before `ExchangeError`, its
+  superclass. `error.exchange.error` still returns it. Other failures (timeout,
+  network, an interceptor's own error) are still wrapped: a timeout is
+  `error.cause instanceof FetchTimeoutError`.
+- **A throwing error interceptor rejects as `ExchangeError`.** An error
+  interceptor that throws, or a callback it runs (CoSec's `onUnauthorized` /
+  `onForbidden`), no longer escapes the exchange as the raw thrown value: it
+  becomes `exchange.error`, the call rejects with an `ExchangeError` whose
+  `cause` is the thrown value, and later error interceptors do not run. A
+  `catch (e) { if (e instanceof MyRedirectError) … }` must read `e.cause`.
+- **`FetcherError` keeps its own stack** (where it surfaced); the original
+  failure and its stack are on `cause`.
+- **No default `Content-Type`.** It follows the body: `application/json` for a
+  plain object or a string, fetch's own type for `Blob`/`FormData`/
+  `URLSearchParams`, none for binary bodies. A server that required
+  `application/json` on bodyless or binary requests needs it set explicitly.
+  Cross-origin `GET`s no longer trigger a CORS preflight for it.
+- **Query serialization.** `undefined`/`null` values are omitted (were sent as
+  the text `undefined`/`null`); an array repeats the key (`ids=1&ids=2`, was
+  `ids=1%2C2`); a `Date` becomes ISO 8601. A `URLSearchParams` is taken as is.
+- **Path parameters.** A placeholder without a value, or with `null`, throws
+  `Missing required path parameter: <name>` even when the request has no path
+  parameters at all (the URL used to go out with `{id}` in it). Express
+  placeholders end at the first non-identifier character: `/files/:name.json`
+  is the parameter `name`.
+- **Timeouts and signals combine.** A timeout applies together with the
+  caller's `signal`/`abortController`; whichever fires first aborts. Passing a
+  `signal` used to switch the timeout off, so requests that ran long with a
+  `signal` may now time out. A timeout no longer aborts the caller's
+  `AbortController`, and nothing is written to the request object.
+- Interceptors work on a copy of `urlParams` (a reused request object is not
+  changed); every `Fetcher` owns its default headers (a header set on one no
+  longer leaks to others); the registrar lives on `globalThis`.
+- New, optional: `FetcherOptions.fetch` (a custom fetch implementation). It
+  configures the default interceptors only; with your own `interceptors`
+  manager use `new InterceptorManager(validateStatus, fetch)`.
+
+```sh
+grep -rnE 'cause\s+instanceof\s+HttpStatusValidationError|cause\s+instanceof\s+(RefreshTokenError|RefreshUnavailableError)' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' . | grep -v node_modules
+grep -rnE "Content-Type|'content-type'" --include='*.ts' --include='*.tsx' . | grep -v node_modules
+grep -rnE 'signal\s*:' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+### `@ahoo-wang/fetcher-cosec`
+
+- **Only a rejected refresh token signs out.** When a refresh fails and storage
+  still holds the same token: a **4xx** from the refresh endpoint (read at
+  `error.exchange.response.status`) or a response without string
+  `accessToken`/`refreshToken` removes the token and throws
+  `RefreshTokenError`, which `onUnauthorized` receives. A **network error,
+  timeout, abort or 5xx keeps the session** and throws the new
+  `RefreshUnavailableError` (`.token`, `.cause`); `UnauthorizedErrorInterceptor`
+  does not report it, and a later request refreshes again. In 5.x every
+  refresh failure signed the user out. The original call rejects with an
+  `ExchangeError` whose `cause` is the `RefreshUnavailableError`; show an
+  "offline / try again" message there instead of waiting for
+  `onUnauthorized`.
+- **A custom `TokenRefresher`** signals a rejection the same way: reject with
+  an error carrying `exchange.response.status` set to the 4xx (a fetcher-based
+  refresher does this already). A plain `throw new Error('refresh failed')` now
+  keeps the session.
+- **Malformed refresh responses** fail the refresh (`RefreshTokenError`, token
+  removed); 5.x stored them and sent `Bearer undefined`.
+- **Callback errors**: if `onUnauthorized`/`onForbidden` throws, the call
+  rejects with an `ExchangeError` whose `cause` is the callback error; when
+  that happened on the refresh request, `RefreshTokenError.cause` is that
+  request's `ExchangeError` (its `cause` is the callback error).
+- **Cross-tab refresh under a Web Lock.** In a browser with Web Locks, tabs
+  sharing a `TokenStorage` on `localStorage` refresh one at a time (lock
+  `cosec-refresh:<key>`); a waiting tab reuses the token another tab stored.
+  A refresh that never settles holds the other tabs' refreshes, so give the
+  refresh client a `timeout`. Outside a browser, or without Web Locks, tabs
+  refresh independently as before.
+- **`isTrusted`** (new option on `CoSecConfig`, `CoSecRequestOptions`,
+  `AuthorizationInterceptorOptions`): by default every request, an absolute
+  URL on another origin included, still gets the token and the `CoSec-*`
+  headers. Add `isTrusted: sameOriginTrust` unless every absolute URL the
+  client requests is yours. A custom predicate is asked once per request; the
+  401 retry reuses the decision.
+- A JWT whose payload is not a JSON object reads as expired
+  (`parseJwtPayload` returns `null`).
+- `destroy()` of `TokenStorage`, `DeviceIdStorage` and `SpaceIdStorage` closes
+  the broadcast bus the storage created; a bus passed in `eventBus` stays open.
+- The 401 retry replays only the request phase and the response interceptors up
+  to the authorization one: a failed retry runs the error interceptors once
+  (`onForbidden` no longer fires twice), and `error.exchange.error` is the
+  retry's own `HttpStatusValidationError`, not a nested `ExchangeError`.
+
+```sh
+grep -rnE 'new CoSecConfigurer\(|new (CoSecRequest|AuthorizationRequest)Interceptor\(|implements TokenRefresher|refresh\s*[:(]' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+grep -rnE 'RefreshTokenError|onUnauthorized|\.eventBus\.destroy\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+### `@ahoo-wang/fetcher-storage` and `@ahoo-wang/fetcher-eventbus`
+
+- A stored value that cannot be deserialized is removed with a warning and read
+  as absent (the default); `get()` used to throw (and so did `set()`/`remove()`).
+  `set(undefined)` removes the value.
+- `KeyStorage.destroy()` closes the event bus it created; a passed `eventBus`
+  stays open, so drop a `storage.eventBus.destroy()` that followed it only
+  when the bus was the default one.
+- `KeyStorage` updates its cache before other listeners run; `addListener`
+  with a name already taken returns a no-op remover (it never removes the
+  other listener). New `reload()` re-reads storage.
+- `EventBus.emit` creates the type's bus on first use; after `destroy()`,
+  `on`/`emit` start a fresh bus. `BroadcastTypedEventBus.emit` after
+  `destroy()` runs the local handlers without posting, and `destroy()` closes
+  only a messenger it created (a passed `options.messenger` is left open).
+- `@ahoo-wang/fetcher-eventbus` no longer peers on `@ahoo-wang/fetcher`.
+
+### `@ahoo-wang/fetcher-decorator`
+
+- Arguments are bound by shape: a plain object passed to `@path`, `@query` or
+  `@header` is still spread into its keys; an array, a `Date` or another value
+  is bound to the parameter's name. `@query('ids') ids: number[]` sends
+  `ids=1&ids=2` (was `0=1&1=2`), an array header is comma-separated, a `Date`
+  is ISO 8601; `undefined`/`null` entries of a spread object are left out.
+- A named `@attribute('user')` stores an object whole under `user` (it was
+  spread); an unnamed `@attribute()` still merges a record or `Map`.
+- A subclass method that overrides an inherited endpoint without its own
+  endpoint decorator runs as written (decorate it to redefine the request).
+  An override that calls `super.method()` and the parent each send their own
+  request; executors are no longer cached, so a changed `apiMetadata` applies
+  on the next call.
+- The unbound-placeholder warning fires once per endpoint, only for an unnamed
+  `@path()` whose inferred name matches no placeholder.
+
+```sh
+grep -rnE "@query\(|@header\(|@attribute\('" --include='*.ts' . | grep -v node_modules
+```
+
+### `@ahoo-wang/fetcher-eventstream` and `@ahoo-wang/fetcher-openai`
+
+- With a terminate detector, a stream that ends without the terminating event
+  (OpenAI: `data: [DONE]`) rejects the `for await` loop with
+  `EventStreamIncompleteError` instead of ending as if complete; a final line
+  cut off before its terminator is dropped. Handle it where mid-stream errors
+  are handled, and do not treat the partial answer as final.
+- Converting a response whose body was already read throws
+  `EventStreamConvertError` (was a bare `TypeError`).
+- `ChatResponse.usage` is optional (read it with `?.`); `chat.completions`
+  accepts an `AbortSignal`; `OpenAIOptions` accepts the other `FetcherOptions`
+  (`timeout`, `fetch`, `headers`, …), with `apiKey` winning over an
+  `Authorization` header.
+
+```sh
+grep -rnE 'requiredJsonEventStream\(|jsonEventStream\(|toJsonServerSentEventStream\(|completions\(|\.usage\.' --include='*.ts' --include='*.tsx' . | grep -v node_modules
+```
+
+### `@ahoo-wang/fetcher-openapi`
+
+Objects typed `Info` must set `title` and `version`, and `Response` must set
+`description`; `SecurityScheme.in` no longer accepts `'path'`; a
+`SecurityRequirement` holds only scheme names (no `x-` keys). `tsc` reports
+these. OpenAPI 3.1 fields and JSON Schema 2020-12 keywords were added.
+
+### UMD bundles
+
+`dist/index.umd.js` became `dist/index.umd.cjs` in `fetcher-cosec`,
+`fetcher-eventbus`, `fetcher-openai`, `fetcher-openapi`, `fetcher-storage` and
+`fetcher-react`. Importing by package name is unaffected; update CDN URLs,
+e.g. `https://unpkg.com/@ahoo-wang/fetcher-cosec@6/dist/index.umd.cjs`.
+
+```sh
+grep -rnE 'index\.umd\.js' --include='*.html' --include='*.ts' --include='*.js' . | grep -v node_modules
+```
+
 ## Detection checklist
 
 Run from the project root. Every hit needs a decision from `SKILL.md` step 2.
+The behavior checks per package are in
+[Behavior changes by package](#behavior-changes-by-package).
 
 ```sh
 # 1. Manifests and lockfile: packages that left fetcher
@@ -257,86 +421,28 @@ Pattern 3 deliberately does not match `useFetcherQuery` or `useQuery`, which
 stay in `@ahoo-wang/fetcher-react`. Confirm each hit's import source before
 rewriting: a project may already import these names from `@ahoo-wang/wow-react`.
 
-Behavior checks from **Changed**, for every project that upgrades
-`@ahoo-wang/fetcher`:
-
-```sh
-# 6. Status errors read from `cause`; HttpStatusValidationError is now thrown as is
-grep -rnE 'cause\s+instanceof\s+HttpStatusValidationError' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' . | grep -v node_modules
-```
-
-Rewrite `error.cause instanceof HttpStatusValidationError` to
-`error instanceof HttpStatusValidationError`, tested before `ExchangeError`, its
-superclass; `error.exchange.error` still returns it. A timeout is still
-`error.cause instanceof FetchTimeoutError`. The fetcher no longer sends
-`Content-Type: application/json` by default: a plain-object or string body
-still gets it, but a server that expects it on bodyless requests or on binary
-bodies needs it set on those requests.
-
-For `@ahoo-wang/fetcher-decorator`: an array passed to `@query('ids')` is now
-sent as `ids=1&ids=2` (it was `0=1&1=2`), an array header as a comma-separated
-list, and a `Date` as ISO 8601; a server that read the old keys needs the new
-form. A named `@attribute('user')` holding an object now stores it under
-`user` instead of merging its keys. A subclass method that overrides an
-inherited endpoint without its own endpoint decorator now runs as written;
-decorate it if it was meant to redefine the request.
-
-For `@ahoo-wang/fetcher-openapi`: objects typed `Info` or `Response` must now
-set `title` and `version`, or `description`; `SecurityScheme.in` no longer
-accepts `'path'`, and a `SecurityRequirement` holds only scheme names (no
-`x-` keys).
-
-For projects that consume event streams with a terminate detector
-(`@ahoo-wang/fetcher-eventstream`) or stream chat completions
-(`@ahoo-wang/fetcher-openai`):
-
-```sh
-# 7. Streams that now reject when they end before their terminating event
-grep -rnE 'requiredJsonEventStream\(|jsonEventStream\(|toJsonServerSentEventStream\(|completions\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
-```
-
-A stream that ends without its terminating event (for OpenAI, `data: [DONE]`)
-now rejects the `for await` loop with `EventStreamIncompleteError` instead of
-ending as if complete; handle it where mid-stream errors are handled, and do
-not treat the partial answer as final. `ChatResponse.usage` is now optional:
-read it with `?.`.
-
-For projects on `@ahoo-wang/fetcher-cosec` or `@ahoo-wang/fetcher-storage`:
-
-```sh
-# 8. CoSec setups and storage cleanup to review
-grep -rnE 'new CoSecConfigurer\(|new (CoSecRequest|AuthorizationRequest)Interceptor\(|\.eventBus\.destroy\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
-```
-
-Add `isTrusted: sameOriginTrust` to each CoSec setup unless every absolute URL
-the client requests is yours: by default an absolute URL on any origin still
-receives the access token and the device ID. A JWT whose payload is not a JSON
-object now reads as expired. `destroy()` now closes the event bus the storage
-created itself, so a following `storage.eventBus.destroy()` on that default
-bus is redundant (drop it); keep it for a bus you passed in `eventBus`.
-
 For projects on `@ahoo-wang/fetcher-react`:
 
 ```sh
-# 9. Hook API removed or changed by the redesign (tsc reports most of these)
+# 6. Hook API removed or changed by the redesign (tsc reports most of these)
 grep -rnE '\b(useFullscreen(Context)?|FullscreenProvider|FullscreenContext|useRefs|useForceUpdate|useMounted|useRequestId|use(Cancellable)?QueryState|isValidateQuery|OnBeforeExecuteCallback|PromiseStateCallbacks|DepsCapable)\b|\b(propagateError|initialQuery|onBeforeExecute|getQuery)\b' --include='*.ts' --include='*.tsx' . | grep -v node_modules
 grep -rnE '\bsetQuery\b|\bisPending\(|\breset\(|abortController\s*[:=]|request\.abortController' --include='*.ts' --include='*.tsx' . | grep -v node_modules
 
-# 10. Tests that assert idle on the first render of an auto-executing query
+# 7. Tests that assert idle on the first render of an auto-executing query
 grep -rnE "status\)\.toBe\(('idle'|PromiseStatus\.IDLE)\)" --include='*.test.ts' --include='*.test.tsx' . | grep -v node_modules
 
-# 11. React hooks whose timing changed
+# 8. React hooks whose timing changed
 grep -rnE 'onUnauthorized=|useLatest\(|useKeyStorage\(|useSecurity\(|<SecurityProvider|useEventSubscription\(' --include='*.ts' --include='*.tsx' . | grep -v node_modules
 ```
 
-Rewrite every hit of step 9 with [the redesign](#the-ahoo-wangfetcher-react-redesign)
-table and diffs. In step 9's second command, `setQuery` is fine when it is your
+Rewrite every hit of step 6 with [the redesign](#the-ahoo-wangfetcher-react-redesign)
+table and diffs. In step 6's second command, `setQuery` is fine when it is your
 own `useState` setter, and `isPending()` stays on `useDebouncedCallback`,
 `useDebouncedExecutePromise` and `useDebouncedFetcher`; check each `reset()`
 caller that expected the request to finish anyway, and each request whose
 `abortController` you set for `useFetcher` (cancel with `abort()` or pass
 `signal`). Hooks imported from `@ahoo-wang/wow-react` keep their own API —
-leave their `setQuery` alone. Step 10's hits fail now: the first render of an
+leave their `setQuery` alone. Step 7's hits fail now: the first render of an
 auto-executing query is `loading`.
 
 `RouteGuard`'s `onUnauthorized` now runs once after commit each time the user
@@ -353,19 +459,24 @@ changes; a handler whose `name`, `order` or `once` changes still resubscribes.
 ## Rewrites
 
 `<wow-version>` is the version `npm view @ahoo-wang/wow-client version`
-printed — 9.2.1 or later, the first to accept fetcher 6.
+printed — 9.2.1 or later, the first to accept fetcher 6. The order matters:
+the Wow packages go in while the app is still on 5.x, then fetcher moves to 6.
 
 ```sh
-pnpm add @ahoo-wang/fetcher-react@5.1.3
+# 1. Latest 5.x (the Wow packages peer ^5.1.5) — every @ahoo-wang/fetcher* package you use
+pnpm add @ahoo-wang/fetcher@^5.1.5 @ahoo-wang/fetcher-react@^5.1.5
+# 2. Replace the moved packages, still on 5.x
 pnpm remove @ahoo-wang/fetcher-wow @ahoo-wang/fetcher-generator
 pnpm add @ahoo-wang/wow-client@<wow-version> @ahoo-wang/wow-react@<wow-version>
 pnpm add -D @ahoo-wang/wow-generator@<wow-version>
-# then, once fetcher 6.0.0 is on npm, every @ahoo-wang/fetcher* package you use:
+# 3. Regenerate clients with wow-generator (see Generated clients), type-check, test
+# 4. fetcher 6 — every @ahoo-wang/fetcher* package you use, together
 pnpm add @ahoo-wang/fetcher@^6 @ahoo-wang/fetcher-react@^6
 ```
 
 After `@ahoo-wang/fetcher-react@^6`, rewrite the hook calls (see
-[the redesign](#the-ahoo-wangfetcher-react-redesign)) until `tsc` passes.
+[the redesign](#the-ahoo-wangfetcher-react-redesign)) until `tsc` passes, then
+work through [Behavior changes by package](#behavior-changes-by-package).
 
 ```diff
 -import { SnapshotQueryClient } from '@ahoo-wang/fetcher-wow';
@@ -386,6 +497,19 @@ After `@ahoo-wang/fetcher-react@^6`, rewrite the hook calls (see
  }
 ```
 
+A CoSec caller that relied on every refresh failure signing out:
+
+```diff
+ try {
+   await fetcher.get('/orders');
+ } catch (error) {
+-  // 5.x: any refresh failure had already called onUnauthorized
++  if (error instanceof ExchangeError && error.cause instanceof RefreshUnavailableError) {
++    toast('Cannot reach the server; still signed in. Try again.');
++  }
+ }
+```
+
 Data-monitor hooks: delete the calls and any UI toggle built on them, or keep
 the whole project on 5.x.
 
@@ -401,10 +525,12 @@ Code produced by `fetcher-generator` imports `@ahoo-wang/fetcher-wow`.
 
 ## Staying on 5.x
 
-- Pin `^5.1.3` for every `@ahoo-wang/fetcher*` package, including
-  `fetcher-wow`, `fetcher-generator` and `fetcher-viewer`.
-- The `5.x` branch keeps receiving fixes. After 6.0 they are published under
-  the npm dist-tag `release-5` (`pnpm add @ahoo-wang/fetcher@release-5`), so
-  `latest` no longer points at 5.x.
-- A project on `fetcher-viewer` stays on 5.x as a whole: the viewer's peers
-  (`fetcher-wow`, the 5.x `fetcher-react`) are `^5.0.0`.
+- Pin `^5.1.5` for every `@ahoo-wang/fetcher*` package, including
+  `fetcher-wow`, `fetcher-generator` and `fetcher-viewer` (deprecated, still
+  installable; the deprecation warning on install is expected).
+- The `5.x` branch keeps receiving fixes, published under the dist-tag
+  `release-5` so `latest` stays on 6.x. Run
+  `npm view @ahoo-wang/fetcher dist-tags` and install
+  `@ahoo-wang/fetcher@release-5` only once that tag is listed.
+- A project on `fetcher-viewer` stays on 5.x as a whole: the viewer peers
+  `fetcher-wow` and the 5.x `fetcher-react` with `^5.0.0`.

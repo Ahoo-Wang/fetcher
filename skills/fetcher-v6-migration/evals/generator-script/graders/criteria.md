@@ -15,3 +15,4 @@ FAIL if the answer does any of these:
 
 - Tells the user to install an `@ahoo-wang/wow-*` package without the `npm view` check, or states a version for one other than "9.2.1 or later" / the version `npm view` prints.
 - Claims the Wow packages are not on npm.
+- Says the `fetcher-generator` command no longer works in 6.0 (it stays an alias of `wow-generator` until Wow v10), or keeps `@ahoo-wang/fetcher-generator` (deprecated) as the generator.

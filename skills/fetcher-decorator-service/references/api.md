@@ -78,7 +78,7 @@ export class UserService {
 - `fetcher` (string | Fetcher) - Name or instance of the fetcher to use
 - `timeout` (number) - Default timeout for all requests (ms)
 - `headers` (RequestHeaders) - Default headers for all requests
-- `attributes` (Record<string, any>) - Default attributes (accessible by interceptors)
+- `attributes` (`Record<string, any> | Map<string, any>`) - Default attributes (accessible by interceptors)
 - `resultExtractor` - Default result extractor for all methods
 - `returnType` (EndpointReturnType) - Default return type (RESULT or EXCHANGE)
 - `urlParams` (UrlParams) - Default URL path and query parameters
@@ -106,7 +106,7 @@ export class UserService {
 - `basePath` (string) - Per-method base path override (falls back to the class-level `@api()` basePath); the final URL is `combineURLs(basePath, path)`, then joined to the fetcher's `baseURL`
 - `resultExtractor` - Override result extractor for this method
 - `returnType` (EndpointReturnType) - Override return type for this method
-- `attributes` (Record<string, any>) - Method-specific attributes
+- `attributes` (`Record<string, any> | Map<string, any>`) - Method-specific attributes, merged over the `@api()` ones
 - `urlParams` (UrlParams) - Method-specific URL parameters
 
 ### 3. Parameter Decorators
@@ -115,7 +115,7 @@ export class UserService {
 
 - Only plain objects are expanded. An array, a `Date`, a class instance or a primitive is bound to the parameter name (explicit, else inferred, else `param<index>`) and serialized by fetcher: `@query('ids') ids: number[]` sends `ids=1&ids=2`, a `Date` is sent as ISO 8601, and an array header is sent as a `, `-joined list.
 - `undefined`/`null` arguments to `@path`/`@query`/`@header` are skipped, and so are `undefined`/`null` entries of an expanded `@path`/`@query` object; an `undefined`/`null` entry of a `@header` object removes that header.
-- When the name is omitted (`@path()`), it is read from the compiled function source (`Function.prototype.toString`); commas inside defaults, strings and comments are handled, a destructured parameter has no name, and a rest parameter's name drops the `...`. Minifiers rename parameters, so pass explicit names in bundled code; a placeholder (in the fetcher's `urlTemplateStyle`) with no path parameter after every layer, `@request` included, is merged logs a `[fetcher-decorator]` warning, and URL resolution then fails with `Missing required path parameter` unless an interceptor supplies it.
+- When the name is omitted (`@path()`), it is read from the compiled function source (`Function.prototype.toString`); commas inside defaults, strings and comments are handled, a destructured parameter has no name, and a rest parameter's name drops the `...`. Minifiers rename parameters, so pass explicit names in bundled code. On the first call of an endpoint whose unnamed `@path()` argument (not a plain object) has an inferred name that matches no placeholder of the endpoint path, a `[fetcher-decorator]` warning is logged once for that endpoint; the placeholder then fails URL resolution with `Missing required path parameter: <name>` (as an `ExchangeError`) unless an interceptor or `beforeExecute` supplies it.
 - Only one body is sent: if several arguments carry `@body()`, the right-most one wins. `@request()` takes a `ParameterRequest` (`FetchRequestInit` plus `path`) that is merged over the decorator-built request with `mergeRequest`, so its `method`, `body`, `timeout`, headers and `urlParams` win; its `path` replaces the endpoint path.
 
 ```text
@@ -212,10 +212,11 @@ Core extractors from `@ahoo-wang/fetcher`:
 
 Event stream extractors from `@ahoo-wang/fetcher-eventstream`:
 
-| Extractor                        | Returns                     | Use Case           |
-| -------------------------------- | --------------------------- | ------------------ |
-| `EventStreamResultExtractor`     | `ServerSentEventStream`     | SSE streaming      |
-| `JsonEventStreamResultExtractor` | `JsonServerSentEventStream` | LLM streaming APIs |
+| Extractor                                   | Returns                     | Use Case                                               |
+| ------------------------------------------- | --------------------------- | ------------------------------------------------------ |
+| `EventStreamResultExtractor`                | `ServerSentEventStream`     | SSE streaming                                          |
+| `JsonEventStreamResultExtractor`            | `JsonServerSentEventStream` | LLM streaming APIs                                     |
+| `jsonEventStreamResultExtractor(detector?)` | `JsonServerSentEventStream` | JSON stream that ends at a terminator such as `[DONE]` |
 
 ```typescript
 import { ResultExtractors } from '@ahoo-wang/fetcher';
@@ -244,7 +245,7 @@ Implement `ExecuteLifeCycle` to hook into request execution:
 
 ```typescript
 import type { ExecuteLifeCycle } from '@ahoo-wang/fetcher-decorator';
-import type { FetchExchange } from '@ahoo-wang/fetcher';
+import { setHeader, type FetchExchange } from '@ahoo-wang/fetcher';
 
 @api('/users', { fetcher: myFetcher })
 export class UserService implements ExecuteLifeCycle {
@@ -254,7 +255,7 @@ export class UserService implements ExecuteLifeCycle {
   }
 
   beforeExecute(exchange: FetchExchange): void | Promise<void> {
-    exchange.ensureRequestHeaders()['X-Custom-Header'] = 'value';
+    setHeader(exchange.ensureRequestHeaders(), 'X-Custom-Header', 'value');
   }
 
   afterExecute(exchange: FetchExchange): void | Promise<void> {
@@ -270,7 +271,7 @@ export class UserService implements ExecuteLifeCycle {
 2. `FetchExchange` created with `fetcher.resolveExchange()` (fetcher default headers/timeout merged in); attributes also carry the service instance under `DECORATOR_TARGET_ATTRIBUTE_KEY` and the `FunctionMetadata` under `DECORATOR_METADATA_ATTRIBUTE_KEY`
 3. `beforeExecute` hook called -- before any request interceptor, so `request.url` is still the unresolved template and `urlParams` are editable
 4. `fetcher.interceptors.exchange()` runs request, response and error phases
-5. `afterExecute` hook called -- **skipped when step 4 throws** (e.g. `HttpStatusValidationError`, an `ExchangeError`, for a 401 under the default `validateStatus`); handle failures in an error interceptor or a `try/catch` at the call site
+5. `afterExecute` hook called -- **skipped when `beforeExecute` or step 4 throws** (e.g. `HttpStatusValidationError`, an `ExchangeError`, for a 401 under the default `validateStatus`); handle failures in an error interceptor or a `try/catch` at the call site
 6. `EXCHANGE` return type returns the exchange; otherwise `exchange.extractResult()` is returned
 
 ### 8. Service Inheritance
@@ -296,7 +297,7 @@ export class AdminUserService extends BaseUserService {
 // new AdminUserService().getStatus() -> GET /admin/users/status
 ```
 
-Note: `@api()` walks the whole prototype chain and rebinds every decorated method on the child class with the child's `@api()` metadata, so inherited endpoints use the child's fetcher and base path. A child base path with a path placeholder (e.g. `/users/{userId}`) therefore breaks every inherited endpoint that has no matching `@path` argument. A child that overrides an inherited endpoint method without decorating the override keeps its own implementation (for example one that calls `super.getStatus()`); decorate the override to redefine the endpoint.
+Note: `@api()` walks the whole prototype chain (string- and symbol-named methods) and rebinds every decorated method on the child class with the child's `@api()` metadata, so inherited endpoints use the child's fetcher and base path. A child base path with a path placeholder (e.g. `/users/{userId}`) therefore breaks every inherited endpoint that has no matching `@path` argument. A child that overrides an inherited endpoint method without decorating the override keeps its own implementation (for example one that calls `super.getStatus()`); decorate the override to redefine the endpoint.
 
 ### 9. Fetcher Resolution Priority
 
@@ -307,7 +308,7 @@ Resolution is `getFetcher(endpoint.fetcher ?? api.fetcher)`, where `api` is the 
 3. **Class-level fetcher** (from `@api()` decorator)
 4. **Default fetcher** (`fetcherRegistrar.default`, registered as `'default'`)
 
-A string name resolves through `fetcherRegistrar.requiredGet()` at call time and throws `Fetcher <name> not found` if unregistered. The merged metadata is cached per instance and method (in a module-level `WeakMap`, not on the instance) and rebuilt when `apiMetadata` is replaced, so assigning a new `apiMetadata` object takes effect on the next call; mutating the existing object in place does not.
+A string name resolves through `fetcherRegistrar.requiredGet()` at call time and throws `Fetcher <name> not found` if unregistered. Nothing is cached: every call reads the instance's `apiMetadata` and shallow-merges it over the class metadata, so assigning a new object or mutating the existing one in place both take effect on the next call.
 
 ```typescript
 import { Fetcher } from '@ahoo-wang/fetcher';

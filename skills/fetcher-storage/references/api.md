@@ -47,12 +47,7 @@ interface StorageEvent<Deserialized> {
 }
 ```
 
-Automatic broadcast conversion preserves which standard fields are own properties.
-A missing field stays absent; an explicitly present `undefined` stays present over
-BroadcastChannel. JSON transports, including StorageMessenger, follow JSON's native
-omission of `undefined` object fields. `set()` and `remove()` continue emitting both
-fields. If an existing old-value snapshot cannot be decoded, the received event
-retains an explicit `oldValue: undefined` instead of discarding its valid new value.
+`set()` emits `{ newValue: value, oldValue }` and `remove()` emits `{ newValue: null, oldValue }`, where `oldValue` is what `get()` returned before (possibly the `defaultValue`).
 
 ### `StorageListenable<Deserialized>`
 
@@ -64,8 +59,8 @@ interface StorageListenable<Deserialized> {
 }
 ```
 
-`EventHandler` requires `name` and `handle` properties (from `@ahoo-wang/fetcher-eventbus`).
-`RemoveStorageListener` is `() => void` and calls `eventBus.off(listener.name)`.
+`EventHandler` (from `@ahoo-wang/fetcher-eventbus`) is `{ name: string; order?: number; once?: boolean; handle(event): void | Promise<void> }`.
+`RemoveStorageListener` is `() => void`; it removes this listener only (a later listener registered under the same name is left alone).
 
 This `StorageEvent` type shadows the DOM global `StorageEvent`; import it explicitly (`import type { StorageEvent } from '@ahoo-wang/fetcher-storage'`).
 
@@ -81,22 +76,22 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 
 ### KeyStorageOptions\<T\>
 
-| Option         | Type                             | Description                                              |
-| -------------- | -------------------------------- | -------------------------------------------------------- |
-| `key`          | `string`                         | Storage key (required)                                   |
-| `serializer`   | `Serializer<string, T>`          | Custom serializer (default: `jsonSerializer`)            |
-| `storage`      | `Storage`                        | Custom backend (default: `getStorage()`)                 |
-| `eventBus`     | `TypedEventBus<StorageEvent<T>>` | Custom event bus for notifications                       |
-| `defaultValue` | `T` (optional)                   | Value returned by `get()` when key is missing in storage |
+| Option         | Type                             | Description                                                                                                                   |
+| -------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `key`          | `string`                         | Storage key (required)                                                                                                        |
+| `serializer`   | `Serializer<string, T>`          | Custom serializer (default: `jsonSerializer`)                                                                                 |
+| `storage`      | `Storage`                        | Custom backend (default: `getStorage()`)                                                                                      |
+| `eventBus`     | `TypedEventBus<StorageEvent<T>>` | Bus for change events (default: a new local `SerialTypedEventBus('KeyStorage:{key}')`); a `BroadcastTypedEventBus` syncs tabs |
+| `defaultValue` | `T` (optional)                   | Value returned by `get()` when key is missing in storage                                                                      |
 
 ### Methods
 
-- `get(): T | null` — Returns the in-memory cache if non-null; otherwise reads and deserializes the key (and caches it). Returns `defaultValue` (or `null`) if the key is missing; the default is neither cached nor written. A stored value that fails to deserialize is removed with a `console.warn` and read as missing, so it cannot make every later `get`/`set`/`remove` throw. The cache is updated only by this instance's `set`/`remove`/`reload` and by events on its bus; writes that bypass the bus (another code path calling `storage.setItem`, or the native `storage` event from other tabs) are not seen by `get()` once a value is cached.
+- `get(): T | null` — Returns the in-memory cache if non-null; otherwise reads and deserializes the key (and caches it). Returns `defaultValue` (or `null`) if the key is missing; the default is neither cached nor written. A stored value that fails to deserialize is removed with a `console.warn` and read as missing, so it cannot make every later `get`/`set`/`remove` throw. The cache is updated only by this instance's `set`/`remove`/`reload` and by events on its bus (its cache handler runs first, at `order: Number.MIN_SAFE_INTEGER`, so listeners already see the new value via `get()`). Writes that bypass the bus are not seen by `get()` once a value is cached: another `KeyStorage` for the same key with its own (default) bus, a direct `storage.setItem`, or another tab without a broadcast bus. Share one instance, or one bus, between code that must agree.
 - `set(value: T): void` — Store value with caching and emit change event. `set(undefined)` removes the value (same as `remove()`).
 - `remove(): void` — Remove value, clear cache, emit change event.
 - `reload(): T | null` — Re-reads the key bypassing the cache, for a value another tab may have written before its change event arrived. Keeps the cached object when the stored text is unchanged; returns `defaultValue` (or `null`) when the key is missing.
 - `destroy(): void` — Removes this instance's internal cache handler from the bus and destroys the bus this instance created (the default `SerialTypedEventBus`, or one a subclass marked with the protected `ownEventBus()`). It does not destroy a bus passed in `eventBus`, does not remove listeners added with `addListener`, and leaves any automatic codec installed on a broadcast bus.
-- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` — Registers on `eventBus` via `on()`. A duplicate `name` is silently ignored, yet the returned remover still calls `off(name)` and so removes the handler that was registered first.
+- `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` — Registers on `eventBus` via `on()`. When the `name` is already taken on that bus, the handler is not added and the returned remover does nothing; otherwise the remover removes exactly this handler.
 - `eventBus` — Public readonly; the supplied bus or a default `SerialTypedEventBus` with type `KeyStorage:{key}`.
 
 ### Example: Basic Usage with defaultValue
@@ -134,34 +129,16 @@ storage.destroy(); // prevent memory leaks
 
 ## Cross-tab Synchronization
 
-`KeyStorage` defaults to `SerialTypedEventBus`, so its change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to enable browser cross-tab synchronization; its default messenger uses `BroadcastChannel` with a `StorageEvent` fallback. A shared bus must represent the same logical storage key. A broadcast bus with the public `messageTransformer` capability gets an automatic snapshot codec when no caller codec is configured. That codec and its snapshot table stay bound to the exact same serializer object for the bus lifetime, even after all KeyStorage instances are destroyed. Passing a different key or a different serializer object to that automatic bus throws; use a new bus for a different key, format, or deserialization configuration. Separate but equivalent explicitly supplied serializer objects are not treated as interchangeable. When both instances omit `serializer`, they reuse the first instance's default JSON serializer, including across duplicate package modules. Ownership and snapshot state are shared across module copies in the same JavaScript global through a non-enumerable global registry of weak bus keys; no properties are added to the bus itself. Receiving caches and listeners use the serializer to restore custom class semantics for both `newValue` and `oldValue`.
+`KeyStorage` defaults to a local `SerialTypedEventBus`, so change notifications stay in the current JavaScript context. Pass a `BroadcastTypedEventBus` to sync tabs: a `set()`/`remove()` in one tab updates the other tabs' caches and calls their listeners. The value is written to the backend (`localStorage`) by the writing tab only; the bus carries the event. Native `window` `storage` events are not used. `BroadcastTypedEventBus` throws `Error('Messenger setup failed')` where no cross-tab messenger exists (SSR/Node without `BroadcastChannel`), so create it only in the browser.
 
-`keyStorage.eventBus` is the supplied bus itself. A preconfigured `messageTransformer` takes precedence; the caller owns transport encoding and decoding of ordinary `StorageEvent` values, including custom class restoration. KeyStorage never installs an automatic codec on a bus that started with a caller codec. `destroy()` removes the instance's internal listener and leaves the automatic codec and snapshot table available for direct bus subscribers and pending messages. Clearing or replacing the codec is an explicit caller override: creating another KeyStorage does not reinstall or replace it. Existing automatic owners keep the same snapshot table, so explicitly restoring the original codec does not orphan their snapshots. In-flight emissions retain the transformer captured at dispatch; incoming messages use the caller-selected codec present when they arrive. The automatic codec captures each dispatch's wire snapshot before local listeners run. A prepared storage snapshot belongs to its originating dispatch; reentrant or later direct emits encode their own current public fields. Messenger serialization and posting still happen after local delivery, and caller codecs retain their default timing. For caller codecs and non-broadcast buses, all shared instances must also use the same value semantics and deserialization configuration because listeners receive the same public event object.
+Rules:
 
-With the default transformer, prepared storage snapshots are attached only at the messenger boundary and decoded before any receiving handler runs. Subscribers registered on the supplied bus before or after KeyStorage construction, through `eventBus.on`, or through `addListener` all receive standard enumerable `newValue` and `oldValue` fields. Spreading or JSON-serializing these events does not expose transport metadata. Local notifications preserve object identity; ordinary custom local buses receive the same standard events.
-
-Wire messages retain their ordinary standard fields for legacy receivers. BroadcastChannel
-uses its native structured-clone semantics, preserving Date, Map, NaN, and undefined
-properties. A non-enumerable wire `toJSON` is used only by JSON transports: it projects
-each supported standard field using its original property key and omits unsupported
-JSON values such as BigInt or cycles. If native cloning fails with `DataCloneError`,
-the automatic transformer retries once with only the prepared string snapshots.
-Neither preparation nor retry traverses the original values; native messenger
-serialization retains its normal getter and `toJSON` behavior after local dispatch.
-Values requiring snapshot-only transport cannot be restored by legacy receivers.
-The default channel and storage keys do not change.
-
-Legacy messages without snapshots keep their standard fields unless the serializer
-explicitly implements `deserializeLegacy(value: unknown): T`. This optional hook may
-restore a known old wire shape; arbitrary lost class prototypes cannot be recovered.
-A failed legacy old-value decode leaves `oldValue` undefined, while a failed new-value
-decode is warned and the message is not dispatched. Snapshot-aware endpoints sharing
-the same key and channel across contexts must use compatible serialization formats
-and decoding semantics. A serializer format change requires application migration
-or a caller-provided independent channel; the generic serializer API does not detect
-incompatible formats, including parsers that silently return an incorrect value.
-
-For the automatic transformer, the old snapshot serializes the actual local `oldValue`, including a cached value or source default, so local and remote notifications describe the same transition. If that value cannot be serialized or the receiver cannot decode it, remote `oldValue` is undefined and a valid new value still updates the cache and listeners. Local buses and caller codecs do not perform this extra old-value serialization. Asynchronous event delivery failures are reported with a warning; synchronous serialization, storage read, write, and removal failures still propagate to the caller. Incoming new-value decoding failures are warned and dropped without changing the receiving cache.
+- **One key per broadcast bus.** Binding a second `KeyStorage` with a different `key` to the same bus throws (`A shared storage event bus requires the same storage key`). Two instances for the same key may share it.
+- **One serializer instance per bus.** When the bus has no `messageTransformer`, `KeyStorage` installs an automatic codec that sends the serialized value and decodes it with the same serializer on the receiving side, so custom classes (e.g. `Date` with a `DateSerializer`) arrive restored. A different serializer object on the same bus throws; instances that both omit `serializer` share the default one. The binding outlives `destroy()`.
+- **A caller-supplied `messageTransformer`** (set before the first `KeyStorage`) is left alone; the caller then owns encoding and decoding of `StorageEvent` values.
+- On the receiving side `oldValue` can be `undefined` when the old value could not be serialized or decoded; `newValue` is still applied. A received event whose `newValue` cannot be decoded is dropped with a `console.warn`.
+- Messages from older versions without serialized snapshots are passed through as-is unless the serializer implements `deserializeLegacy(value: unknown): T`.
+- Serialization, storage write and removal errors from `set()`/`remove()` throw synchronously; listener errors are only logged.
 
 ```typescript
 import {
@@ -233,10 +210,10 @@ const typedStringStorage = new KeyStorage<string>({
 
 ### Custom Serializer
 
-`Serializer<Serialized, Deserialized>` defines `serialize(value)`,
-`deserialize(value)`, and optional `deserializeLegacy(value: unknown)` for restoring
-known legacy broadcast values. Only serialized snapshots use `deserialize`; the
-legacy hook is never guessed from or replaced by a serialize/deserialize round trip.
+`Serializer<Serialized, Deserialized>` defines `serialize(value: any): Serialized`,
+`deserialize(value: Serialized): Deserialized`, and optional
+`deserializeLegacy(value: unknown): Deserialized` for restoring legacy broadcast
+messages (see above). `KeyStorage` takes a `Serializer<string, T>`.
 
 ```typescript
 import type { Serializer } from '@ahoo-wang/fetcher-storage';
@@ -262,14 +239,14 @@ memory.getItem('temp'); // 'data'
 memory.length; // 1
 ```
 
-Full `Storage` interface implementation using a `Map` backend. Used automatically by `getStorage()` in Node/SSR.
+Full `Storage` interface implementation using a `Map` backend; `setItem` stores `String(value)` like Web Storage. Used automatically by `getStorage()` in Node/SSR (a new one per call). It fires no events — pair it with a local bus in tests.
 
 ## Installation
 
-`@ahoo-wang/fetcher-eventbus` is a peer dependency (and it peers on `@ahoo-wang/fetcher`):
+`@ahoo-wang/fetcher-eventbus` is the only peer dependency:
 
 ```bash
-pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher
+pnpm add @ahoo-wang/fetcher-storage @ahoo-wang/fetcher-eventbus
 ```
 
 ## Quick Start

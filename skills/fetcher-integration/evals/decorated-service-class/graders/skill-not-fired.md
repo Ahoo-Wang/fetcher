@@ -7,4 +7,4 @@ max: 0
 arm: both
 ---
 
-The request belongs to $fetcher-decorator-service, so $fetcher-integration must not load. Scored in both arms (`arm: both`): the without-skill arm passes trivially, so a negative case measures trigger precision, not a with/without delta. The case has no llm grader — only the skill under test is loaded, so the neighbouring skill's answer cannot be expected here.
+Declaring endpoints as a decorated class belongs to $fetcher-decorator-service, even though the prompt mentions an existing `NamedFetcher`; $fetcher-integration's description sends `@api`/`@get` classes there, so it must not load. Scored in both arms (`arm: both`): the without-skill arm passes trivially, so a negative case measures trigger precision, not a with/without delta. The case has no llm grader — only the skill under test is loaded, so the neighbouring skill's answer cannot be expected here.

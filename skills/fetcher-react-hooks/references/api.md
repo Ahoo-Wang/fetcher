@@ -424,17 +424,39 @@ without `execute` — `query`, `autoExecute` (default `true`), callbacks,
 
 ## Security (CoSec)
 
-Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>`
-(`TokenStorage` from `@ahoo-wang/fetcher-cosec`). `useSecurityContext()` (throws
-outside the provider) and `useSecurity(tokenStorage, options?)` return
-`currentUser` (`ANONYMOUS_USER` when signed out), `authenticated`,
-`signIn(compositeTokenOrAsyncProvider)`, `signOut()`. `useSecurity` re-renders
-when the refresh token expires. `RouteGuard` (`children`, `fallback?`,
-`onUnauthorized?`) renders children only when authenticated and calls
-`onUnauthorized` in an effect after commit, once each time the user becomes (or
-starts out) unauthenticated, so it may call `navigate()`;
-`RefreshableRouteGuard` (`tokenManager: JwtTokenManager`, `fallback?`,
-`refreshing?`) tries a token refresh first.
+The Fetcher side (`CoSecConfigurer`, `TokenStorage`, refresh) is
+`$fetcher-cosec-auth`; these components only read and write the token storage.
+
+Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>`,
+passing the **same** `TokenStorage` instance given to `CoSecConfigurer` (a
+second instance has its own cache and bus and does not see the other's writes
+until `reload()`). `useSecurityContext()` (throws outside the provider) and
+`useSecurity(tokenStorage, options?)` return:
+
+- `currentUser`: the stored access token's payload, even once expired;
+  `ANONYMOUS_USER` when no token is stored.
+- `authenticated`: the access token is unexpired. Re-renders when the refresh
+  token expires; an expired but refreshable access token does not re-render
+  (the next request renews it).
+- `signIn(token | () => Promise<token>)`: async, stores a `CompositeToken`
+  (`{ accessToken, refreshToken }`), then calls `onSignIn`.
+- `signOut()`: removes the token, then calls `onSignOut`.
+
+On the server and during hydration they render the default (anonymous), then
+the stored value.
+
+`RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only
+when authenticated, otherwise `fallback`; it calls `onUnauthorized` in an
+effect after commit, once each time the user becomes (or starts out)
+unauthenticated, so `navigate('/login')` there is safe.
+
+`RefreshableRouteGuard` (`tokenManager: JwtTokenManager` — e.g.
+`configurer.tokenManager` — `fallback?`, `refreshing?`) refreshes on mount when
+the access token is expired but refreshable, rendering `refreshing` (default
+`<p>Refreshing...</p>`) meanwhile and `fallback` when nothing is refreshable.
+A refresh error is only logged: after a `RefreshUnavailableError` (server
+unreachable, session kept) it keeps rendering `refreshing` until something
+else re-renders it.
 
 ```tsx
 import {

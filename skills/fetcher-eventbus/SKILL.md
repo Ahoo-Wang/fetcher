@@ -1,25 +1,26 @@
 ---
 name: fetcher-eventbus
 description: >
-  Publish and subscribe typed in-memory events with `@ahoo-wang/fetcher-eventbus`: `SerialTypedEventBus`, `ParallelTypedEventBus`, `BroadcastTypedEventBus` across browser tabs, the multi-type `EventBus`, handler order and `once`, and cross-tab messengers. Use for "notify other components/tabs" without persisted state. For a persisted value that syncs across tabs use fetcher-storage.
+  Publish and subscribe typed events with `@ahoo-wang/fetcher-eventbus`: `SerialTypedEventBus` (ordered), `ParallelTypedEventBus`, `BroadcastTypedEventBus` across browser tabs, the multi-type `EventBus`, `once` handlers and cross-tab messengers. Use to notify components or other tabs that something happened when nothing needs to be stored. To persist a value (localStorage) and sync it across tabs use fetcher-storage.
 ---
 
 # fetcher-eventbus
 
 ## Decisions
 
-- **Serial vs parallel**: `SerialTypedEventBus` awaits handlers one by one, sorted by `order` (lower first, default 0). `ParallelTypedEventBus` runs them concurrently and **ignores `order`** entirely.
-- **Across tabs**: wrap a local bus — `new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus('cart') })`. `emit` runs local handlers first, then posts; a tab never receives its own message and received messages are not re-broadcast.
-- **Several event types**: `EventBus` routes by type, creating each type's bus lazily on the first `on(type, …)`; emitting a type nobody subscribed to does nothing.
+- **Serial vs parallel**: `SerialTypedEventBus` awaits handlers one by one, sorted by `order` (lower first, default 0). `ParallelTypedEventBus` runs them concurrently and **ignores `order`**; switch to serial when order matters.
+- **Across tabs**: wrap a local bus — `new BroadcastTypedEventBus({ delegate: new SerialTypedEventBus('cart') })` (an options object, not the bus positionally). `emit` runs local handlers first, then posts; a tab never receives its own message and received messages are not re-broadcast. Payloads cross tabs by structured clone (`BroadcastChannel`) or JSON (`StorageMessenger` fallback): send plain data.
+- **Several event types**: `EventBus<Events>(type => new SerialTypedEventBus(type))` routes by type, creating each type's bus on first `on` or `emit`.
 - **Need the value later, not just the notification?** That is `$fetcher-storage` (`KeyStorage`), which uses these buses underneath.
 
 ## Gotchas a capable model gets wrong
 
-- `on(handler)` returns a `boolean`, not an unsubscribe function; a duplicate `name` returns `false` and keeps the existing handler. Unsubscribe with `off(name)` — names are identifiers.
-- Handler errors are caught and logged with `console.warn`; `emit()` never rejects because of a handler.
+- `on(handler)` returns a `boolean`, not an unsubscribe function; a duplicate `name` returns `false` and keeps the existing handler. Unsubscribe with `off(name)` — names are the identity, so give each handler a distinct one (`nameGenerator.generate('cart')` makes one).
+- A handler is an object `{ name, order?, once?, handle(event) }`, not a bare function.
+- Handler errors are caught and logged with `console.warn`; `emit()` never rejects because of a handler and the remaining handlers still run.
 - `once: true` handlers are removed before dispatch, so they run at most once even with overlapping emits.
-- `createCrossTabMessenger()` tries `BroadcastChannelMessenger`, then `StorageMessenger`, then returns `undefined`; without any messenger the `BroadcastTypedEventBus` constructor throws. `StorageMessenger` payloads must survive `JSON.stringify`.
-- `BroadcastTypedEventBus.destroy()` stops cross-tab traffic but leaves the delegate's handlers; call `destroy()` on the delegate to drop them. It closes only a messenger the bus created — a messenger passed in `options.messenger` is detached and left open, so close it yourself.
+- `createCrossTabMessenger()` tries `BroadcastChannelMessenger`, then `StorageMessenger`, then returns `undefined`; with no messenger the `BroadcastTypedEventBus` constructor throws `Error('Messenger setup failed')` (SSR, old runtimes) — create it only in the browser or pass `messenger`.
+- `BroadcastTypedEventBus.destroy()` stops cross-tab traffic only: later `emit()`s still run local handlers but post nothing, and the delegate keeps its handlers (call `destroy()` on the delegate to drop them). It closes only a messenger it created; a messenger passed in `options.messenger` is detached and left open.
 
 ## Minimal example
 
@@ -29,19 +30,38 @@ import {
   SerialTypedEventBus,
 } from '@ahoo-wang/fetcher-eventbus';
 
-const cart = new BroadcastTypedEventBus<{ id: string }>({
-  delegate: new SerialTypedEventBus('cart'),
+interface CartUpdated {
+  cartId: string;
+  count: number;
+}
+
+const cartUpdated = new BroadcastTypedEventBus<CartUpdated>({
+  delegate: new SerialTypedEventBus<CartUpdated>('cart-updated'),
 });
-cart.on({ name: 'audit', order: 1, handle: e => console.log('cart', e.id) });
-cart.on({ name: 'init', once: true, handle: () => console.log('first only') });
-await cart.emit({ id: 'c1' }); // local handlers, then other tabs
-cart.off('audit');
-cart.destroy();
+cartUpdated.on({
+  name: 'audit',
+  order: -1,
+  handle: e => console.log('audit', e),
+});
+cartUpdated.on({
+  name: 'badge',
+  order: 0,
+  handle: e => console.log('badge', e.count),
+});
+cartUpdated.on({
+  name: 'first',
+  once: true,
+  handle: () => console.log('first only'),
+});
+
+await cartUpdated.emit({ cartId: 'c1', count: 3 }); // audit, badge, first; then other tabs
+cartUpdated.off('badge');
+cartUpdated.destroy();
 ```
 
 ## References
 
-- `references/api.md`: `TypedEventBus` and `EventHandler` contracts, the multi-type `EventBus`, messenger APIs and fallback chain, and examples. Load it for exact signatures.
+- `references/api.md`: `TypedEventBus` and `EventHandler` contracts, the multi-type `EventBus`, `messageTransformer`, messenger APIs and fallback chain. Load it for exact signatures.
 
 ## Related Skills
 

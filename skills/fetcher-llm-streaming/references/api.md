@@ -9,15 +9,13 @@
 - [ServerSentEvent Structure](#serversentevent-structure)
 - [Standalone Functions (No Prototype Needed)](#standalone-functions-no-prototype-needed)
 - [Termination Detection](#termination-detection)
-- [OpenAI Client Streaming](#openai-client-streaming)
+- [OpenAI Chat Completions](#openai-chat-completions)
 - [Result Extractors (for Decorator Pattern)](#result-extractors-for-decorator-pattern)
 - [ReadableStreamAsyncIterable](#readablestreamasynciterable)
 - [Other Exports](#other-exports)
 - [Installation](#installation)
 - [CommonJS](#commonjs)
 - [Related Packages](#related-packages)
-
-Implement streaming features for LLM APIs using Fetcher's eventstream package.
 
 ## Side-Effect Import Pattern
 
@@ -44,7 +42,7 @@ After the side-effect import, Response objects gain these members:
 
 ## EventStreamConvertError
 
-Thrown by `requiredEventStream()` and `requiredJsonEventStream()` when the response is not an event stream, and by `toServerSentEventStream()` (so also by `eventStream()` / `jsonEventStream()` on an SSE response) when `response.body` is null. Extends `FetcherError` from `@ahoo-wang/fetcher`; the constructor is `(response: Response, errorMsg?: string, cause?)` and the original response is `error.response`.
+Thrown by `requiredEventStream()` and `requiredJsonEventStream()` when the response is not an event stream, and by `toServerSentEventStream()` (so also by `eventStream()` / `jsonEventStream()` on an SSE response) when `response.body` is null or already used/locked (`'Response body is already used'`): a response converts to a stream once. Extends `FetcherError` from `@ahoo-wang/fetcher`; the constructor is `(response: Response, errorMsg?: string, cause?)` and the original response is `error.response`.
 
 ```typescript
 import { EventStreamConvertError } from '@ahoo-wang/fetcher-eventstream';
@@ -58,9 +56,9 @@ try {
 }
 ```
 
-Errors _during_ iteration are not `EventStreamConvertError`: a `data` payload that is not valid JSON (for example an undetected `[DONE]`) errors the JSON stream with the `SyntaxError` from `JSON.parse`, which `for await` rethrows. With a detector, a stream that ends without the terminating event (a lost connection or a server that stopped early) errors with `EventStreamIncompleteError` (also extends `FetcherError`, exported from this package), so a partial answer does not look complete; without a detector the stream ends normally.
+### Errors during iteration
 
-SSE media types are matched case-insensitively after removing parameters, using the complete type (`text/event-stream`). Field names remain case-sensitive. CR, LF and CRLF delimit lines, including pairs split across chunks; only an empty line ends an event block. Lines starting with `:` are comments; multiple `data:` lines are joined with `\n`; a block without a `data` line dispatches nothing. Empty blocks reset the event type while retaining the last event ID; `retry` is reported only on the event whose block set it. A final block whose lines all arrived but whose trailing blank line did not is still emitted when the body ends (the WHATWG parser drops it); a final line cut off before its line terminator is dropped, not parsed.
+Errors _during_ iteration are not `EventStreamConvertError`: a `data` payload that is not valid JSON (for example an undetected `[DONE]`) errors the JSON stream with the `SyntaxError` from `JSON.parse`, which `for await` rethrows. With a detector, a stream that ends without the terminating event (a lost connection or a server that stopped early) errors with `EventStreamIncompleteError` (also extends `FetcherError`, exported from this package), so a partial answer does not look complete; without a detector the stream ends normally.
 
 ## SSE Stream Processing Pipeline
 
@@ -88,6 +86,10 @@ interface ServerSentEvent {
 ```
 
 `JsonServerSentEvent<DATA>` is `Omit<ServerSentEvent, 'data'>` plus `data: DATA` (the `JSON.parse`d payload). `ServerSentEventStream` is `ReadableStream<ServerSentEvent>`; `JsonServerSentEventStream<DATA>` is `ReadableStream<JsonServerSentEvent<DATA>>`.
+
+### Parsing rules
+
+SSE media types are matched case-insensitively after removing parameters, using the complete type (`text/event-stream`). Field names remain case-sensitive. CR, LF and CRLF delimit lines, including pairs split across chunks; only an empty line ends an event block. Lines starting with `:` are comments; multiple `data:` lines are joined with `\n`; a block without a `data` line dispatches nothing. Empty blocks reset the event type while retaining the last event ID; `retry` is reported only on the event whose block set it. A final block whose lines all arrived but whose trailing blank line did not is still emitted when the body ends (the WHATWG parser drops it); a final line cut off before its line terminator is dropped, not parsed.
 
 ## Standalone Functions (No Prototype Needed)
 
@@ -121,44 +123,58 @@ const terminateOnDone: TerminateDetector = event => event.data === '[DONE]';
 const terminateOnEvent: TerminateDetector = event => event.event === 'done';
 ```
 
-## OpenAI Client Streaming
+## OpenAI Chat Completions
 
 For OpenAI Chat Completions use `@ahoo-wang/fetcher-openai` (skill `fetcher-openai-client`): `openai.chat.completions({ ..., stream: true })` resolves to a `JsonServerSentEventStream<ChatResponse>` already terminated by `DoneDetector`. Each item is a `JsonServerSentEvent<ChatResponse>`, so read `event.data.choices[0]?.delta?.content`, not `event.choices`.
 
 ## Result Extractors (for Decorator Pattern)
 
-Use the standalone extractors exported from `@ahoo-wang/fetcher-eventstream`. They are **not** on `ResultExtractors` from `@ahoo-wang/fetcher`.
+Exported from `@ahoo-wang/fetcher-eventstream`; they are **not** on `ResultExtractors` from `@ahoo-wang/fetcher`. A non-SSE response makes them throw `EventStreamConvertError`.
 
-- `EventStreamResultExtractor` -- `exchange.requiredResponse.requiredEventStream()`, yields `ServerSentEventStream`
-- `JsonEventStreamResultExtractor` -- `exchange.requiredResponse.requiredJsonEventStream()` with **no** terminate detector, yields `JsonServerSentEventStream<any>`
+| Export                                                  | Kind     | Yields                                                                             |
+| ------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `EventStreamResultExtractor`                            | constant | `ServerSentEventStream` (raw string `data`)                                        |
+| `JsonEventStreamResultExtractor`                        | constant | `JsonServerSentEventStream<any>`, **no** terminate detector                        |
+| `jsonEventStreamResultExtractor<DATA = any>(detector?)` | factory  | `ResultExtractor<JsonServerSentEventStream<DATA>>` that ends at `detector`'s event |
 
-For a stream that ends with a non-JSON sentinel, write a one-line extractor that passes a detector. Set it on the endpoint (`@post(path, { resultExtractor })`) so other methods keep the decorator default `JsonResultExtractor`:
+For a stream that ends with a non-JSON sentinel use the factory. Set it on the endpoint (`@post(path, { resultExtractor })`) so other methods keep the decorator default `JsonResultExtractor`, or pass it as a `RequestOptions.resultExtractor` to a plain `fetcher` call:
 
 ```typescript
-import '@ahoo-wang/fetcher-eventstream';
-import type { FetchExchange, ResultExtractor } from '@ahoo-wang/fetcher';
+import { fetcher } from '@ahoo-wang/fetcher';
 import {
   api,
   autoGeneratedError,
   body,
   post,
 } from '@ahoo-wang/fetcher-decorator';
-import type { JsonServerSentEventStream } from '@ahoo-wang/fetcher-eventstream';
+import {
+  jsonEventStreamResultExtractor,
+  type JsonServerSentEventStream,
+} from '@ahoo-wang/fetcher-eventstream';
 
-const UntilDone: ResultExtractor<JsonServerSentEventStream<Chunk>> = (
-  exchange: FetchExchange,
-) =>
-  exchange.requiredResponse.requiredJsonEventStream(e => e.data === '[DONE]');
+interface Chunk {
+  token: string;
+}
+const untilDone = jsonEventStreamResultExtractor<Chunk>(
+  e => e.data === '[DONE]',
+);
 
 @api('/chat', { fetcher: 'llm' })
 export class LlmClient {
-  @post('/completions', { resultExtractor: UntilDone })
+  @post('/completions', { resultExtractor: untilDone })
   streamChat(
-    @body() req: ChatRequest,
+    @body() req: { prompt: string },
   ): Promise<JsonServerSentEventStream<Chunk>> {
     throw autoGeneratedError(req);
   }
 }
+
+// Without decorators:
+const stream = await fetcher.post<JsonServerSentEventStream<Chunk>>(
+  '/chat/completions',
+  { body: { prompt: 'Hi' } },
+  { resultExtractor: untilDone },
+);
 ```
 
 ## ReadableStreamAsyncIterable
@@ -168,7 +184,7 @@ Exported class (`new ReadableStreamAsyncIterable(stream)`) that locks the stream
 ## Other Exports
 
 - `ServerSentEventFields` -- static field-name constants `ID`, `RETRY`, `EVENT`, `DATA`
-- `safeEnqueue(controller, chunk)`, `safeError(controller, reason)`, `safeTerminate(controller)` -- return `false` instead of throwing when the controller is already closed (only `TypeError` is swallowed); controller type `StreamController<T>`
+- `safeEnqueue(controller, chunk)`, `safeError(controller, reason)` (controller: `StreamController<T>`, a readable-stream or transform-stream controller) and `safeTerminate(controller: TransformStreamDefaultController<T>)` -- return `false` instead of throwing when the controller is already closed (only `TypeError` is swallowed)
 - `TransformerPhase` -- `'transform' | 'flush'`, passed to `SafeTransformer.onError`
 
 ## Installation

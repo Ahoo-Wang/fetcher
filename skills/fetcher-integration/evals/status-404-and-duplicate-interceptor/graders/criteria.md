@@ -13,3 +13,6 @@ PASS only if the answer does all of these:
 FAIL if the answer does any of these:
 
 - Claims Fetcher resolves non-2xx responses without throwing by default.
+- Passes `IGNORE_VALIDATE_STATUS` in the second (request) argument, or as a header, instead of the `attributes` of the third (options) argument.
+- Tells the caller to catch `ExchangeError` and read the `HttpStatusValidationError` from `error.cause` (it is thrown itself, not wrapped).
+- Claims a second `use()` with the same `name` registers a duplicate or replaces the first (it is ignored and returns `false`).

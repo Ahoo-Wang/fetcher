@@ -7,5 +7,10 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 
 PASS only if the answer does all of these:
 
-1. Explains that `on()` returns a boolean (`false` when a handler with that name already exists), not an unsubscribe function.
-2. Unsubscribes with `off(name)`, using the handler's name.
+1. Explains that `on()` returns a boolean (`false` when a handler with that name already exists, which is then not added), not an unsubscribe function.
+2. Unsubscribes with `off(name)`, using the handler's `name`.
+
+FAIL if the answer does any of these:
+
+- Calls `off(handler)` with the handler object or function instead of its name.
+- Calls a method the bus does not have, such as `unsubscribe`, `removeListener` or `removeHandler`.

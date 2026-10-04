@@ -166,6 +166,7 @@ new CoSecConfigurer({ appId, tokenRefresher, isTrusted: sameOriginTrust });
 - `isTrustedRequest(exchange, isTrusted?)`: without `isTrusted` every request is trusted; with it a relative request URL is always trusted and an absolute one only when `isTrusted(url, exchange)` returns true.
 - `sameOriginTrust` trusts the origin of the fetcher's `baseURL` and the page's own origin.
 - An untrusted request gets no `CoSec-*` headers, no `Authorization` and no refresh.
+- The decision is made once per request and cached on the exchange, so the 401 retry (whose URL is absolute by then) keeps the `Authorization` header of a request that was trusted.
 
 ---
 
@@ -362,6 +363,7 @@ interceptors pass the originating exchange; direct calls can omit it.
 - On failure, the manager first re-reads storage (`tokenStorage.reload()`): when another tab has already refreshed the same session (its one-time refresh token made ours fail) and stored the successor, that token is used. Otherwise, if storage still holds the token that started the refresh:
   - The refresh endpoint rejected the refresh token — the error carries a 4xx at `error.exchange.response.status` (the `ExchangeError`/`HttpStatusValidationError` the refresh client rejects with; a custom `TokenRefresher` signals a rejection the same way), or the response is not a composite token: the token is removed and `RefreshTokenError` (with `.token`, `.cause`) is thrown, which `onUnauthorized` receives.
   - Any other failure — network error, timeout, abort, 5xx, an error without a response: the token is kept and `RefreshUnavailableError` (with `.token`, `.cause`) is thrown. `onUnauthorized` is not called, the user stays signed in, and a later request refreshes again.
+- Cross-tab: in a browser with Web Locks, a `TokenStorage` on `localStorage` (the default) refreshes under the lock `cosec-refresh:<key>`, so tabs refresh one at a time; a tab that waited re-reads storage and reuses the successor another tab stored for the same session. A refresh that never settles holds the other tabs' refreshes, so give the refresh client a `timeout`. Outside a browser (a server holds many users under one key), with another `storage`, or without Web Locks, refreshes are not serialized across tabs.
 - If the session changes (sign-out, `signIn`, another user) while refreshing, `RefreshSessionChangedError` rejects the original request; it is not sent or retried as the new user and does not trigger `onUnauthorized`.
 - If another tab already stored a successor for the same session, the pending refresh (or a late 401 for an older token) reuses it without refreshing again.
 - A request started with no token records an anonymous session; a later login cannot replay it with the new session.
@@ -573,6 +575,34 @@ throws, its error becomes `exchange.error` and the call rejects with an
 `ExchangeError` whose `cause` is the callback error. When that happens on the
 refresh request itself, the resulting `RefreshTokenError.cause` is the refresh
 request's `ExchangeError` (its `cause` is the callback error).
+
+What the caller receives (the interceptors run inside the exchange, so every
+refresh failure reaches the call wrapped):
+
+```typescript
+import { ExchangeError, HttpStatusValidationError } from '@ahoo-wang/fetcher';
+import {
+  RefreshSessionChangedError,
+  RefreshTokenError,
+  RefreshUnavailableError,
+} from '@ahoo-wang/fetcher-cosec';
+
+try {
+  await fetcher.get('/api/orders');
+} catch (error) {
+  if (error instanceof HttpStatusValidationError) {
+    // a 401 that could not be refreshed, a 403, any other status failure
+  } else if (error instanceof ExchangeError) {
+    if (error.cause instanceof RefreshUnavailableError) {
+      // refresh endpoint unreachable/5xx: still signed in, offer "try again"
+    } else if (error.cause instanceof RefreshTokenError) {
+      // refresh token rejected: signed out, onUnauthorized already ran
+    } else if (error.cause instanceof RefreshSessionChangedError) {
+      // the user signed out or in while this request waited: drop it
+    }
+  }
+}
+```
 
 ### UnauthorizedErrorInterceptor (401)
 

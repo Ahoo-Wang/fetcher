@@ -1,7 +1,7 @@
 ---
 name: fetcher-decorator-service
 description: >
-  Declare typed API service classes with `@ahoo-wang/fetcher-decorator`: `@api`, `@get`/`@post`/`@put`/`@patch`/`@del`, `@path`/`@query`/`@header`/`@body`, per-endpoint result extractors and `ExecuteLifeCycle` hooks. Use when endpoints are stable and should read as a class. For client setup or interceptors use fetcher-integration; for React state use fetcher-react-hooks.
+  Declare HTTP endpoints as a typed class with `@ahoo-wang/fetcher-decorator`: `@api`, `@get`/`@post`/`@put`/`@patch`/`@del`, `@path`/`@query`/`@header`/`@body`, return types, result extractors, `beforeExecute`/`afterExecute`. Use when writing or debugging a decorated service class. Direct `fetcher.get/post` calls, URLs built at runtime, client setup or interceptors (even for decorated services): fetcher-integration; React state: fetcher-react-hooks.
 ---
 
 # fetcher-decorator-service
@@ -9,8 +9,8 @@ description: >
 ## Decisions
 
 - **Decorator service vs direct calls**: use a class when endpoints are stable and discoverable; call the fetcher directly (`$fetcher-integration`) when URLs or bodies are built dynamically.
-- **Which fetcher**: `@api(basePath, { fetcher: 'api' })` resolves a `NamedFetcher` by name at call time, falling back to `fetcherRegistrar.default`. An instance `apiMetadata` field overrides class options; assigning a new object takes effect on the next call (mutating it in place does not).
-- **Cross-cutting behaviour** (auth, retry, recovery) stays in fetcher interceptors. `afterExecute` runs only after a successful exchange — with the default status validation a 401 throws before it.
+- **Which fetcher**: `@api(basePath, { fetcher: 'api' })` resolves a `NamedFetcher` by name (or takes a `Fetcher` instance) on every call, falling back to `fetcherRegistrar.default`, which throws if nothing is named `'default'`. An instance `apiMetadata` field is shallow-merged over the class options on every call, so replacing or mutating it applies to the next call.
+- **Cross-cutting behaviour** (auth, retry, 401 redirects) stays in fetcher interceptors (`$fetcher-integration`). `afterExecute` runs only after a successful (or interceptor-recovered) exchange — it is not a `finally`, and under the default status validation a 401 rejects with `HttpStatusValidationError` before it.
 
 ## Gotchas a capable model gets wrong
 

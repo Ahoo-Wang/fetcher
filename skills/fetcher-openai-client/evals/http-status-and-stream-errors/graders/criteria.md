@@ -7,5 +7,10 @@ Judge only the agent's final answer. It worked in an empty, read-only directory,
 
 PASS only if the answer does all of these:
 
-1. Catches the failed completion call's `ExchangeError`/`HttpStatusValidationError` and reads the status from `error.exchange.response?.status`.
-2. Does not swallow errors raised while iterating the stream (`SyntaxError`, network errors): they are rethrown or surfaced.
+1. Catches the rejected `chat.completions(...)` call as `ExchangeError` (or its subclass `HttpStatusValidationError`) from `@ahoo-wang/fetcher` and reads the status from `error.exchange.response?.status`.
+2. Explains that errors after the stream starts surface from the `for await` loop (`SyntaxError`, `EventStreamIncompleteError` when the stream ends before `[DONE]`, network errors), are not `ExchangeError`s, and rethrows or surfaces them instead of swallowing them.
+
+FAIL if the answer does any of these:
+
+- Reads the status Axios- or SDK-style, as `error.response.status` or `error.status`.
+- Has a catch-all around the loop that only logs and continues, or treats a stream that ended early as a complete answer.

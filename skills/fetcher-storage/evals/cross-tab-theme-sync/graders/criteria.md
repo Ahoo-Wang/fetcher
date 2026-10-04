@@ -15,3 +15,4 @@ FAIL if the answer does any of these:
 - Claims `KeyStorage` already syncs across tabs by default.
 - Adds a `window` `storage` event listener as the sync mechanism.
 - Calls `new BroadcastTypedEventBus(new SerialTypedEventBus(...))` with the local bus as a positional argument.
+- Reuses one broadcast bus for several storage keys.
