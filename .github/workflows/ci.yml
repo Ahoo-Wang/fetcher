@@ -293,3 +293,33 @@ jobs:
           files: coverage-artifacts/packages/*/coverage/coverage-final.json
           disable_search: true
           fail_ci_if_error: true
+
+  # The one check the 5.x ruleset requires from this workflow (as on main).
+  # Matrix jobs skipped by scope report unexpanded names, and a job whose
+  # dependency fails reports "skipped", which a required check counts as
+  # passing; this job always runs and fails unless every job it needs
+  # succeeded or was skipped by scope.
+  gate:
+    name: CI gate
+    needs:
+      [
+        changes,
+        build-and-test,
+        node24,
+        view-engine-shard,
+        view-engine,
+        package-docs,
+        coverage,
+      ]
+    if: always()
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every needed job succeeded or was skipped by scope
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "needs: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done

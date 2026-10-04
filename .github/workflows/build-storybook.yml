@@ -103,3 +103,24 @@ jobs:
       # STORYBOOK_BROWSERS widens this to firefox/webkit; see the workflow README.
       - name: Test Storybook interactions
         run: pnpm test:storybook --shard=${{ matrix.shard }}/2
+
+  # The one check the 5.x ruleset requires from this workflow (as on main).
+  # Matrix jobs skipped by scope report unexpanded names, and a job whose
+  # dependency fails reports "skipped", which a required check counts as
+  # passing; this job always runs and fails unless every job it needs
+  # succeeded or was skipped by scope.
+  gate:
+    name: Storybook gate
+    needs: [changes, build-and-test, interactions]
+    if: always()
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every needed job succeeded or was skipped by scope
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "needs: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done
