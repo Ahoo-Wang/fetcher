@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher'
+  short_description: 'HTTP client, decorators, streaming, auth, events, storage and OpenAPI types'
+  default_prompt: 'Use $fetcher to set up a Fetcher 6 client with interceptors, typed results and error handling.'

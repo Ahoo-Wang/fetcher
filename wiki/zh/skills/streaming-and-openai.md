@@ -8,10 +8,10 @@ pageClass: skills-page
 
 从任务的输入和输出选择 Skill；同一应用可以组合多个包，但每次修改保持明确的职责边界。
 
-| 任务     | Skill                                                                                                            | API 参考                                         |
-| -------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| SSE 消费 | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md) | [eventstream](../reference/eventstream/index.md) |
-| 对话补全 | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md) | [openai](../reference/openai/index.md)           |
+| 任务     | Skill                                                                                               | API 参考                                         |
+| -------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| SSE 消费 | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md) | [eventstream](../reference/eventstream/index.md) |
+| 对话补全 | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md) | [openai](../reference/openai/index.md)           |
 
 ## 提供这些上下文
 

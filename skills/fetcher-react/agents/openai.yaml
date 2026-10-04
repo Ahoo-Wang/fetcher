@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Fetcher React'
+  short_description: 'Request state, queries, debouncing, storage and CoSec in React'
+  default_prompt: 'Use $fetcher-react to drive a React component from Fetcher requests with loading, error and cancellation.'

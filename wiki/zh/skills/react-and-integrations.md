@@ -11,9 +11,9 @@ pageClass: skills-page
 
 | 任务                  | Skill                                                                                                                   | API 参考                               |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| React 请求状态        | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)            | [react](../reference/react/index.md)   |
+| React 请求状态        | [`$fetcher-react`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react/SKILL.md)                        | [react](../reference/react/index.md)   |
 | 数据视图（5.x）       | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-viewer-components/SKILL.md) | [viewer](../reference/viewer/index.md) |
-| CoSec 认证            | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)              | [cosec](../reference/cosec/index.md)   |
+| CoSec 认证            | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/auth.md)                          | [cosec](../reference/cosec/index.md)   |
 | Wow 命令与查询（5.x） | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-wow-cqrs/SKILL.md)                   | [wow](../reference/wow/index.md)       |
 
 ## 提供这些上下文

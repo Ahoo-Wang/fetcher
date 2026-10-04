@@ -59,7 +59,6 @@ function evalCase(name, caseName, { negative = false } = {}) {
 function skill(name, { body = '', description } = {}) {
   return {
     [`skills/${name}/SKILL.md`]: `---\nname: ${name}\ndescription: >\n  ${description ?? `Use ${name} when testing.`}\n---\n\n${body}\n`,
-    [`skills/${name}/references/api.md`]: '# API\n',
     [`skills/${name}/agents/openai.yaml`]: `interface:\n  display_name: 'X'\n  short_description: 'Y'\n  default_prompt: 'Use $${name} to test.'\n`,
     ...evalCase(name, 'first'),
     ...evalCase(name, 'second'),
@@ -125,6 +124,17 @@ test('a well-formed skill passes', () => {
     }),
   );
   assert.deepEqual(skillProblems(root), []);
+});
+
+test('references are optional, and the imports in those a skill ships are checked', () => {
+  const root = workspace({
+    ...skill('referenced', { body: 'Load `references/client.md`.' }),
+    'skills/referenced/references/client.md':
+      "```ts\nimport { Client, Ghost } from '@ahoo-wang/fetcher';\n```\n",
+  });
+  assert.deepEqual(skillProblems(root), [
+    "skills/referenced/references/client.md: import { Ghost } from '@ahoo-wang/fetcher': not exported",
+  ]);
 });
 
 test('imports of names a package does not export fail', () => {

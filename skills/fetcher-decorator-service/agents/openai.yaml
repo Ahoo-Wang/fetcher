@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Fetcher Decorator Service'
-  short_description: 'Typed API service classes with decorators'
-  default_prompt: 'Use $fetcher-decorator-service to declare a typed API service class for my endpoints.'

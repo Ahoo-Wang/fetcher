@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Fetcher OpenAI Client'
-  short_description: 'OpenAI-compatible chat completions'
-  default_prompt: 'Use $fetcher-openai-client to stream an OpenAI-compatible chat completion through Fetcher.'

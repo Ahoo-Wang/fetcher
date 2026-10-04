@@ -22,21 +22,21 @@ Claude Code uses `/plugin marketplace add https://github.com/Ahoo-Wang/skills` f
 
 ## Choose the task boundary
 
-| Task                           | Skill                                                                                                                    | API reference                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| HTTP clients                   | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)                                                    |
-| Declarative services           | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md)                                                |
-| Event delivery                 | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)                                                  |
-| Stored values                  | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)                                                    |
-| SSE consumption                | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md)         | [eventstream](../reference/eventstream/index.md)                                            |
-| Chat completions               | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md)         | [openai](../reference/openai/index.md)                                                      |
-| OpenAPI types                  | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)         | [openapi](../reference/openapi/index.md)                                                    |
-| Client generation (5.x)        | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md)  | [generator](../reference/generator/index.md)                                                |
-| React request state            | [`$fetcher-react-hooks`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react-hooks/SKILL.md)             | [react](../reference/react/index.md)                                                        |
-| Data viewers (5.x)             | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-viewer-components/SKILL.md)  | [viewer](../reference/viewer/index.md)                                                      |
-| CoSec authentication           | [`$fetcher-cosec-auth`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-cosec-auth/SKILL.md)               | [cosec](../reference/cosec/index.md)                                                        |
-| Wow commands and queries (5.x) | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-wow-cqrs/SKILL.md)                    | [wow](../reference/wow/index.md)                                                            |
-| Upgrade 5.x → 6.0              | [`$fetcher-v6-migration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-v6-migration/SKILL.md)           | [6.0 release notes](https://github.com/Ahoo-Wang/fetcher/blob/main/docs/releases/v6.0.0.md) |
+| Task                           | Skill                                                                                                                   | API reference                                                                               |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| HTTP clients                   | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/client.md)                        | [fetcher](../reference/fetcher/index.md)                                                    |
+| Declarative services           | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/decorator.md)                     | [decorator](../reference/decorator/index.md)                                                |
+| Event delivery                 | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/state.md)                         | [eventbus](../reference/eventbus/index.md)                                                  |
+| Stored values                  | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/state.md)                         | [storage](../reference/storage/index.md)                                                    |
+| SSE consumption                | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md)                     | [eventstream](../reference/eventstream/index.md)                                            |
+| Chat completions               | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md)                     | [openai](../reference/openai/index.md)                                                      |
+| OpenAPI types                  | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/openapi.md)                       | [openapi](../reference/openapi/index.md)                                                    |
+| Client generation (5.x)        | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md)                                                |
+| React request state            | [`$fetcher-react`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-react/SKILL.md)                        | [react](../reference/react/index.md)                                                        |
+| Data viewers (5.x)             | [`$fetcher-viewer-components`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-viewer-components/SKILL.md) | [viewer](../reference/viewer/index.md)                                                      |
+| CoSec authentication           | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/auth.md)                          | [cosec](../reference/cosec/index.md)                                                        |
+| Wow commands and queries (5.x) | [`$fetcher-wow-cqrs`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-wow-cqrs/SKILL.md)                   | [wow](../reference/wow/index.md)                                                            |
+| Upgrade 5.x → 6.0              | [`$fetcher-v6-migration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-v6-migration/SKILL.md)          | [6.0 release notes](https://github.com/Ahoo-Wang/fetcher/blob/main/docs/releases/v6.0.0.md) |
 
 ## Ask for a verifiable outcome
 
@@ -45,7 +45,7 @@ $fetcher-v6-migration check whether this repository can move to Fetcher 6.0.
 List every blocking usage with file and line, decide stay on 5.x or upgrade, and type-check after any rewrite.
 ```
 
-Provide inputs, output location, existing clients, runtime, and acceptance criteria. A skill’s references/api.md supplies detailed material on demand; human Reference pages also provide accurate contracts without requiring readers to switch to a skill to develop an application.
+Provide inputs, output location, existing clients, runtime, and acceptance criteria. A skill’s references/ files supply detailed material on demand; human Reference pages also provide accurate contracts without requiring readers to switch to a skill to develop an application.
 
 Author source files under this repository’s skills/. Ahoo Skills generates distribution copies; change and validate the source rather than editing generated copies.
 

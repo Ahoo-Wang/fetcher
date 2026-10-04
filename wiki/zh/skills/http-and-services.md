@@ -8,12 +8,12 @@ pageClass: skills-page
 
 从任务的输入和输出选择 Skill；同一应用可以组合多个包，但每次修改保持明确的职责边界。
 
-| 任务        | Skill                                                                                                                    | API 参考                                     |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| HTTP 客户端 | [`$fetcher-integration`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-integration/SKILL.md)             | [fetcher](../reference/fetcher/index.md)     |
-| 声明式服务  | [`$fetcher-decorator-service`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-decorator-service/SKILL.md) | [decorator](../reference/decorator/index.md) |
-| 事件投递    | [`$fetcher-eventbus`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-eventbus/SKILL.md)                   | [eventbus](../reference/eventbus/index.md)   |
-| 值存储      | [`$fetcher-storage`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-storage/SKILL.md)                     | [storage](../reference/storage/index.md)     |
+| 任务        | Skill                                                                                               | API 参考                                     |
+| ----------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| HTTP 客户端 | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/client.md)    | [fetcher](../reference/fetcher/index.md)     |
+| 声明式服务  | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/decorator.md) | [decorator](../reference/decorator/index.md) |
+| 事件投递    | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/state.md)     | [eventbus](../reference/eventbus/index.md)   |
+| 值存储      | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/state.md)     | [storage](../reference/storage/index.md)     |
 
 ## 提供这些上下文
 

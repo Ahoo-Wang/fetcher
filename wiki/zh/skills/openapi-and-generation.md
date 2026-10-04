@@ -10,7 +10,7 @@ pageClass: skills-page
 
 | 任务              | Skill                                                                                                                   | API 参考                                     |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| OpenAPI 类型      | [`$fetcher-openapi-types`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openapi-types/SKILL.md)        | [openapi](../reference/openapi/index.md)     |
+| OpenAPI 类型      | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/openapi.md)                       | [openapi](../reference/openapi/index.md)     |
 | 客户端生成（5.x） | [`$fetcher-openapi-generator`](https://github.com/Ahoo-Wang/fetcher/blob/5.x/skills/fetcher-openapi-generator/SKILL.md) | [generator](../reference/generator/index.md) |
 
 ## 提供这些上下文

@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Fetcher Integration'
-  short_description: 'Core HTTP client, interceptors and errors'
-  default_prompt: 'Use $fetcher-integration to set up a Fetcher HTTP client with interceptors, timeouts and typed results.'

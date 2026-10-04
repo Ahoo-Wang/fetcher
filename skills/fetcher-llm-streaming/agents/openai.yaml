@@ -1,4 +1,0 @@
-interface:
-  display_name: 'Fetcher LLM Streaming'
-  short_description: 'Custom SSE and non-OpenAI token streams'
-  default_prompt: 'Use $fetcher-llm-streaming to consume an SSE or LLM token stream with a [DONE] terminator.'

@@ -551,11 +551,9 @@ export function skillProblems(root) {
     const report = (file, message) =>
       problems.push(`skills/${skill}/${file}: ${message}`);
 
-    for (const required of [
-      'SKILL.md',
-      'references/api.md',
-      'agents/openai.yaml',
-    ])
+    // References are optional: a skill ships the ones its SKILL.md points at
+    // (checked below), and nothing else.
+    for (const required of ['SKILL.md', 'agents/openai.yaml'])
       if (!existsSync(join(dir, required))) report(required, 'missing');
     if (!existsSync(join(dir, 'SKILL.md'))) continue;
 

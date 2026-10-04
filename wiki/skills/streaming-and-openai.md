@@ -8,10 +8,10 @@ pageClass: skills-page
 
 Choose a skill from the task’s inputs and outputs. An application can compose packages while keeping each change focused on one responsibility.
 
-| Task             | Skill                                                                                                            | API reference                                    |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| SSE consumption  | [`$fetcher-llm-streaming`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-llm-streaming/SKILL.md) | [eventstream](../reference/eventstream/index.md) |
-| Chat completions | [`$fetcher-openai-client`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher-openai-client/SKILL.md) | [openai](../reference/openai/index.md)           |
+| Task             | Skill                                                                                               | API reference                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| SSE consumption  | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md) | [eventstream](../reference/eventstream/index.md) |
+| Chat completions | [`$fetcher`](https://github.com/Ahoo-Wang/fetcher/blob/main/skills/fetcher/references/streaming.md) | [openai](../reference/openai/index.md)           |
 
 ## Provide this context
 
