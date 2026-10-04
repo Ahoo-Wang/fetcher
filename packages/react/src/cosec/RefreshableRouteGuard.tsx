@@ -13,7 +13,7 @@
 
 import type { RouteGuardProps } from './RouteGuard.js';
 import type { ReactNode } from 'react';
-import { useCallback, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
 import { useSecurityContext } from './SecurityContext.js';
 
@@ -32,27 +32,28 @@ export function RefreshableRouteGuard({
   tokenManager,
 }: RefreshableRouteGuardProps) {
   const { authenticated } = useSecurityContext();
+  // A failed refresh that leaves the token in storage (a network failure or
+  // a 5xx keeps the session: RefreshUnavailableError) changes nothing the
+  // guard re-renders on, so without this it would show `refreshing` forever.
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const refreshable =
     tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
-  const refreshToken = useCallback(async () => {
-    if (refreshable) {
-      try {
-        await tokenManager.refresh();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  }, [refreshable, tokenManager]);
 
   useEffect(() => {
-    refreshToken();
-  }, [refreshToken]);
+    if (!refreshable) {
+      return;
+    }
+    tokenManager.refresh().catch(error => {
+      console.error(error);
+      setRefreshFailed(true);
+    });
+  }, [refreshable, tokenManager]);
 
   if (authenticated) {
     return <>{children}</>;
   }
 
-  if (!refreshable) {
+  if (!refreshable || refreshFailed) {
     return <>{fallback}</>;
   }
   const refreshingNode = refreshing ?? <p>Refreshing...</p>;

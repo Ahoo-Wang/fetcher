@@ -235,9 +235,7 @@ describe('RefreshableRouteGuard', () => {
       expect(getByText('Refreshing...')).toBeTruthy();
     });
 
-    it('should continue showing refreshing content regardless of refresh outcome', () => {
-      // The current implementation doesn't wait for refresh completion
-      // It just triggers refresh and immediately renders based on current auth state
+    it('should show refreshing content while the refresh is in flight', () => {
       const refreshSpy = vi.spyOn(tokenManager, 'refresh').mockResolvedValue();
 
       const { getByText } = render(
@@ -251,12 +249,11 @@ describe('RefreshableRouteGuard', () => {
         </SecurityProvider>,
       );
 
-      // Current implementation always shows refreshing when refreshable
       expect(getByText('Refreshing...')).toBeTruthy();
       expect(refreshSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should log refresh errors to console but continue showing refreshing', async () => {
+    it('should log a refresh error and render fallback instead of refreshing forever', async () => {
       const consoleErrorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
@@ -276,14 +273,13 @@ describe('RefreshableRouteGuard', () => {
         </SecurityProvider>,
       );
 
-      await waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-          new Error('Refresh failed'),
-        );
-      });
-
-      // Current implementation still shows refreshing even on error
       expect(screen.getByText('Refreshing...')).toBeTruthy();
+      await waitFor(() => {
+        expect(screen.getByText('Login required')).toBeTruthy();
+      });
+      expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Refresh failed'));
+      expect(screen.queryByText('Refreshing...')).toBeNull();
+      expect(refreshSpy).toHaveBeenCalledTimes(1);
     });
   });
 
