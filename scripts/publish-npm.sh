@@ -20,7 +20,9 @@ for package in packages/*/; do
       continue
     fi
     echo "Publishing $package_name"
-    pnpm publish "$package" --access public --no-git-checks
+    # 6.x owns `latest`; a 5.x patch is published under `release-5` so it
+    # never moves `latest` back (install with @ahoo-wang/<pkg>@release-5).
+    pnpm publish "$package" --access public --no-git-checks --tag release-5
   fi
 done
 
