@@ -406,7 +406,10 @@ controller would fill that slot).
 ### createQueryApiHooks
 
 ```tsx
-const { useSearchUsers } = createQueryApiHooks({ api: userApi });
+const { useGetUser, useSearchUsers } = createQueryApiHooks({ api: userApi });
+
+// the id is the query: loads now, and again whenever `id` changes
+const { result: user } = useGetUser({ query: id });
 
 const [query, setQuery] = useState<UserQuery>({ name: '' });
 const { loading, result, execute } = useSearchUsers({
@@ -419,6 +422,15 @@ Options (`UseApiMethodQueryOptions<Q, TData, E>`): the `useQuery` options
 without `execute` — `query`, `autoExecute` (default `true`), callbacks,
 `initialStatus` — plus `attributes`. Each run calls
 `method(query, attributes, abortController)`; returns the `useQuery` shape.
+
+Any method whose first parameter is the whole input fits, not only search
+methods: `getUser(@path('id') id)` gets `useGetUser({ query: id })`. A decorator
+method ignores an argument at a position with no parameter decorator and picks
+up an `AbortController` at any position, so the extra `attributes` (unless the
+method declares `@attribute()`) and the controller are harmless. Reads that
+should load when their input changes are query hooks; do not rebuild one from an
+execute hook plus `useEffect`. A method with two or more inputs, such as
+`updateUser(id, user)`, has no query hook: use the execute hook.
 
 ---
 
