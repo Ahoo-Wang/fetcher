@@ -1,7 +1,7 @@
 ---
 prev: false
 title: 'Cosec 参考'
-description: 'Cosec 参考 — Fetcher 5.0.0'
+description: 'Cosec 参考 — Fetcher 6.0.0'
 ---
 
 # Cosec 参考

@@ -1,6 +1,6 @@
 ---
 title: '客户端与聊天补全'
-description: '客户端与聊天补全 — Fetcher 5.0.0'
+description: '客户端与聊天补全 — Fetcher 6.0.0'
 ---
 
 # 客户端与聊天补全

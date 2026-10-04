@@ -44,7 +44,7 @@ The hooks were reworked around the model above (breaking). Removed: the fullscre
 :::
 
 ::: info Wow query hooks and data monitoring
-The Wow query hooks (`useListQuery`, `usePagedQuery`, `useFetcherListQuery` and the rest) and the data-monitor hooks (`useDataMonitor`, `DataMonitorService`) remain only in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)). From 6.0 the Wow hooks live in `@ahoo-wang/wow-react` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [documentation](https://wow.ahoo.me)); it is not on npm yet and ships with Wow's first stable release. The data-monitor hooks were retired together with `@ahoo-wang/fetcher-viewer`.
+The Wow query hooks (`useListQuery`, `usePagedQuery`, `useFetcherListQuery` and the rest) and the data-monitor hooks (`useDataMonitor`, `DataMonitorService`) remain only in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)). From 6.0 the Wow hooks live in `@ahoo-wang/wow-react` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [documentation](https://wow.ahoo.me)); it is on npm from Wow 9.2.0, and 9.2.1 or later accepts fetcher 6. The data-monitor hooks were retired together with `@ahoo-wang/fetcher-viewer`.
 :::
 
 ## Runnable core example

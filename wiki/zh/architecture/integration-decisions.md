@@ -22,7 +22,7 @@ description: 按契约与维护责任比较客户端风格和服务集成。
 
 ## 数据视图
 
-Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`（View、Viewer、FetcherViewer）冻结在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)）；它的[指南](../guides/viewer/index.md)与[参考](../reference/viewer/index.md)为存量用户保留。接替它的是 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)中的 `@ahoo-wang/wow-view-engine`，尚未发布。现在新建表格时，把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来，筛选、排序和分页留在数据服务中完成。
+Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`（View、Viewer、FetcherViewer）冻结在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)）；它的[指南](../guides/viewer/index.md)与[参考](../reference/viewer/index.md)为存量用户保留。接替它的是 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)中的 `@ahoo-wang/wow-view-engine`，自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6；见 [wow.ahoo.me](https://wow.ahoo.me)）。现在新建表格时，把 [React 请求状态](../guides/react/index.md)与应用已在使用的表格组件组合起来，筛选、排序和分页留在数据服务中完成。
 
 ## 服务专用集成
 

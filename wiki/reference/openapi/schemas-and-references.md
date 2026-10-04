@@ -1,6 +1,6 @@
 ---
 title: 'Schemas and references'
-description: 'Schemas and references — Fetcher 5.0.0'
+description: 'Schemas and references — Fetcher 6.0.0'
 ---
 
 # Schemas and references

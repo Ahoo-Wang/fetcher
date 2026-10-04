@@ -1,6 +1,6 @@
 ---
 title: '拦截器与资源归属'
-description: '拦截器与资源归属 — Fetcher 5.0.0'
+description: '拦截器与资源归属 — Fetcher 6.0.0'
 ---
 
 # 拦截器与资源归属

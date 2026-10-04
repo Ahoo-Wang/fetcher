@@ -7,7 +7,7 @@ description: 'Generator 参考 — Fetcher 5.0.0'
 # Generator 参考
 
 ::: warning 仅适用于 5.x
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-generator` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；后继包 `@ahoo-wang/wow-generator` 自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。
 :::
 
 从 OpenAPI 文档生成 TypeScript 模型和装饰器客户端，可识别 Wow CQRS。包根仅导出 CodeGenerator、DEFAULT_CONFIG_PATH。

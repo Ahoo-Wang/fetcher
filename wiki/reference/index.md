@@ -25,7 +25,7 @@ Each package has an entry page and focused reference topics. Choose the responsi
 | [wow](./wow/index.md) (5.x)               | Commands and queries       | 9      |
 | [viewer](./viewer/index.md) (5.x, frozen) | Data views and persistence | 8      |
 
-Packages marked 5.x apply only to the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, Wow and the generator live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)); Viewer is frozen and superseded by `@ahoo-wang/wow-view-engine`, which is not published yet.
+Packages marked 5.x apply only to the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, Wow and the generator live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)); their npm successors are `@ahoo-wang/wow-client`, `@ahoo-wang/wow-react` and `@ahoo-wang/wow-generator` (Wow 9.2.1 or later accepts fetcher 6). Viewer is frozen and superseded by `@ahoo-wang/wow-view-engine`, also on npm.
 
 ## Use the right depth
 

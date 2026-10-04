@@ -6,7 +6,7 @@ description: '投影、排序与分页 — @ahoo-wang/fetcher-wow 5.0.0'
 # 投影、排序与分页
 
 ::: warning 仅适用于 5.x
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；后继包 `@ahoo-wang/wow-client` 自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。
 :::
 
 查询构造器返回可序列化普通对象，不执行 HTTP。新 filter 与旧 condition 有不同请求类型和 list 默认值，迁移时优先显式指定 limit。

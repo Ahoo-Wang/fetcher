@@ -44,7 +44,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus
 :::
 
 ::: info Wow 查询 Hook 与数据监控
-Wow 查询 Hook（`useListQuery`、`usePagedQuery`、`useFetcherListQuery` 等）与数据监控 Hook（`useDataMonitor`、`DataMonitorService`）只保留在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)）。从 6.0 起，Wow Hook 位于 Wow 仓库的 `@ahoo-wang/wow-react`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[文档](https://wow.ahoo.me)）；它尚未发布到 npm，随 Wow 首个稳定版发布。数据监控 Hook 随 `@ahoo-wang/fetcher-viewer` 一同退役。
+Wow 查询 Hook（`useListQuery`、`usePagedQuery`、`useFetcherListQuery` 等）与数据监控 Hook（`useDataMonitor`、`DataMonitorService`）只保留在 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/react)）。从 6.0 起，Wow Hook 位于 Wow 仓库的 `@ahoo-wang/wow-react`（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)，[文档](https://wow.ahoo.me)）；它自 Wow 9.2.0 起已发布到 npm，9.2.1 及以上兼容 fetcher 6。数据监控 Hook 随 `@ahoo-wang/fetcher-viewer` 一同退役。
 :::
 
 ## 可运行核心示例

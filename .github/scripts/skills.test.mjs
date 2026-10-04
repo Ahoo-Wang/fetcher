@@ -67,7 +67,7 @@ function skill(name, { body = '', description } = {}) {
   };
 }
 
-const migrationBody = `The \`@ahoo-wang/wow-*\` packages are not on npm yet.\n\n${REMOVED_REACT_EXPORTS.join(', ')}`;
+const migrationBody = `The \`@ahoo-wang/wow-*\` packages accept fetcher 6 from Wow 9.2.1.\n\n${REMOVED_REACT_EXPORTS.join(', ')}`;
 
 function workspace(files) {
   const root = mkdtempSync(join(tmpdir(), 'skills-'));
@@ -236,7 +236,7 @@ test('only the migration skill may name packages that left or are not here', () 
   ]);
 });
 
-test('the migration skill must say the Wow packages are not on npm and list every removed export', () => {
+test('the migration skill must name the Wow version that accepts fetcher 6 and list every removed export', () => {
   const root = workspace(
     skill(MIGRATION_SKILL, {
       body: "Install `@ahoo-wang/wow-react`.\n\n```diff\n-import { usePagedQuery } from '@ahoo-wang/fetcher';\n+import { Client } from '@ahoo-wang/fetcher';\n```",
@@ -245,7 +245,7 @@ test('the migration skill must say the Wow packages are not on npm and list ever
   const problems = skillProblems(root);
   assert.ok(
     problems.includes(
-      `skills/${MIGRATION_SKILL}/SKILL.md: names @ahoo-wang/wow-* but never says they are not on npm yet`,
+      `skills/${MIGRATION_SKILL}/SKILL.md: names @ahoo-wang/wow-* but never says Wow 9.2.1 is the first to accept fetcher 6`,
     ),
   );
   assert.ok(

@@ -1,6 +1,6 @@
 ---
 title: 'Schema 与引用'
-description: 'Schema 与引用 — Fetcher 5.0.0'
+description: 'Schema 与引用 — Fetcher 6.0.0'
 ---
 
 # Schema 与引用

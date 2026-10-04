@@ -6,7 +6,7 @@ description: '聚合构造器 — @ahoo-wang/fetcher-wow 5.0.0'
 # 聚合构造器
 
 ::: warning 仅适用于 5.x
-本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；它在 Wow 仓库的后继包尚未发布到 npm，随 Wow 首个稳定版发布。
+本页只适用于 5.x 线（npm 5.1.x，分支 [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)）。从 6.0 起，`@ahoo-wang/fetcher-wow` 位于 Wow 仓库（[`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)），文档见 [wow.ahoo.me](https://wow.ahoo.me)；后继包 `@ahoo-wang/wow-client` 自 Wow 9.2.0 起已发布到 npm（9.2.1 及以上兼容 fetcher 6）。
 :::
 
 AggregationQuery 描述服务端聚合，不是 JavaScript reducer，至少提供一个 metric。`aggregate(query, attributes?, controller?)` 返回以 alias 为键的扁平行；`aggregateStream` 返回 JSON SSE 行，需要显式消费。泛型描述行但不校验内容。

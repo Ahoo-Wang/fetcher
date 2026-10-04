@@ -125,10 +125,10 @@
 - [KeyStorage and change listeners](/reference/storage/key-storage) — KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0.0
 - [Serialization and runtime storage](/reference/storage/serialization-and-runtime) — Serialization and runtime storage — @ahoo-wang/fetcher-storage 5.0.0
 - [storage public symbols](/reference/storage/symbols) — Complete root exports with behavior contracts and source locations.
-- [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 5.0.0
-- [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 5.0.0
-- [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 5.0.0
-- [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 5.0.0
+- [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 6.0.0
+- [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 6.0.0
+- [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 6.0.0
+- [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 6.0.0
 - [openapi public symbols](/reference/openapi/symbols) — Complete root exports with behavior contracts and source locations.
 - [Generator reference](/reference/generator/) — Generator reference — Fetcher 5.0.0
 - [Generator CLI](/reference/generator/cli) — Generator CLI — Fetcher 5.0.0
@@ -137,14 +137,14 @@
 - [Programmatic API](/reference/generator/programmatic-api) — Programmatic API — Fetcher 5.0.0
 - [Wow aggregate discovery](/reference/generator/wow-discovery) — Wow aggregate discovery — Fetcher 5.0.0
 - [generator public symbols](/reference/generator/symbols) — Complete root exports with behavior contracts and source locations.
-- [Openai reference](/reference/openai/) — Openai reference — Fetcher 5.0.0
-- [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 5.0.0
-- [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 5.0.0
+- [Openai reference](/reference/openai/) — Openai reference — Fetcher 6.0.0
+- [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 6.0.0
+- [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 6.0.0
 - [openai public symbols](/reference/openai/symbols) — Complete root exports with behavior contracts and source locations.
-- [Cosec reference](/reference/cosec/) — Cosec reference — Fetcher 5.0.0
-- [CoSec configuration](/reference/cosec/configuration) — CoSec configuration — Fetcher 5.0.0
-- [Tokens and refresh](/reference/cosec/tokens-and-refresh) — Tokens and refresh — Fetcher 5.0.0
-- [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 5.0.0
+- [Cosec reference](/reference/cosec/) — Cosec reference — Fetcher 6.0.0
+- [CoSec configuration](/reference/cosec/configuration) — CoSec configuration — Fetcher 6.0.0
+- [Tokens and refresh](/reference/cosec/tokens-and-refresh) — Tokens and refresh — Fetcher 6.0.0
+- [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 6.0.0
 - [cosec public symbols](/reference/cosec/symbols) — Complete root exports with behavior contracts and source locations.
 - [React reference](/reference/react/) — React entry selection, installation and behavior contracts
 - [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0

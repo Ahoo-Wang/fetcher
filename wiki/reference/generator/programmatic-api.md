@@ -6,7 +6,7 @@ description: 'Programmatic API — Fetcher 5.0.0'
 # Programmatic API
 
 ::: warning 5.x only
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its Wow-repository successor is not on npm yet and ships with Wow's first stable release.
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). From 6.0, `@ahoo-wang/fetcher-generator` lives in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)) and is documented at [wow.ahoo.me](https://wow.ahoo.me); its successor `@ahoo-wang/wow-generator` is on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6).
 :::
 
 The package root exports exactly `CodeGenerator` and `DEFAULT_CONFIG_PATH`. The executable is separately exposed as the `fetcher-generator` binary. Do not import internal AggregateResolver, ModelGenerator, GenerateContext, ConsoleLogger, setupCLI, parser helpers or internal option types from the package root or undocumented subpaths.
