@@ -5,8 +5,8 @@ description: 'Tables, columns and cells — @ahoo-wang/fetcher-viewer 5.0.0'
 
 # Tables, columns and cells
 
-::: warning 5.x only (frozen)
-This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is frozen there: existing functionality is maintained, with no new features. It is superseded by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
+::: warning Deprecated (5.x only)
+This page applies to the 5.x line only (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x)). `@ahoo-wang/fetcher-viewer` is deprecated on npm (every version) and frozen there: existing functionality is maintained, with no new features. It is replaced by `@ahoo-wang/wow-view-engine` in the Wow repository ([`typescript/`](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), [wow.ahoo.me](https://wow.ahoo.me)), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6). The two use different models and APIs, so migration requires adaptation.
 :::
 
 `ViewTable<RecordType>` maps FieldDefinition and ViewColumn to Ant Design columns and receives an array of records. It does not paginate/query the server. Required props are fields, columns, dataSource, enableRowSelection and viewTableSetting (false or settings); optional attributes forwards table props, tableSize defaults middle.

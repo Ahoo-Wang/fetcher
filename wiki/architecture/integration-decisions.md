@@ -22,7 +22,7 @@ Start with [HTTP requests](../guides/http/requests.md), then use [declarative cl
 
 ## Data views
 
-Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` (View, Viewer, FetcherViewer) is frozen in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)); its [guides](../guides/viewer/index.md) and [reference](../reference/viewer/index.md) remain for existing consumers. It is superseded by `@ahoo-wang/wow-view-engine` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6; see [wow.ahoo.me](https://wow.ahoo.me)). For a new table today, compose [React request state](../guides/react/index.md) with the table component your application already uses, and keep filtering, sorting and pagination in your data service.
+Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` (View, Viewer, FetcherViewer) is deprecated on npm and frozen in the 5.x line (npm 5.1.x, branch [`5.x`](https://github.com/Ahoo-Wang/fetcher/tree/5.x/packages/viewer)); its [guides](../guides/viewer/index.md) and [reference](../reference/viewer/index.md) remain for existing consumers. It is superseded by `@ahoo-wang/wow-view-engine` in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript), on npm from Wow 9.2.0 (9.2.1 or later accepts fetcher 6; see [wow.ahoo.me](https://wow.ahoo.me)). For a new table today, compose [React request state](../guides/react/index.md) with the table component your application already uses, and keep filtering, sorting and pagination in your data service.
 
 ## Service-specific integrations
 

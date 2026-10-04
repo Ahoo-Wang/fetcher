@@ -34,7 +34,7 @@ features:
     link: /zh/guides/react/
     linkText: 了解更多
   - title: 数据视图
-    details: 用 Ant Design Viewer 接入表格、筛选和已保存视图；Viewer 冻结在 5.x 线，后继位于 Wow 仓库。
+    details: 用 Ant Design Viewer 接入表格、筛选和已保存视图；Viewer 已弃用并冻结在 5.x 线，由 `@ahoo-wang/wow-view-engine`（Wow 9.2+）替代。
     link: /zh/start/first-view
     linkText: 了解更多
   - title: 架构与选型

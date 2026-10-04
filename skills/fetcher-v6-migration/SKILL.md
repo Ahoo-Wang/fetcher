@@ -23,12 +23,12 @@ Use the version that command prints (at least 9.2.1 when fetcher 6 is the target
 
 Run the checklist in `references/api.md` (grep patterns for manifests, imports, scripts, generated code and the fetcher-react hook API). Classify the project:
 
-| Found                                                                     | Decision                                                                                                                                                                               |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@ahoo-wang/fetcher-viewer`, or any data-monitor hook                     | **Stay on 5.x** (`^5.1.3`). No drop-in 6.x replacement: `@ahoo-wang/wow-view-engine` supersedes `fetcher-viewer` with a different model and API, and the data-monitor hooks have none. |
-| `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-generator`, Wow query hooks | Move to the latest 5.x (the Wow peer range needs `^5.1.5`), **switch to the Wow packages (9.2.1 or later) first**, then upgrade fetcher.                                               |
-| `@ahoo-wang/fetcher-react` hooks (any of them)                            | Upgrade, and **rewrite the hook calls** (section 3b) — they no longer type-check or behave the same.                                                                                   |
-| none of the above                                                         | **Upgrade** every `@ahoo-wang/fetcher*` to `^6.0.0` once 6.0.0 is on npm; no code changes beyond the **Changed** checks in `references/api.md`.                                        |
+| Found                                                                     | Decision                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@ahoo-wang/fetcher-viewer`, or any data-monitor hook                     | **Stay on 5.x** (`^5.1.3`). No drop-in 6.x replacement: `fetcher-viewer` is deprecated on npm, and `@ahoo-wang/wow-view-engine` replaces it with a different model and API, and the data-monitor hooks have none. |
+| `@ahoo-wang/fetcher-wow`, `@ahoo-wang/fetcher-generator`, Wow query hooks | Move to the latest 5.x (the Wow peer range needs `^5.1.5`), **switch to the Wow packages (9.2.1 or later) first**, then upgrade fetcher.                                                                          |
+| `@ahoo-wang/fetcher-react` hooks (any of them)                            | Upgrade, and **rewrite the hook calls** (section 3b) — they no longer type-check or behave the same.                                                                                                              |
+| none of the above                                                         | **Upgrade** every `@ahoo-wang/fetcher*` to `^6.0.0` once 6.0.0 is on npm; no code changes beyond the **Changed** checks in `references/api.md`.                                                                   |
 
 Removed from `@ahoo-wang/fetcher-react` in 6.0:
 
