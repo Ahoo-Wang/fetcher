@@ -19,7 +19,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 24.21.0
       - name: Validate title and description
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
