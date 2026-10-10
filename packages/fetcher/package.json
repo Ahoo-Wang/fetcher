@@ -29,7 +29,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=18.20.8"
+    "node": ">=24.21.0"
   },
   "main": "./dist/index.umd.cjs",
   "module": "./dist/index.es.js",

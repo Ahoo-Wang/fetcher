@@ -69,7 +69,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 24.21.0
 
       - name: Build fetcher packages
         working-directory: fetcher
