@@ -46,7 +46,14 @@ if (
   typeof ReadableStream !== 'undefined' &&
   !isReadableStreamAsyncIterableSupported
 ) {
-  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>() {
-    return new ReadableStreamAsyncIterable<R>(this as ReadableStream<R>);
+  // Takes the standard iterator options: `preventCancel: true` keeps the
+  // stream readable when the iteration ends early.
+  ReadableStream.prototype[Symbol.asyncIterator] = function <R = any>(
+    options?: ReadableStreamIteratorOptions,
+  ) {
+    return new ReadableStreamAsyncIterable<R>(
+      this as ReadableStream<R>,
+      options,
+    );
   };
 }

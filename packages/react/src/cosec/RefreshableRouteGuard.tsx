@@ -32,28 +32,39 @@ export function RefreshableRouteGuard({
   tokenManager,
 }: RefreshableRouteGuardProps) {
   const { authenticated } = useSecurityContext();
+  const refreshable =
+    tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
+  // The token being refreshed: a session that replaces it gets a refresh of
+  // its own, even when both need one.
+  const refreshToken = refreshable ? tokenManager.currentToken : null;
   // A failed refresh that leaves the token in storage (a network failure or
   // a 5xx keeps the session: RefreshUnavailableError) changes nothing the
   // guard re-renders on, so without this it would show `refreshing` forever.
-  const [refreshFailed, setRefreshFailed] = useState(false);
-  const refreshable =
-    tokenManager.isRefreshNeeded && tokenManager.isRefreshable;
+  // It is recorded for its token only: a later session is not failed by it.
+  const [failedToken, setFailedToken] = useState<object | null>(null);
+  const refreshFailed = refreshToken !== null && failedToken === refreshToken;
 
   useEffect(() => {
-    if (!refreshable) {
+    if (!refreshToken) {
       return;
     }
+    let current = true;
     tokenManager.refresh().catch(error => {
+      // The refresh of a session that is no longer the guard's.
+      if (!current) return;
       console.error(error);
-      setRefreshFailed(true);
+      setFailedToken(refreshToken);
     });
-  }, [refreshable, tokenManager]);
+    return () => {
+      current = false;
+    };
+  }, [refreshToken, tokenManager]);
 
   if (authenticated) {
     return <>{children}</>;
   }
 
-  if (!refreshable || refreshFailed) {
+  if (!refreshToken || refreshFailed) {
     return <>{fallback}</>;
   }
   const refreshingNode = refreshing ?? <p>Refreshing...</p>;

@@ -58,6 +58,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `JwtTokenManager`                                | [Tokens and refresh](tokens-and-refresh#jwttokenmanager)                                                    |
 | `JwtTokenManagerCapable`                         | [CoSec configuration](configuration#jwttokenmanagercapable)                                                 |
 | `NanoIdGenerator`                                | [Interceptors and attribution](interceptors-and-attribution#nanoidgenerator)                                |
+| `NonReplayableRequestError`                      | [Interceptors and attribution](interceptors-and-attribution#nonreplayablerequesterror)                      |
 | `NoneSpaceIdProvider`                            | [Interceptors and attribution](interceptors-and-attribution#nonespaceidprovider)                            |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`  | [Interceptors and attribution](interceptors-and-attribution#resource_attribution_request_interceptor_name)  |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER` | [Interceptors and attribution](interceptors-and-attribution#resource_attribution_request_interceptor_order) |

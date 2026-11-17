@@ -29,7 +29,13 @@ export interface EndpointMetadata
   method?: HttpMethod;
 }
 
-export const ENDPOINT_METADATA_KEY = Symbol('endpoint:metadata');
+/**
+ * Registered (`Symbol.for`), so the ES module and CommonJS builds of this
+ * package, loaded side by side, read each other's metadata.
+ */
+export const ENDPOINT_METADATA_KEY = Symbol.for(
+  '@ahoo-wang/fetcher-decorator:endpoint',
+);
 
 export type MethodEndpointMetadata = Omit<EndpointMetadata, 'method' | 'path'>;
 

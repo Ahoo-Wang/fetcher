@@ -22,12 +22,21 @@ import type {
 } from '@ahoo-wang/fetcher-eventbus';
 import type { Serializer } from './serializer.js';
 import type { StorageEvent } from './keyStorage.js';
+import { sharedState } from './sharedState.js';
+import type { StorageEventStamp } from './storageEventOrder.js';
+import {
+  receiveStorageEventStamp,
+  storageEventStamp,
+} from './storageEventOrder.js';
 
 // Kept on the wire so receivers never need to serialize a cloned class instance.
 const SERIALIZED_STORAGE_EVENT = '__fetcher_storage_snapshot__';
+// Orders the change on the receiver, which ignores one older than its cache.
+const STORAGE_EVENT_STAMP = '__fetcher_storage_stamp__';
 
 type SerializedStorageEvent = StorageEvent<unknown> & {
   [SERIALIZED_STORAGE_EVENT]: StorageEvent<string>;
+  [STORAGE_EVENT_STAMP]?: StorageEventStamp;
 };
 
 type BroadcastStorageState = {
@@ -37,20 +46,10 @@ type BroadcastStorageState = {
   transformer?: object;
   snapshots?: WeakMap<object, SerializedStorageEvent>;
 };
-const BROADCAST_STORAGE_STATES = Symbol.for(
-  '@ahoo-wang/fetcher-storage/broadcast-storage-states',
+const broadcastStorageStates = sharedState(
+  'broadcast-storage-states',
+  () => new WeakMap<object, BroadcastStorageState>(),
 );
-const sharedState = globalThis as typeof globalThis & {
-  [BROADCAST_STORAGE_STATES]?: WeakMap<object, BroadcastStorageState>;
-};
-const broadcastStorageStates =
-  sharedState[BROADCAST_STORAGE_STATES] ??
-  new WeakMap<object, BroadcastStorageState>();
-if (!sharedState[BROADCAST_STORAGE_STATES]) {
-  Object.defineProperty(sharedState, BROADCAST_STORAGE_STATES, {
-    value: broadcastStorageStates,
-  });
-}
 
 function deserializeStorageEvent<T>(
   message: unknown,
@@ -103,6 +102,8 @@ function serializeStorageEvent<T>(
   const wireEvent: SerializedStorageEvent = {
     [SERIALIZED_STORAGE_EVENT]: snapshot,
   };
+  const stamp = storageEventStamp(event);
+  if (stamp) wireEvent[STORAGE_EVENT_STAMP] = stamp;
   if (Object.prototype.hasOwnProperty.call(event, 'newValue')) {
     const value = event.newValue;
     snapshot.newValue =
@@ -135,6 +136,7 @@ function serializeStorageEvent<T>(
       const jsonEvent: SerializedStorageEvent = {
         [SERIALIZED_STORAGE_EVENT]: snapshot,
       };
+      if (stamp) jsonEvent[STORAGE_EVENT_STAMP] = stamp;
       for (const name of ['newValue', 'oldValue'] as const) {
         try {
           Object.assign(
@@ -184,7 +186,11 @@ function fallbackSerialize(message: unknown, error: unknown): unknown {
         snapshot.oldValue == null ||
         typeof snapshot.oldValue === 'string')
     ) {
-      return { [SERIALIZED_STORAGE_EVENT]: snapshot };
+      const stamp =
+        STORAGE_EVENT_STAMP in message
+          ? { [STORAGE_EVENT_STAMP]: message[STORAGE_EVENT_STAMP] }
+          : {};
+      return { [SERIALIZED_STORAGE_EVENT]: snapshot, ...stamp };
     }
   }
   throw error;
@@ -219,8 +225,16 @@ export function bindStorageEventCodec<T>(
           snapshots.delete(event);
           return snapshot ?? serializeStorageEvent(event, serializer);
         },
-        deserialize: (message: unknown) =>
-          deserializeStorageEvent(message, serializer),
+        deserialize: (message: unknown) => {
+          const event = deserializeStorageEvent(message, serializer);
+          if (typeof message === 'object' && message !== null) {
+            receiveStorageEventStamp(
+              event,
+              (message as SerializedStorageEvent)[STORAGE_EVENT_STAMP],
+            );
+          }
+          return event;
+        },
         fallbackSerialize,
       };
       state.transformer = bus.messageTransformer;

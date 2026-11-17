@@ -17,7 +17,8 @@ import type {
 } from './crossTabMessenger.js';
 
 export class BroadcastChannelMessenger implements CrossTabMessenger {
-  private readonly broadcastChannel: BroadcastChannel;
+  /** @internal */
+  readonly broadcastChannel: BroadcastChannel;
 
   constructor(channelName: string) {
     this.broadcastChannel = new BroadcastChannel(channelName);

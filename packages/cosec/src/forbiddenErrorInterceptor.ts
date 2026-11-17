@@ -141,7 +141,7 @@ export class ForbiddenErrorInterceptor implements ErrorInterceptor {
    * });
    * ```
    */
-  constructor(private options: ForbiddenErrorInterceptorOptions) {}
+  constructor(public options: ForbiddenErrorInterceptorOptions) {}
 
   /**
    * Intercepts fetch exchanges to detect and handle forbidden (403) responses.

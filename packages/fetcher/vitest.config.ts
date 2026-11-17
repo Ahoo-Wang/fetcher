@@ -22,6 +22,12 @@ export default mergeConfig(
       clearMocks: true,
       restoreMocks: true,
       unstubGlobals: true,
+      // Type-level tests (*.test-d.ts) are checked by tsc during the run.
+      typecheck: {
+        enabled: true,
+        include: ['test/**/*.test-d.ts'],
+        tsconfig: './tsconfig.test-d.json',
+      },
       coverage: {
         exclude: [...configDefaults.exclude, '**/**.stories.tsx'],
       },

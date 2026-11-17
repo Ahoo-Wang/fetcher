@@ -27,13 +27,15 @@ import { SafeTransformer } from './safeTransformer.js';
  * stream drops it, since a line cut off by a lost connection is not data.
  */
 export class TextLineTransformer extends SafeTransformer<string, string> {
-  private buffer = '';
+  /** @internal */
+  buffer = '';
 
-  constructor(private readonly emitUnterminated: boolean = true) {
+  constructor(readonly emitUnterminated: boolean = true) {
     super();
   }
 
-  private discardLeadingLF = false;
+  /** @internal */
+  discardLeadingLF = false;
 
   protected onTransform(
     chunk: string,

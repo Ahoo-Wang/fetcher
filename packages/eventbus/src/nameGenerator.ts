@@ -22,7 +22,8 @@ export interface NameGenerator {
  * Default implementation of NameGenerator that generates names with incrementing counters
  */
 export class DefaultNameGenerator implements NameGenerator {
-  private namingCounter: number = 0;
+  /** @internal */
+  namingCounter: number = 0;
 
   /**
    * Generates a unique name by appending an incrementing counter to the prefix

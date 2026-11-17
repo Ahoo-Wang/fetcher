@@ -51,6 +51,7 @@ describe('ResourceAttributionRequestInterceptor', () => {
       },
       fetcher: {
         urlBuilder: {
+          baseURL: '',
           urlTemplateResolver: {
             extractPathParams: vi.fn().mockReturnValue(['tenantId', 'ownerId']),
           },

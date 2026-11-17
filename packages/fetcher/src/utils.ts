@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { isMap } from './realm.js';
+
 /**
  * Merges two record objects, giving precedence to the second record for overlapping keys.
  *
@@ -76,7 +78,7 @@ export function mergeRecordToMap<V>(
   if (!record) {
     return map;
   }
-  if (record instanceof Map) {
+  if (isMap(record)) {
     for (const [key, value] of record) {
       map.set(key, value);
     }

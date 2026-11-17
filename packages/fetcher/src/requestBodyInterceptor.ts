@@ -18,6 +18,13 @@ import {
 import type { FetchExchange } from './fetchExchange.js';
 import { CONTENT_TYPE_HEADER, ContentTypeValues } from './fetchRequest.js';
 import { deleteHeader, getHeader, setHeader } from './requestHeaders.js';
+import {
+  isArrayBuffer,
+  isBlob,
+  isFormData,
+  isReadableStream,
+  isURLSearchParams,
+} from './realm.js';
 
 /**
  * The name of the RequestBodyInterceptor.
@@ -29,8 +36,6 @@ export const REQUEST_BODY_INTERCEPTOR_NAME = 'RequestBodyInterceptor';
  */
 export const REQUEST_BODY_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + BUILT_IN_INTERCEPTOR_ORDER_STEP;
-
-type BodyTypeConstructor = abstract new (...args: any[]) => unknown;
 
 /**
  * Interceptor responsible for converting plain objects to JSON strings for HTTP request bodies.
@@ -65,30 +70,17 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    */
   readonly order = REQUEST_BODY_INTERCEPTOR_ORDER;
 
-  private isInstanceOfBodyType(body: any, typeName: string): boolean {
-    const bodyType = (globalThis as Record<string, unknown>)[typeName];
-    if (typeof bodyType !== 'function') {
-      return false;
-    }
-
-    try {
-      return body instanceof (bodyType as BodyTypeConstructor);
-    } catch {
-      return false;
-    }
-  }
-
   /**
    * Checks if the provided body is of a supported complex type that doesn't require JSON serialization.
    *
    * @param body - The request body to check
    * @returns True if the body is an ArrayBuffer, TypedArray, DataView or ReadableStream, false otherwise
+   *
+   * @internal
    */
-  private isSupportedComplexBodyType(body: any): boolean {
+  isSupportedComplexBodyType(body: any): boolean {
     return (
-      body instanceof ArrayBuffer ||
-      ArrayBuffer.isView(body) ||
-      this.isInstanceOfBodyType(body, 'ReadableStream')
+      isArrayBuffer(body) || ArrayBuffer.isView(body) || isReadableStream(body)
     );
   }
 
@@ -97,14 +89,11 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    *
    * @param body - The request body to check
    * @returns True if the body is a Blob, File, FormData or URLSearchParams, false otherwise
+   *
+   * @internal
    */
-  private isAutoAppendContentType(body: any): boolean {
-    return (
-      this.isInstanceOfBodyType(body, 'Blob') ||
-      this.isInstanceOfBodyType(body, 'File') ||
-      this.isInstanceOfBodyType(body, 'FormData') ||
-      this.isInstanceOfBodyType(body, 'URLSearchParams')
-    );
+  isAutoAppendContentType(body: any): boolean {
+    return isBlob(body) || isFormData(body) || isURLSearchParams(body);
   }
 
   /**
@@ -133,11 +122,12 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    * For unsupported object types (like plain objects), they will be automatically
    * converted to JSON strings.
    *
-   * The Content-Type follows the body; one the caller set is kept, except for
-   * the types fetch labels itself:
+   * The Content-Type follows the body; one the caller set is kept (an empty
+   * value included), except for the types fetch labels itself:
    *   - a plain object: serialized as JSON, `application/json`;
    *   - a string: sent as is, `application/json`;
-   *   - Blob, File, FormData, URLSearchParams: any Content-Type is removed so
+   *   - Blob, File, FormData, URLSearchParams (from any realm, such as a
+   *     same-origin iframe): any Content-Type is removed so
    *     fetch sets the right one (the multipart boundary, the blob's type);
    *   - ArrayBuffer, typed arrays, DataView, ReadableStream: no Content-Type
    *     is added.
@@ -165,7 +155,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     // text/plain; a pre-serialized JSON string is the common case.
     if (typeof request.body === 'string') {
       const headers = exchange.ensureRequestHeaders();
-      if (!getHeader(headers, CONTENT_TYPE_HEADER)) {
+      if (getHeader(headers, CONTENT_TYPE_HEADER) === undefined) {
         setHeader(
           headers,
           CONTENT_TYPE_HEADER,
@@ -186,7 +176,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     }
     // Check if it's a supported type
     if (this.isSupportedComplexBodyType(request.body)) {
-      if (this.isInstanceOfBodyType(request.body, 'ReadableStream')) {
+      if (isReadableStream(request.body)) {
         request.duplex ??= 'half';
       }
       return;
@@ -196,7 +186,7 @@ export class RequestBodyInterceptor implements RequestInterceptor {
     // Also ensure Content-Type header is set to application/json
     exchange.request.body = JSON.stringify(request.body);
 
-    if (!getHeader(headers, CONTENT_TYPE_HEADER)) {
+    if (getHeader(headers, CONTENT_TYPE_HEADER) === undefined) {
       setHeader(
         headers,
         CONTENT_TYPE_HEADER,

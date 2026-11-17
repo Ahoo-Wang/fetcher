@@ -35,21 +35,29 @@ export function deleteHeader(headers: RequestHeaders, name: string): void {
   }
 }
 
+/** Replaces every spelling of a header with `name`, as an own data field. */
+function putHeader(
+  headers: RequestHeaders,
+  name: string,
+  value: string | undefined,
+): void {
+  deleteHeader(headers, name);
+  Object.defineProperty(headers, name, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
 /** Replaces a header, retaining the supplied spelling; undefined removes it. */
 export function setHeader(
   headers: RequestHeaders,
   name: string,
   value: string | undefined,
 ): void {
-  deleteHeader(headers, name);
-  if (value !== undefined) {
-    Object.defineProperty(headers, name, {
-      value,
-      enumerable: true,
-      writable: true,
-      configurable: true,
-    });
-  }
+  if (value === undefined) deleteHeader(headers, name);
+  else putHeader(headers, name, value);
 }
 
 /** Merges records with case-insensitive replacement by the last layer. */
@@ -60,6 +68,27 @@ export function mergeHeaders(
   for (const record of headers) {
     for (const [name, value] of Object.entries(record ?? {})) {
       setHeader(merged, name, value);
+    }
+  }
+  return merged;
+}
+
+/**
+ * Merges the header layers of a request a `Fetcher` has yet to send,
+ * keeping removals. Like {@link mergeHeaders}, a later layer replaces every
+ * spelling of a name; but an `undefined` (or `null`) value stays in the
+ * result as `undefined` instead of being dropped. The Fetcher's own merge
+ * then removes its default too, as it does for `{ Authorization: undefined }`
+ * passed to it directly. `mergeRequest` and the decorator merge with this;
+ * the Fetcher's final merge drops the markers, so `fetch` never sees them.
+ */
+export function mergeHeaderOverrides(
+  ...headers: (RequestHeaders | undefined)[]
+): RequestHeaders {
+  const merged: RequestHeaders = {};
+  for (const record of headers) {
+    for (const [name, value] of Object.entries(record ?? {})) {
+      putHeader(merged, name, value ?? undefined);
     }
   }
   return merged;

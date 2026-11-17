@@ -44,7 +44,7 @@ interface TypedEventBus<EVENT> {
 
 ### AbstractTypedEventBus<EVENT>
 
-Abstract base class of `SerialTypedEventBus` and `ParallelTypedEventBus`: protected `eventHandlers` array, a `handlers` getter returning a copy, protected `handleEvent(handler, event)` (awaits the handler, catches and `console.warn`s its error) and `destroy()` (drops all handlers). Subclasses implement `type`, `on`, `off` and `emit`.
+Abstract base class of `SerialTypedEventBus` and `ParallelTypedEventBus`: an `eventHandlers` array, a `handlers` getter returning a copy, `handleEvent(handler, event)` (both public but `@internal`, for subclasses) (awaits the handler, catches and `console.warn`s its error) and `destroy()` (drops all handlers). Subclasses implement `type`, `on`, `off` and `emit`.
 
 ### EventHandler<EVENT>
 

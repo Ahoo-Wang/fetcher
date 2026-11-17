@@ -21,11 +21,11 @@ Token 解析只进行本地解码与过期管理，不验证签名、issuer、au
 
 `JwtPayload` 声明必填 jti/sub/exp/iat，可选 iss/aud/nbf。`CoSecJwtPayload` 添加 tenantId、policies、roles、attributes。`IJwtToken<Payload>` 将 token/payload/isExpired 与 `EarlyPeriodCapable` 合并。`RefreshTokenStatusCapable` 提供 readonly isRefreshNeeded/isRefreshable。`AccessToken`、`RefreshToken` 各有一个字符串字段，`CompositeToken` 合并二者。
 
-deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
+deserialize 的 JSON 解析错误会传播；解析结果不是 composite token（非数组对象且 accessToken、refreshToken 均为字符串）时抛 TypeError，TokenStorage 随即移除该存储记录并视为不存在，不会发送 `Bearer undefined`。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
 
 ## TokenStorage
 
-`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key；由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
+`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、以实际 key 命名的 serial 总线，仅当存储为浏览器 `localStorage` 时再包装为跨标签页广播总线（由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
 
 | 成员                                | 结果                                     |
 | ----------------------------------- | ---------------------------------------- |
@@ -40,7 +40,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 
 ## 刷新管理器与传输
 
-`new JwtTokenManager(tokenStorage, tokenRefresher)` 暴露两个依赖、currentToken（token/null）及状态 getter（无 token 时为 false）。`refresh(exchange?): Promise<void>` 在无 token 时拒绝并抛 Error('No token found')。同一 manager 对同一当前 token 的并发刷新共用 Promise。跨标签页时，若 token 存储使用浏览器的 `localStorage`（默认如此）且存在 Web Locks（`navigator.locks`），刷新在锁 `cosec-refresh:<token 存储 key>` 下进行：共享该存储的标签页依次刷新，等待过的标签页先重新读取存储，若另一标签页已为同一会话存入 token 就直接复用，而不再使用已用过的 refresh token；仅当存储中仍是自己的 token 时才刷新（会话已变或已退出登录则抛 `RefreshSessionChangedError`，不刷新）。没有 Web Locks、不在浏览器中（服务端一个进程在同一 key 下持有多个用户的存储），或存储不被各标签页共享时，各标签页独立刷新。同会话较新 token 优先于迟到的刷新结果。退出登录或切换会话会阻止陈旧回写，并抛出 `RefreshSessionChangedError(cause?)`。
+`new JwtTokenManager(tokenStorage, tokenRefresher)` 暴露两个依赖、currentToken（token/null）及状态 getter（无 token 时为 false）。`refresh(exchange?): Promise<void>` 在无 token 时拒绝并抛 Error('No token found')。同一 manager 对同一当前 token 的并发刷新共用 Promise。跨标签页时，若 token 存储使用浏览器的 `localStorage`（默认如此）且存在 Web Locks（`navigator.locks`），刷新在锁 `cosec-refresh:<token 存储 key>` 下进行：共享该存储的标签页依次刷新，等待过的标签页先重新读取存储，若另一标签页已为同一会话存入 token 就直接复用，而不再使用已用过的 refresh token；仅当存储中仍是自己的 token 时才刷新（会话已变或已退出登录则抛 `RefreshSessionChangedError`，不刷新）。没有 Web Locks、不在浏览器中（服务端一个进程在同一 key 下持有多个用户的存储），或存储不被各标签页共享时，各标签页独立刷新。存储刷新结果前，manager 用 `tokenStorage.reload()` 重新读取存储，因为其他标签页的登录和退出不经过刷新锁，其变更事件可能尚未送达：同会话较新的 token 优先于迟到的刷新结果并被复用；存储中已退出登录或换成其他会话时，阻止陈旧回写并抛出 `RefreshSessionChangedError(cause?)`。
 
 刷新失败时，manager 用 `tokenStorage.reload()` 重新读取存储：如果另一个标签页已刷新同一会话（因此一次性 refresh token 在这里失败）并存入了新 token，就复用该 token，请求继续。刷新响应若缺少字符串类型的 `accessToken` 与 `refreshToken`，绝不存储。存储中仍是刷新失败的那个 token 时，后续处理取决于服务端是否拒绝了 refresh token：
 
@@ -49,7 +49,7 @@ deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；�
 | 刷新端点返回 4xx（错误带有 `exchange.response.status`，刷新客户端拒绝时使用的 `ExchangeError`/`HttpStatusValidationError` 即如此），或响应不是 composite token | 删除 token | `RefreshTokenError(token, cause?)`       | 调用             |
 | 其他情况：网络错误、超时、中止、5xx、没有响应的错误                                                                                                            | 保留 token | `RefreshUnavailableError(token, cause?)` | 不调用           |
 
-自定义 `TokenRefresher` 以同样方式表示拒绝：用 `exchange.response.status` 为 4xx 的错误拒绝。抛出 `RefreshUnavailableError` 后用户仍保持登录，之后的请求会再次刷新。两个错误的 `cause` 都是刷新失败的原因；若刷新请求因其错误拦截器回调（如 `onUnauthorized`）抛错而失败，`cause` 是该请求的 `ExchangeError`，其 `cause` 才是回调错误。两个错误都暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
+自定义 `TokenRefresher` 以同样方式表示拒绝：用 `exchange.response.status` 为 4xx 的错误拒绝（同步抛出也按同样方式处理）。`CoSecTokenRefresher` 通过注册 Symbol 标记而非 `instanceof` 识别，因此由该包另一份副本（与 ES 模块构建并存的 CommonJS 构建）创建的实例，刷新请求与业务请求之间仍只共享一次 `onUnauthorized` 通知。抛出 `RefreshUnavailableError` 后用户仍保持登录，之后的请求会再次刷新。两个错误的 `cause` 都是刷新失败的原因；若刷新请求因其错误拦截器回调（如 `onUnauthorized`）抛错而失败，`cause` 是该请求的 `ExchangeError`，其 `cause` 才是回调错误。两个错误都暴露旧 JwtCompositeToken，日志应避免输出原始凭据。重试业务请求失败保持原错误传播，不移除已经刷新成功的凭据。finally 会清理待完成 Promise。未授权通知所有权与 exchange 错误处理器协调，不是通用事件队列。
 
 `TokenRefresher.refresh(token): Promise<CompositeToken>` 是自定义传输契约。`CoSecTokenRefresher({fetcher, endpoint})` 两字段必填，以 POST 发送 token 对象并提取 JSON。具体类的 refresh 还接受 `shouldNotifyUnauthorized?: () => boolean`。它设置 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 防止递归刷新；自定义传输若使用已配置 Fetcher，需要自行提供该属性。
 
@@ -104,27 +104,27 @@ try {
 
 <span id="ijwttoken"></span>
 
-**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L46)
+**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L47)
 
 <span id="jwttoken"></span>
 
-**`JwtToken`** — [packages/cosec/src/jwtToken.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L81)
+**`JwtToken`** — [packages/cosec/src/jwtToken.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L82)
 
 <span id="refreshtokenstatuscapable"></span>
 
-**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L129)
+**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L130)
 
 <span id="jwtcompositetoken"></span>
 
-**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L168)
+**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L169)
 
 <span id="jwtcompositetokenserializer"></span>
 
-**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L257)
+**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L258)
 
 <span id="jwtcompositetokenserializer-instance"></span>
 
-**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L329)
+**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:332](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L332)
 
 <span id="refreshtokenerror"></span>
 
@@ -140,7 +140,7 @@ try {
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L66)
 
 <span id="default_cosec_token_key"></span>
 
@@ -156,24 +156,24 @@ try {
 
 <span id="accesstoken"></span>
 
-**`AccessToken`** — [packages/cosec/src/tokenRefresher.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L30)
+**`AccessToken`** — [packages/cosec/src/tokenRefresher.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L31)
 
 <span id="refreshtoken"></span>
 
-**`RefreshToken`** — [packages/cosec/src/tokenRefresher.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L43)
+**`RefreshToken`** — [packages/cosec/src/tokenRefresher.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L44)
 
 <span id="compositetoken"></span>
 
-**`CompositeToken`** — [packages/cosec/src/tokenRefresher.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L60)
+**`CompositeToken`** — [packages/cosec/src/tokenRefresher.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L61)
 
 <span id="tokenrefresher"></span>
 
-**`TokenRefresher`** — [packages/cosec/src/tokenRefresher.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L76)
+**`TokenRefresher`** — [packages/cosec/src/tokenRefresher.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L77)
 
 <span id="cosectokenrefresheroptions"></span>
 
-**`CoSecTokenRefresherOptions`** — [packages/cosec/src/tokenRefresher.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L113)
+**`CoSecTokenRefresherOptions`** — [packages/cosec/src/tokenRefresher.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L114)
 
 <span id="cosectokenrefresher"></span>
 
-**`CoSecTokenRefresher`** — [packages/cosec/src/tokenRefresher.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L144)
+**`CoSecTokenRefresher`** — [packages/cosec/src/tokenRefresher.ts:145](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/tokenRefresher.ts#L145)

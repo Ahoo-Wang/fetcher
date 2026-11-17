@@ -12,9 +12,9 @@
  */
 
 import { type FetchRequestInit } from './fetchRequest.js';
-import { type UrlParams } from './urlBuilder.js';
+import { mergeQuery, type UrlParams } from './urlBuilder.js';
 import { mergeRecords } from './utils.js';
-import { mergeHeaders } from './requestHeaders.js';
+import { mergeHeaderOverrides } from './requestHeaders.js';
 
 /**
  * Merges two FetcherRequest objects into one.
@@ -23,6 +23,10 @@ import { mergeHeaders } from './requestHeaders.js';
  * taking precedence over the first object's properties. Special handling is applied
  * to nested objects like path, query, and headers which are merged recursively.
  * For primitive values, the second object's values override the first's.
+ *
+ * Headers merge with {@link mergeHeaderOverrides}: a removal
+ * (`{ Authorization: undefined }`) stays in the result, so the Fetcher that
+ * sends the request still removes its own default of that header.
  *
  * @param first - The first request object (lower priority)
  * @param second - The second request object (higher priority)
@@ -67,24 +71,24 @@ export function mergeRequest(
   // If first request is empty, return second request
   if (Object.keys(first).length === 0) {
     return second.headers
-      ? { ...second, headers: mergeHeaders(second.headers) }
+      ? { ...second, headers: mergeHeaderOverrides(second.headers) }
       : second;
   }
 
   // If second request is empty, return first request
   if (Object.keys(second).length === 0) {
     return first.headers
-      ? { ...first, headers: mergeHeaders(first.headers) }
+      ? { ...first, headers: mergeHeaderOverrides(first.headers) }
       : first;
   }
 
   // Merge nested objects
   const urlParams: UrlParams = {
     path: mergeRecords(first.urlParams?.path, second.urlParams?.path),
-    query: mergeRecords(first.urlParams?.query, second.urlParams?.query),
+    query: mergeQuery(first.urlParams?.query, second.urlParams?.query),
   };
 
-  const headers = mergeHeaders(first.headers, second.headers);
+  const headers = mergeHeaderOverrides(first.headers, second.headers);
 
   // For primitive values, second takes precedence
   const method = second.method ?? first.method;
