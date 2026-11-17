@@ -198,25 +198,32 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    *
    * This value is injected into the CoSec-App-Id header for every request.
    * It identifies your application in the CoSec authentication system.
+   *
+   * @internal
    */
-  private readonly appId: string;
+  readonly appId: string;
 
   /**
    * Storage for device identifiers.
    *
    * Provides persistent storage and retrieval of device identifiers
    * with cross-tab synchronization.
+   *
+   * @internal
    */
-  private readonly deviceIdStorage: DeviceIdStorage;
+  readonly deviceIdStorage: DeviceIdStorage;
 
   /**
    * Provider for resolving space identifiers.
    *
    * Determines which space a request belongs to (if any) for
    * multi-tenant, multi-space applications.
+   *
+   * @internal
    */
-  private readonly spaceIdProvider: SpaceIdProvider;
-  private readonly isTrusted?: RequestTrust;
+  readonly spaceIdProvider: SpaceIdProvider;
+  /** @internal */
+  readonly isTrusted?: RequestTrust;
 
   /**
    * Creates a new CoSecRequestInterceptor instance.

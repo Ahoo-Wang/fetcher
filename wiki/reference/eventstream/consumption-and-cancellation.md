@@ -28,7 +28,7 @@ Use `return()` for intentional early termination. Releasing a lock alone leaves 
 
 `SafeTransformer<I, O>` implements native `Transformer<I, O>`. Subclasses implement protected `onTransform(chunk, controller): void | Promise<void>` and may override `onFlush(controller)` and `onError(error, phase)`. `TransformerPhase` is `'transform' | 'flush'`.
 
-`transform` ignores later chunks after termination. It catches the hook's error, marks terminated, invokes the guarded error hook, and calls `safeError` so readers observe failure. `flush` catches similarly and marks terminated in finally. Errors thrown by `onError` are suppressed so they cannot replace the original failure. Protected `enqueue` and `terminate` return booleans; `terminate` marks state before operating on the controller.
+`transform` ignores later chunks after termination. It catches the hook's error, marks terminated, invokes the guarded error hook, and calls `safeError` so readers observe failure. `flush` catches similarly and marks terminated in finally. Errors thrown by `onError` are suppressed so they cannot replace the original failure. `enqueue` and `terminate` (public but `@internal`, for subclasses) return booleans; `terminate` marks state before operating on the controller.
 
 ## Controller helpers {#controllers}
 

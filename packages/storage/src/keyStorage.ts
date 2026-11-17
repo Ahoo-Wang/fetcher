@@ -113,38 +113,56 @@ export interface KeyStorageOptions<Deserialized> {
 export class KeyStorage<
   Deserialized,
 > implements StorageListenable<Deserialized> {
-  private readonly key: string;
-  private readonly serializer: Serializer<string, Deserialized>;
-  private readonly storage: Storage;
+  /** @internal */
+  readonly key: string;
+  /** @internal */
+  readonly serializer: Serializer<string, Deserialized>;
+  /** @internal */
+  readonly storage: Storage;
   public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
-  private readonly defaultValue: Deserialized | null = null;
-  private cacheValue: Deserialized | null = null;
-  private readonly serializedEvents?: StorageEventSnapshots;
-  /** Whether this instance created its event bus, and so closes it. */
-  private ownsEventBus: boolean;
-  /** The stamp of the latest change the cache holds. */
-  private cacheStamp?: StorageEventStamp;
-  /** Whether the bus accepted keyStorageHandler. */
-  private cacheHandlerRegistered = false;
+  /** @internal */
+  readonly defaultValue: Deserialized | null = null;
+  /** @internal */
+  cacheValue: Deserialized | null = null;
+  /** @internal */
+  readonly serializedEvents?: StorageEventSnapshots;
+  /**
+   * Whether this instance created its event bus, and so closes it.
+   *
+   * @internal
+   */
+  ownsEventBus: boolean;
+  /**
+   * The stamp of the latest change the cache holds.
+   *
+   * @internal
+   */
+  cacheStamp?: StorageEventStamp;
+  /**
+   * Whether the bus accepted keyStorageHandler.
+   *
+   * @internal
+   */
+  cacheHandlerRegistered = false;
   // Follows the changes on the bus. A bus may deliver them out of order (a
   // ParallelTypedEventBus ignores `order`, and a broadcast is posted after the
   // sender's slow listeners), so a stamped change older than the cached one
   // is ignored rather than moving the cache back.
-  private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
-    {
-      name: nameGenerator.generate('KeyStorage'),
-      order: Number.MIN_SAFE_INTEGER,
-      handle: (event: StorageEvent<Deserialized>) => {
-        const stamp = storageEventStamp(event);
-        if (stamp) {
-          if (this.cacheStamp && compareStamps(stamp, this.cacheStamp) < 0) {
-            return;
-          }
-          this.cacheStamp = stamp;
+  /** @internal */
+  readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> = {
+    name: nameGenerator.generate('KeyStorage'),
+    order: Number.MIN_SAFE_INTEGER,
+    handle: (event: StorageEvent<Deserialized>) => {
+      const stamp = storageEventStamp(event);
+      if (stamp) {
+        if (this.cacheStamp && compareStamps(stamp, this.cacheStamp) < 0) {
+          return;
         }
-        this.cacheValue = event.newValue ?? null;
-      },
-    };
+        this.cacheStamp = stamp;
+      }
+      this.cacheValue = event.newValue ?? null;
+    },
+  };
 
   /**
    * Creates a new KeyStorage instance
@@ -176,8 +194,10 @@ export class KeyStorage<
    * Registers the cache handler under a name no other handler on the bus
    * holds: another copy of this package (its CommonJS build next to the ES
    * module, say) counts names separately and may already use this one.
+   *
+   * @internal
    */
-  private registerCacheHandler(): void {
+  registerCacheHandler(): void {
     const handler = this.keyStorageHandler;
     while (this.eventBus.on(handler) === false) {
       const handlers = this.eventBus.handlers;
@@ -387,8 +407,10 @@ export class KeyStorage<
   /**
    * Stamps a change this instance makes, so its cache never takes an older
    * one back, and snapshots it for the wire.
+   *
+   * @internal
    */
-  private stampEvent(
+  stampEvent(
     event: StorageEvent<Deserialized>,
     serializedNewValue: string | null,
   ): StorageEvent<Deserialized> {
@@ -406,8 +428,10 @@ export class KeyStorage<
   /**
    * Marks the event bus a subclass created for this instance (and passed in
    * `eventBus`) as owned: destroy() then closes it too.
+   *
+   * @internal
    */
-  protected ownEventBus(): void {
+  ownEventBus(): void {
     this.ownsEventBus = true;
   }
 

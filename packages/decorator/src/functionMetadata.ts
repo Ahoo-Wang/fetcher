@@ -394,8 +394,10 @@ export class FunctionMetadata implements NamedCapable {
    * serialized by fetcher's `UrlBuilder`. Absent values (`undefined`,
    * `null`) are left out. Every key is set as an own field, `__proto__`
    * included.
+   *
+   * @internal
    */
-  private processHttpParam(
+  processHttpParam(
     param: ParameterMetadata,
     value: any,
     params: Record<string, any>,
@@ -412,7 +414,8 @@ export class FunctionMetadata implements NamedCapable {
     setField(params, param.name || `param${param.index}`, value);
   }
 
-  private processPathParam(
+  /** @internal */
+  processPathParam(
     param: ParameterMetadata,
     value: any,
     path: Record<string, any>,
@@ -420,7 +423,8 @@ export class FunctionMetadata implements NamedCapable {
     this.processHttpParam(param, value, path);
   }
 
-  private processQueryParam(
+  /** @internal */
+  processQueryParam(
     param: ParameterMetadata,
     value: any,
     query: Record<string, any>,
@@ -435,8 +439,10 @@ export class FunctionMetadata implements NamedCapable {
    * of an object removes that header, a default of the Fetcher's included.
    *
    * @returns The headers with this argument merged over them
+   *
+   * @internal
    */
-  private processHeaderParam(
+  processHeaderParam(
     param: ParameterMetadata,
     value: any,
     headers: RequestHeaders,
@@ -460,8 +466,10 @@ export class FunctionMetadata implements NamedCapable {
    * or plain object is merged entry by entry, and any other value is stored
    * under the inferred parameter name. A Map or plain object from another
    * realm counts too.
+   *
+   * @internal
    */
-  private processAttributeParam(
+  processAttributeParam(
     param: ParameterMetadata,
     value: any,
     attributes: Map<string, any>,

@@ -60,17 +60,23 @@ export const IGNORED = [
 ];
 
 /**
- * Packages left out of the cross-entry class check (`consumer.cross.mts`),
- * each with why. Remove a package once its exported classes pass.
+ * Exported classes left out of the cross-entry class check
+ * (`consumer.cross.mts`), by package, with why. A class is listed only when
+ * passing would break its own users.
  */
 export const CROSS_EXEMPT = {
-  '@ahoo-wang/fetcher-cosec': 'Exported classes still have private members.',
-  '@ahoo-wang/fetcher-decorator':
-    'Exported classes still have private members.',
-  '@ahoo-wang/fetcher-eventbus': 'Exported classes still have private members.',
-  '@ahoo-wang/fetcher-eventstream':
-    'Exported classes still have private members.',
-  '@ahoo-wang/fetcher-storage': 'Exported classes still have private members.',
+  '@ahoo-wang/fetcher-eventstream': {
+    classes: [
+      'SafeTransformer',
+      'JsonServerSentEventTransform',
+      'ServerSentEventTransformer',
+      'TextLineTransformer',
+    ],
+    reason:
+      'SafeTransformer subclasses override the protected onTransform, ' +
+      'onFlush and onError hooks, the documented way to write one; made ' +
+      'public, a subclass that declares them protected stops compiling.',
+  },
 };
 
 const PROBLEM_FIELDS = ['entrypoint', 'resolutionKind'];
@@ -179,10 +185,11 @@ export function consumerEntries(manifest) {
  * both ways and requires an instance of each exported class to be
  * assignable from one to the other, both ways: an object made through the
  * CommonJS entry (by a dependency, say) is used where the ES module entry's
- * type is expected. A `private` member breaks this, since TypeScript keeps
- * the two declarations of a private member apart.
+ * type is expected. A `private` or `protected` member breaks this, since
+ * TypeScript keeps the two declarations of such a member apart. `exempt`
+ * names classes to leave out.
  */
-export function consumerSources(entries, { cross = true } = {}) {
+export function consumerSources(entries, { exempt = [] } = {}) {
   const source = side =>
     entries
       .filter(entry => entry[side])
@@ -192,9 +199,8 @@ export function consumerSources(entries, { cross = true } = {}) {
           `export type Entry${index} = typeof entry${index};\n`,
       )
       .join('') || 'export {};\n';
-  const both = cross
-    ? entries.filter(entry => entry.import && entry.require)
-    : [];
+  const both = entries.filter(entry => entry.import && entry.require);
+  const omitted = exempt.map(name => `'${name}'`).join(' | ') || 'never';
   const crossSource =
     both.length === 0
       ? 'export {};\n'
@@ -205,16 +211,17 @@ export function consumerSources(entries, { cross = true } = {}) {
         '    ? I\n' +
         '    : never;\n' +
         '};\n' +
+        `type Checked<M> = Omit<Instances<M>, ${omitted}>;\n` +
         both
           .map(
             (entry, index) =>
               `import type * as esm${index} from '${entry.specifier}';\n` +
               `import type * as cjs${index} from '${entry.specifier}' ` +
               `with { 'resolution-mode': 'require' };\n` +
-              `declare const esmInstances${index}: Instances<typeof esm${index}>;\n` +
-              `declare const cjsInstances${index}: Instances<typeof cjs${index}>;\n` +
-              `export const fromCjs${index}: Instances<typeof esm${index}> = cjsInstances${index};\n` +
-              `export const fromEsm${index}: Instances<typeof cjs${index}> = esmInstances${index};\n`,
+              `declare const esmInstances${index}: Checked<typeof esm${index}>;\n` +
+              `declare const cjsInstances${index}: Checked<typeof cjs${index}>;\n` +
+              `export const fromCjs${index}: Checked<typeof esm${index}> = cjsInstances${index};\n` +
+              `export const fromEsm${index}: Checked<typeof cjs${index}> = esmInstances${index};\n`,
           )
           .join('');
   return {
@@ -383,7 +390,7 @@ export function installConsumer(root, tarballs, destination) {
 function checkConsumer(root, project, manifest) {
   const directory = mkdtempSync(join(project, 'check-'));
   const sources = consumerSources(consumerEntries(manifest), {
-    cross: !(manifest.name in CROSS_EXEMPT),
+    exempt: CROSS_EXEMPT[manifest.name]?.classes,
   });
   for (const [file, source] of Object.entries(sources))
     writeFileSync(join(directory, file), source);

@@ -72,7 +72,7 @@ Response.body (Uint8Array)
   -> JsonServerSentEventTransformStream(det?)  (ServerSentEvent -> JsonServerSentEvent<DATA>; transformer JsonServerSentEventTransform)
 ```
 
-The transformers extend the exported abstract `SafeTransformer<I, O>`, which implements the platform `TransformStream<I, O>` transformer contract without needing the DOM-only `Transformer` global. Subclasses implement `onTransform(chunk, controller)`, optionally `onFlush(controller)` / `onError(error, phase)`, and use the protected `enqueue()` / `terminate()` helpers. A thrown error errors the stream and drops later chunks.
+The transformers extend the exported abstract `SafeTransformer<I, O>`, which implements the platform `TransformStream<I, O>` transformer contract without needing the DOM-only `Transformer` global. Subclasses implement `onTransform(chunk, controller)`, optionally `onFlush(controller)` / `onError(error, phase)`, and use the `enqueue()` / `terminate()` helpers (public but `@internal`, for subclasses; the three hooks stay protected). A thrown error errors the stream and drops later chunks.
 
 ## ServerSentEvent Structure
 

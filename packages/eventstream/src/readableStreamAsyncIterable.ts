@@ -49,9 +49,12 @@
  * ```
  */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
-  private readonly reader: ReadableStreamDefaultReader<T>;
-  private readonly preventCancel: boolean;
-  private _locked: boolean = true;
+  /** @internal */
+  readonly reader: ReadableStreamDefaultReader<T>;
+  /** @internal */
+  readonly preventCancel: boolean;
+  /** @internal */
+  _locked: boolean = true;
 
   /**
    * Creates a new ReadableStreamAsyncIterable instance.
@@ -62,7 +65,7 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
    *                  releases the lock and leaves the stream readable.
    */
   constructor(
-    private readonly stream: ReadableStream<T>,
+    readonly stream: ReadableStream<T>,
     options?: ReadableStreamIteratorOptions,
   ) {
     this.reader = stream.getReader();
@@ -149,7 +152,8 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
     throw error;
   }
 
-  private async finish(reason?: any) {
+  /** @internal */
+  async finish(reason?: any) {
     if (!this._locked) return;
     try {
       if (!this.preventCancel) {

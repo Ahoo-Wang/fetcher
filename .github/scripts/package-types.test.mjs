@@ -179,8 +179,8 @@ test('the cross consumer holds class instances of both entries to each other', (
     cross,
     /import type \* as cjs0 from 'dual' with \{ 'resolution-mode': 'require' \};/,
   );
-  assert.match(cross, /fromCjs0: Instances<typeof esm0> = cjsInstances0/);
-  assert.match(cross, /fromEsm0: Instances<typeof cjs0> = esmInstances0/);
+  assert.match(cross, /fromCjs0: Checked<typeof esm0> = cjsInstances0/);
+  assert.match(cross, /fromEsm0: Checked<typeof cjs0> = esmInstances0/);
   // Only entries that resolve both ways have two declarations to compare.
   assert.ok(!cross.includes("'dual/esm'"));
   assert.equal(
@@ -189,21 +189,29 @@ test('the cross consumer holds class instances of both entries to each other', (
     ],
     'export {};\n',
   );
-  assert.equal(
-    consumerSources([{ specifier: 'dual', import: true, require: true }], {
-      cross: false,
-    })['consumer.cross.mts'],
-    'export {};\n',
+  const exempted = consumerSources(
+    [{ specifier: 'dual', import: true, require: true }],
+    { exempt: ['Base', 'Derived'] },
+  )['consumer.cross.mts'];
+  assert.match(exempted, /Omit<Instances<M>, 'Base' \| 'Derived'>/);
+  assert.match(
+    consumerSources([{ specifier: 'dual', import: true, require: true }])[
+      'consumer.cross.mts'
+    ],
+    /Omit<Instances<M>, never>/,
   );
 });
 
-test('every package left out of the cross check gives its reason', () => {
-  for (const [name, reason] of Object.entries(CROSS_EXEMPT)) {
+test('every class left out of the cross check is named, with the reason', () => {
+  for (const [name, { classes, reason }] of Object.entries(CROSS_EXEMPT)) {
     assert.match(name, /^@ahoo-wang\//);
+    assert.ok(classes.length > 0, name);
     assert.ok(reason.length > 0, name);
   }
-  // The core package, whose instances other packages pass around, is checked.
-  assert.ok(!('@ahoo-wang/fetcher' in CROSS_EXEMPT));
+  // Whole packages are not exempt: every other class of theirs is checked.
+  assert.deepEqual(Object.keys(CROSS_EXEMPT), [
+    '@ahoo-wang/fetcher-eventstream',
+  ]);
 });
 
 test('an entry without conditions, or a package without exports, resolves from both', () => {
