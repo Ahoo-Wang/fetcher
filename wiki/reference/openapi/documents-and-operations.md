@@ -16,14 +16,14 @@ Use these types to author an OpenAPI document or describe input to the [generato
 | `Contact`, `License`              | Contact fields optional; License requires name, with an optional SPDX identifier (3.1) or url                                                        |
 | `Server`, `ServerVariable`        | Server requires url; variable requires default; no URL interpolation happens here                                                                    |
 | `Tag`, `ExternalDocumentation`    | Require name and url respectively; metadata only                                                                                                     |
-| `Paths`, `PathItem`, `HTTPMethod` | Paths maps strings to items; eight lowercase method keys, shared parameters/servers, optional `$ref`                                                 |
+| `Paths`, `PathItem`, `HTTPMethod` | Paths maps `/`-prefixed paths (`PathKey`) to items, beside `x-*` extensions; eight lowercase method keys, shared parameters/servers, optional `$ref` |
 | `Operation`                       | Requires responses; optional operationId, tags, parameters, body, callbacks, security and servers                                                    |
 
 ## Parameters and responses
 
 `Parameter` requires `name` and `in` (`query`, `header`, `path`, `cookie`). All serialization hints (`style`, `explode`, `allowReserved`, `allowEmptyValue`) are optional; the package supplies no runtime defaults. It does not enforce path-parameter `required: true`, or mutual exclusion of schema/content and example/examples.
 
-`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps string status keys to `Response | Reference | undefined`, with optional default. A Response requires description. `Link` describes another operation by ID/ref; `Callback` maps runtime-expression strings to PathItem. None follows links, sends callbacks, negotiates content, or validates response status.
+`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps status codes and ranges (`HttpStatusCodeKey`, such as `200` or `2XX`) to `Response | Reference | undefined`, with optional default. A Response requires description. `Link` describes another operation by ID/ref; `Callback` maps runtime expressions (`CallbackExpression`: `$request.body#/url`, or a string embedding `{$...}`) to PathItem. Paths, Responses and Callback also accept `x-*` extensions with any value. Their keys are template literal types rather than `string`, because a `string` index signature would require every extension value to be a PathItem or Response; index them with such a key (a plain `string` key does not compile under `noImplicitAny`), or iterate with `Object.entries`, which also yields the extensions. None follows links, sends callbacks, negotiates content, or validates response status.
 
 ## Complete document
 
@@ -198,12 +198,20 @@ export interface PathItem extends Extensible {
 
 ### Paths {#paths}
 
-[packages/openapi/src/paths.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L95)
+[packages/openapi/src/paths.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L100)
 
 ```ts
 export interface Paths extends Extensible {
-  [path: string]: PathItem;
+  [path: PathKey]: PathItem;
 }
+```
+
+### PathKey {#pathkey}
+
+[packages/openapi/src/paths.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L107)
+
+```ts
+export type PathKey = `/${string}`;
 ```
 
 ### Parameter {#parameter}
@@ -297,24 +305,40 @@ export interface Response extends Extensible {
 
 ### Responses {#responses}
 
-[packages/openapi/src/responses.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L62)
+[packages/openapi/src/responses.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L73)
 
 ```ts
 export interface Responses extends Extensible {
   default?: Response | Reference;
 
-  [httpCode: string]: Response | Reference | undefined;
+  [httpCode: HttpStatusCodeKey]: Response | Reference | undefined;
 }
+```
+
+### HttpStatusCodeKey {#httpstatuscodekey}
+
+[packages/openapi/src/responses.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L63)
+
+```ts
+export type HttpStatusCodeKey = `${1 | 2 | 3 | 4 | 5}${string}`;
 ```
 
 ### Callback {#callback}
 
-[packages/openapi/src/responses.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L71)
+[packages/openapi/src/responses.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L93)
 
 ```ts
 export interface Callback extends Extensible {
-  [expression: string]: PathItem;
+  [expression: CallbackExpression]: PathItem;
 }
+```
+
+### CallbackExpression {#callbackexpression}
+
+[packages/openapi/src/responses.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L84)
+
+```ts
+export type CallbackExpression = `$${string}` | `${string}{$${string}`;
 ```
 
 ### Tag {#tag}

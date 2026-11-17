@@ -58,6 +58,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `JwtTokenManager`                                | [Token 与刷新](tokens-and-refresh#jwttokenmanager)                                              |
 | `JwtTokenManagerCapable`                         | [CoSec 配置](configuration#jwttokenmanagercapable)                                              |
 | `NanoIdGenerator`                                | [拦截器与资源归属](interceptors-and-attribution#nanoidgenerator)                                |
+| `NonReplayableRequestError`                      | [拦截器与资源归属](interceptors-and-attribution#nonreplayablerequesterror)                      |
 | `NoneSpaceIdProvider`                            | [拦截器与资源归属](interceptors-and-attribution#nonespaceidprovider)                            |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`  | [拦截器与资源归属](interceptors-and-attribution#resource_attribution_request_interceptor_name)  |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER` | [拦截器与资源归属](interceptors-and-attribution#resource_attribution_request_interceptor_order) |

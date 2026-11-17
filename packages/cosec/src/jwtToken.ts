@@ -20,6 +20,7 @@ import { isTokenExpired, parseJwtPayload } from './jwts.js';
 import type { CompositeToken } from './tokenRefresher.js';
 import type { Serializer } from '@ahoo-wang/fetcher-storage';
 import { idGenerator } from './idGenerator.js';
+import { isCompositeToken } from './compositeToken.js';
 
 /**
  * Interface for JWT token with typed payload.
@@ -272,12 +273,14 @@ export class JwtCompositeTokenSerializer
    * @param value The JSON string representation of a composite token
    * @returns A JwtCompositeToken instance
    * @throws SyntaxError if the JSON string is invalid
-   * @throws Error if the parsed object doesn't match the expected CompositeToken structure
+   * @throws TypeError if the parsed value is not a CompositeToken: a non-array object whose accessToken and refreshToken are strings
    */
   deserialize(value: string): JwtCompositeToken {
-    const { sessionId, ...compositeToken } = JSON.parse(
-      value,
-    ) as CompositeToken & {
+    const record: unknown = JSON.parse(value);
+    if (!isCompositeToken(record)) {
+      throw new TypeError('Invalid composite token');
+    }
+    const { sessionId, ...compositeToken } = record as CompositeToken & {
       sessionId?: unknown;
     };
     return new JwtCompositeToken(

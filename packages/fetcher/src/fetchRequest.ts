@@ -56,6 +56,8 @@ export const CONTENT_TYPE_HEADER = 'Content-Type';
 
 export class ContentTypeValues {
   static readonly APPLICATION_JSON = 'application/json';
+  /** Problem details for HTTP APIs (RFC 9457). */
+  static readonly APPLICATION_PROBLEM_JSON = 'application/problem+json';
   static readonly TEXT_EVENT_STREAM = 'text/event-stream';
 }
 

@@ -59,6 +59,26 @@ export const IGNORED = [
   },
 ];
 
+/**
+ * Exported classes left out of the cross-entry class check
+ * (`consumer.cross.mts`), by package, with why. A class is listed only when
+ * passing would break its own users.
+ */
+export const CROSS_EXEMPT = {
+  '@ahoo-wang/fetcher-eventstream': {
+    classes: [
+      'SafeTransformer',
+      'JsonServerSentEventTransform',
+      'ServerSentEventTransformer',
+      'TextLineTransformer',
+    ],
+    reason:
+      'SafeTransformer subclasses override the protected onTransform, ' +
+      'onFlush and onError hooks, the documented way to write one; made ' +
+      'public, a subclass that declares them protected stops compiling.',
+  },
+};
+
 const PROBLEM_FIELDS = ['entrypoint', 'resolutionKind'];
 
 function matches(value, expected) {
@@ -156,12 +176,20 @@ export function consumerEntries(manifest) {
 }
 
 /**
- * The two consumer sources for one package: `consumer.mts` imports every
- * entry that resolves from ES modules, `consumer.cts` every entry that
- * resolves from CommonJS. Type-only namespace imports load each declaration
- * file, global augmentations included, without needing a runtime.
+ * The consumer sources for one package: `consumer.mts` imports every entry
+ * that resolves from ES modules, `consumer.cts` every entry that resolves
+ * from CommonJS. Type-only namespace imports load each declaration file,
+ * global augmentations included, without needing a runtime.
+ *
+ * `consumer.cross.mts` loads both declarations of every entry that resolves
+ * both ways and requires an instance of each exported class to be
+ * assignable from one to the other, both ways: an object made through the
+ * CommonJS entry (by a dependency, say) is used where the ES module entry's
+ * type is expected. A `private` or `protected` member breaks this, since
+ * TypeScript keeps the two declarations of such a member apart. `exempt`
+ * names classes to leave out.
  */
-export function consumerSources(entries) {
+export function consumerSources(entries, { exempt = [] } = {}) {
   const source = side =>
     entries
       .filter(entry => entry[side])
@@ -171,9 +199,35 @@ export function consumerSources(entries) {
           `export type Entry${index} = typeof entry${index};\n`,
       )
       .join('') || 'export {};\n';
+  const both = entries.filter(entry => entry.import && entry.require);
+  const omitted = exempt.map(name => `'${name}'`).join(' | ') || 'never';
+  const crossSource =
+    both.length === 0
+      ? 'export {};\n'
+      : 'type Instances<M> = {\n' +
+        '  [K in keyof M as M[K] extends abstract new (...args: any) => any\n' +
+        '    ? K\n' +
+        '    : never]: M[K] extends abstract new (...args: any) => infer I\n' +
+        '    ? I\n' +
+        '    : never;\n' +
+        '};\n' +
+        `type Checked<M> = Omit<Instances<M>, ${omitted}>;\n` +
+        both
+          .map(
+            (entry, index) =>
+              `import type * as esm${index} from '${entry.specifier}';\n` +
+              `import type * as cjs${index} from '${entry.specifier}' ` +
+              `with { 'resolution-mode': 'require' };\n` +
+              `declare const esmInstances${index}: Checked<typeof esm${index}>;\n` +
+              `declare const cjsInstances${index}: Checked<typeof cjs${index}>;\n` +
+              `export const fromCjs${index}: Checked<typeof esm${index}> = cjsInstances${index};\n` +
+              `export const fromEsm${index}: Checked<typeof cjs${index}> = esmInstances${index};\n`,
+          )
+          .join('');
   return {
     'consumer.mts': source('import'),
     'consumer.cts': source('require'),
+    'consumer.cross.mts': crossSource,
   };
 }
 
@@ -190,7 +244,7 @@ export function consumerConfig(module) {
       skipLibCheck: false,
       noEmit: true,
     },
-    files: ['consumer.mts', 'consumer.cts'],
+    files: ['consumer.mts', 'consumer.cts', 'consumer.cross.mts'],
   };
 }
 
@@ -271,7 +325,7 @@ export function consumerWorkspace(tarballs) {
   };
 }
 
-function pack(directory, destination) {
+export function pack(directory, destination) {
   const before = new Set(readdirSync(destination));
   // pnpm pack rewrites workspace: and catalog: ranges as publishing does.
   execFileSync('pnpm', ['pack', '--pack-destination', destination], {
@@ -305,7 +359,7 @@ function analyze(root, tarball) {
   return JSON.parse(readFileSync(report, 'utf8')).analysis;
 }
 
-function installConsumer(root, tarballs, destination) {
+export function installConsumer(root, tarballs, destination) {
   const project = join(destination, 'dual-consumer');
   mkdirSync(project);
   // Declarations that import react need its types, at the workspace's version.
@@ -335,7 +389,9 @@ function installConsumer(root, tarballs, destination) {
 /** Type-checks the dual consumer of one package; diagnostics by mode. */
 function checkConsumer(root, project, manifest) {
   const directory = mkdtempSync(join(project, 'check-'));
-  const sources = consumerSources(consumerEntries(manifest));
+  const sources = consumerSources(consumerEntries(manifest), {
+    exempt: CROSS_EXEMPT[manifest.name]?.classes,
+  });
   for (const [file, source] of Object.entries(sources))
     writeFileSync(join(directory, file), source);
   const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc');

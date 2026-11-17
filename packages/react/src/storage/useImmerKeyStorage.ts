@@ -15,6 +15,7 @@ import { createRef, useCallback, useInsertionEffect, useMemo } from 'react';
 import type { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { useKeyStorage } from './useKeyStorage.js';
 import { produce } from 'immer';
+import type { Draft } from 'immer';
 
 function createStorageDefaults<T>(storage: KeyStorage<T>) {
   return { storage, defaultValueRef: createRef<T | undefined>() };
@@ -24,14 +25,24 @@ export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [
   T | null,
-  (updater: (draft: T | null) => T | null | void) => void,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
   () => void,
 ];
 
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
-): [T, (updater: (draft: T) => T | null | void) => void, () => void];
+  defaultValue: NonNullable<T>,
+): [T, (updater: (draft: Draft<T>) => T | null | void) => void, () => void];
+
+/** A default that may be `null` or `undefined` leaves the value nullable. */
+export function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [
+  T | null,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
+  () => void,
+];
 /**
  * A React hook that provides Immer-based immutable state management for a KeyStorage instance.
  *
@@ -133,7 +144,7 @@ export function useImmerKeyStorage<T>(
   defaultValue?: T,
 ): [
   T | null,
-  (updater: (draft: T | null) => T | null | void) => void,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
   () => void,
 ] {
   const [value, setValue, remove] = useKeyStorage<T>(
@@ -150,11 +161,16 @@ export function useImmerKeyStorage<T>(
     defaultValueRef.current = defaultValue;
   }, [defaultValueRef, defaultValue]);
   const updateImmer = useCallback(
-    (updater: (draft: T | null) => T | null | void) => {
+    (updater: (draft: Draft<T> | null) => T | null | void) => {
       const storedValue = storage.get();
       const currentValue =
         storedValue === null ? (defaultValueRef.current ?? null) : storedValue;
-      const nextValue = produce(currentValue, updater);
+      // produce passes a Draft<T> (or null), as the updater declares; its
+      // generic recipe type cannot be matched for an unresolved T.
+      const nextValue = produce(
+        currentValue,
+        updater as unknown as (draft: T | null) => T | null | void,
+      );
       if (nextValue === null) {
         remove();
         return;

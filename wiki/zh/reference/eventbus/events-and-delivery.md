@@ -27,7 +27,7 @@ description: '事件与本地投递 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 `new SerialTypedEventBus<EVENT>(type)` 按 order 升序排列，在**单次 emit 内**依次等待处理器。并发 emit 不会全局排队，不同事件的处理器可以重叠。`new ParallelTypedEventBus<EVENT>(type)` 使用 `Promise.all` 启动处理器，不按 order 排序，也不保证完成顺序。
 
-两者继承 `AbstractTypedEventBus<EVENT>`。它的 protected `handleEvent` 捕获同步抛错和异步拒绝，输出 `console.warn` 后继续。因此内置本地 `emit` 即使有处理器失败也会完成。子类提供 `type`、`on`、`off`、`emit`，可复用此错误边界。总线不聚合处理器结果，也不隐式取消其他处理器。
+两者继承 `AbstractTypedEventBus<EVENT>`。它的 `handleEvent`（公开但标记为 `@internal`，供子类使用） 捕获同步抛错和异步拒绝，输出 `console.warn` 后继续。因此内置本地 `emit` 即使有处理器失败也会完成。子类提供 `type`、`on`、`off`、`emit`，可复用此错误边界。总线不聚合处理器结果，也不隐式取消其他处理器。
 
 ## 多事件路由 {#routing}
 
@@ -68,7 +68,7 @@ bus.destroy();
 | <a id="eventbus"></a>`EventBus`                           | [eventBus.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/eventBus.ts#L35)                           |
 | <a id="namegenerator"></a>`NameGenerator`                 | [nameGenerator.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L17)                 |
 | <a id="defaultnamegenerator"></a>`DefaultNameGenerator`   | [nameGenerator.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L24)                 |
-| <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L41)                 |
+| <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L42)                 |
 | <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L34) |
 | <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L38)     |
 | <a id="typedeventbus"></a>`TypedEventBus`                 | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                 |

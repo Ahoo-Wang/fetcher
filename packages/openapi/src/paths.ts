@@ -90,8 +90,18 @@ export interface PathItem extends Extensible {
 }
 
 /**
- * Holds the relative paths to the individual endpoints and their operations
+ * Holds the relative paths to the individual endpoints and their operations.
+ *
+ * A path starts with `/`, as the specification requires, which keeps it apart
+ * from the `x-*` extensions the map may also carry: a `string` index
+ * signature would require every extension value to be a {@link PathItem}.
+ * Index it with a {@link PathKey}, or iterate it with `Object.entries`.
  */
 export interface Paths extends Extensible {
-  [path: string]: PathItem;
+  [path: PathKey]: PathItem;
 }
+
+/**
+ * A relative path that keys a {@link Paths} map, such as `/pets/{petId}`.
+ */
+export type PathKey = `/${string}`;

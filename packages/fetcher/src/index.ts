@@ -24,6 +24,7 @@ export * from './interceptorManager.js';
 export * from './mergeRequest.js';
 export * from './namedFetcher.js';
 export * from './orderedCapable.js';
+export * from './problemDetails.js';
 export * from './requestBodyInterceptor.js';
 export * from './requestOptions.js';
 export * from './responseJson.js';
@@ -38,3 +39,11 @@ export * from './utils.js';
 export * from './validateStatusInterceptor.js';
 
 export * from './requestHeaders.js';
+// Realm-independent checks other packages (decorator) rely on; the rest of
+// realm.ts stays internal.
+export {
+  isAbortController,
+  isAbortSignal,
+  isMap,
+  isPlainObject,
+} from './realm.js';

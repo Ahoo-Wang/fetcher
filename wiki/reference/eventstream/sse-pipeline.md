@@ -67,8 +67,8 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 | <a id="serversentevent"></a>`ServerSentEvent`                               | [serverSentEventTransformStream.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L21)   |
 | <a id="serversenteventfields"></a>`ServerSentEventFields`                   | [serverSentEventTransformStream.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L35)   |
 | <a id="serversenteventtransformer"></a>`ServerSentEventTransformer`         | [serverSentEventTransformStream.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L88)   |
-| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:187](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L187) |
+| <a id="serversenteventtransformstream"></a>`ServerSentEventTransformStream` | [serverSentEventTransformStream.ts:189](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/serverSentEventTransformStream.ts#L189) |
 | <a id="textlinetransformer"></a>`TextLineTransformer`                       | [textLineTransformStream.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L29)                 |
-| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L85)                 |
+| <a id="textlinetransformstream"></a>`TextLineTransformStream`               | [textLineTransformStream.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/textLineTransformStream.ts#L87)                 |
 
 [Package index](./index.md)

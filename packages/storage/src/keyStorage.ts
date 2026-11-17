@@ -24,6 +24,23 @@ import {
   bindStorageEventCodec,
   snapshotStorageEvent,
 } from './storageEventCodec.js';
+import type { StorageEventStamp } from './storageEventOrder.js';
+import {
+  compareStamps,
+  stampStorageEvent,
+  storageEventStamp,
+} from './storageEventOrder.js';
+import { sharedState } from './sharedState.js';
+
+/**
+ * The latest addListener() registration of each handler object, per bus: a
+ * remover removes the handler only while its own registration is the latest,
+ * so it never removes a later registration of the same object.
+ */
+const listenerRegistrations = sharedState(
+  'listener-registrations',
+  () => new WeakMap<object, WeakMap<object, object>>(),
+);
 
 export interface StorageEvent<Deserialized> {
   newValue?: Deserialized | null;
@@ -96,26 +113,56 @@ export interface KeyStorageOptions<Deserialized> {
 export class KeyStorage<
   Deserialized,
 > implements StorageListenable<Deserialized> {
-  private readonly key: string;
-  private readonly serializer: Serializer<string, Deserialized>;
-  private readonly storage: Storage;
+  /** @internal */
+  readonly key: string;
+  /** @internal */
+  readonly serializer: Serializer<string, Deserialized>;
+  /** @internal */
+  readonly storage: Storage;
   public readonly eventBus: TypedEventBus<StorageEvent<Deserialized>>;
-  private readonly defaultValue: Deserialized | null = null;
-  private cacheValue: Deserialized | null = null;
-  private readonly serializedEvents?: StorageEventSnapshots;
-  /** Whether this instance created its event bus, and so closes it. */
-  private ownsEventBus: boolean;
-  // Runs before every other handler, so it sees events in emit order: set()
-  // already updated the cache, and a slow listener ahead of it could otherwise
-  // let an older event overwrite a newer value.
-  private readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> =
-    {
-      name: nameGenerator.generate('KeyStorage'),
-      order: Number.MIN_SAFE_INTEGER,
-      handle: (event: StorageEvent<Deserialized>) => {
-        this.cacheValue = event.newValue ?? null;
-      },
-    };
+  /** @internal */
+  readonly defaultValue: Deserialized | null = null;
+  /** @internal */
+  cacheValue: Deserialized | null = null;
+  /** @internal */
+  readonly serializedEvents?: StorageEventSnapshots;
+  /**
+   * Whether this instance created its event bus, and so closes it.
+   *
+   * @internal
+   */
+  ownsEventBus: boolean;
+  /**
+   * The stamp of the latest change the cache holds.
+   *
+   * @internal
+   */
+  cacheStamp?: StorageEventStamp;
+  /**
+   * Whether the bus accepted keyStorageHandler.
+   *
+   * @internal
+   */
+  cacheHandlerRegistered = false;
+  // Follows the changes on the bus. A bus may deliver them out of order (a
+  // ParallelTypedEventBus ignores `order`, and a broadcast is posted after the
+  // sender's slow listeners), so a stamped change older than the cached one
+  // is ignored rather than moving the cache back.
+  /** @internal */
+  readonly keyStorageHandler: EventHandler<StorageEvent<Deserialized>> = {
+    name: nameGenerator.generate('KeyStorage'),
+    order: Number.MIN_SAFE_INTEGER,
+    handle: (event: StorageEvent<Deserialized>) => {
+      const stamp = storageEventStamp(event);
+      if (stamp) {
+        if (this.cacheStamp && compareStamps(stamp, this.cacheStamp) < 0) {
+          return;
+        }
+        this.cacheStamp = stamp;
+      }
+      this.cacheValue = event.newValue ?? null;
+    },
+  };
 
   /**
    * Creates a new KeyStorage instance
@@ -140,7 +187,29 @@ export class KeyStorage<
     this.serializer = codec.serializer;
     this.serializedEvents = codec.snapshots;
     this.defaultValue = options.defaultValue ?? null;
-    this.eventBus.on(this.keyStorageHandler);
+    this.registerCacheHandler();
+  }
+
+  /**
+   * Registers the cache handler under a name no other handler on the bus
+   * holds: another copy of this package (its CommonJS build next to the ES
+   * module, say) counts names separately and may already use this one.
+   *
+   * @internal
+   */
+  registerCacheHandler(): void {
+    const handler = this.keyStorageHandler;
+    while (this.eventBus.on(handler) === false) {
+      const handlers = this.eventBus.handlers;
+      if (!handlers?.some(other => other.name === handler.name)) {
+        console.warn(
+          `The event bus of ${this.key} refused the KeyStorage cache listener; the cache will not follow changes made elsewhere.`,
+        );
+        return;
+      }
+      handler.name = nameGenerator.generate('KeyStorage');
+    }
+    this.cacheHandlerRegistered = true;
   }
 
   /**
@@ -152,8 +221,9 @@ export class KeyStorage<
    *
    * Names are unique per bus: when another listener already has this name,
    * the listener is not added and the returned function does nothing. The
-   * returned function removes only this listener, never one registered later
-   * under the same name.
+   * returned function removes only this registration, never one made later
+   * under the same name or (through addListener) with the same handler
+   * object.
    *
    * @param listener - The event handler to be called when storage changes
    * @returns A function that can be called to remove the listener
@@ -175,13 +245,24 @@ export class KeyStorage<
   addListener(
     listener: EventHandler<StorageEvent<Deserialized>>,
   ): RemoveStorageListener {
-    if (!this.eventBus.on(listener)) {
+    const eventBus = this.eventBus;
+    if (!eventBus.on(listener)) {
       // The name is taken by another listener, which this remover must not remove.
       return () => {};
     }
+    let registrations = listenerRegistrations.get(eventBus);
+    if (!registrations) {
+      registrations = new WeakMap();
+      listenerRegistrations.set(eventBus, registrations);
+    }
+    const registration = {};
+    registrations.set(listener, registration);
     return () => {
-      if (this.eventBus.handlers.includes(listener)) {
-        this.eventBus.off(listener.name);
+      // A later addListener() of the same object owns its registration now.
+      if (registrations.get(listener) !== registration) return;
+      registrations.delete(listener);
+      if (eventBus.handlers.includes(listener)) {
+        eventBus.off(listener.name);
       }
     };
   }
@@ -230,8 +311,11 @@ export class KeyStorage<
   /**
    * Reads the stored value again, bypassing the cache: for when another tab
    * may have written it and its change event has not arrived yet. The cached
-   * object is kept when the stored text is unchanged, so identity checks on
-   * it still hold.
+   * object is kept when the stored text still holds the same value (the
+   * cache serializes the same as the stored text read back, so formatting
+   * or a format the serializer still reads does not count as a change), so
+   * identity checks on it still hold. A cached object the caller mutated is
+   * replaced.
    *
    * @returns The stored value, or the default value if none is stored
    */
@@ -241,17 +325,31 @@ export class KeyStorage<
       this.cacheValue = null;
       return this.defaultValue;
     }
-    if (this.cacheValue !== null && this.cacheValue !== undefined) {
+    const cached = this.cacheValue;
+    let cachedText: string | undefined;
+    if (cached !== null && cached !== undefined) {
       try {
-        if (this.serializer.serialize(this.cacheValue) === value) {
-          return this.cacheValue;
-        }
+        cachedText = this.serializer.serialize(cached);
       } catch {
-        // Fall through and read the stored text.
+        // Read the stored text below.
       }
+      if (cachedText === value) return cached;
     }
     this.cacheValue = null;
-    return this.get();
+    const stored = this.get();
+    // get() caches what it read; it caches nothing for an unreadable value.
+    const read = this.cacheValue as Deserialized | null;
+    if (cachedText !== undefined && read !== null && read !== undefined) {
+      try {
+        if (this.serializer.serialize(read) === cachedText) {
+          this.cacheValue = cached;
+          return cached;
+        }
+      } catch {
+        // Keep the value just read.
+      }
+    }
+    return stored;
   }
 
   /**
@@ -276,7 +374,7 @@ export class KeyStorage<
     }
     const oldValue = this.get();
     const serialized = this.serializer.serialize(value);
-    const event = this.snapshotEvent({ newValue: value, oldValue }, serialized);
+    const event = this.stampEvent({ newValue: value, oldValue }, serialized);
     this.storage.setItem(this.key, serialized);
     this.cacheValue = value;
     this.eventBus.emit(event).catch(error => {
@@ -298,7 +396,7 @@ export class KeyStorage<
    */
   remove(): void {
     const oldValue = this.get();
-    const event = this.snapshotEvent({ newValue: null, oldValue }, null);
+    const event = this.stampEvent({ newValue: null, oldValue }, null);
     this.storage.removeItem(this.key);
     this.cacheValue = null;
     this.eventBus.emit(event).catch(error => {
@@ -306,10 +404,17 @@ export class KeyStorage<
     });
   }
 
-  private snapshotEvent(
+  /**
+   * Stamps a change this instance makes, so its cache never takes an older
+   * one back, and snapshots it for the wire.
+   *
+   * @internal
+   */
+  stampEvent(
     event: StorageEvent<Deserialized>,
     serializedNewValue: string | null,
   ): StorageEvent<Deserialized> {
+    this.cacheStamp = stampStorageEvent(event);
     snapshotStorageEvent(
       this.eventBus,
       this.serializedEvents,
@@ -323,8 +428,10 @@ export class KeyStorage<
   /**
    * Marks the event bus a subclass created for this instance (and passed in
    * `eventBus`) as owned: destroy() then closes it too.
+   *
+   * @internal
    */
-  protected ownEventBus(): void {
+  ownEventBus(): void {
     this.ownsEventBus = true;
   }
 
@@ -343,7 +450,16 @@ export class KeyStorage<
    * ```
    */
   destroy() {
-    this.eventBus.off(this.keyStorageHandler.name);
+    const handlers = this.eventBus.handlers;
+    // Remove only this instance's handler: its name may since belong to
+    // another handler (say this instance's registration failed).
+    if (
+      this.cacheHandlerRegistered &&
+      (!Array.isArray(handlers) || handlers.includes(this.keyStorageHandler))
+    ) {
+      this.cacheHandlerRegistered = false;
+      this.eventBus.off(this.keyStorageHandler.name);
+    }
     // A bus this instance created (a broadcast channel, say) has no other
     // user: close it rather than leak it.
     if (this.ownsEventBus) {

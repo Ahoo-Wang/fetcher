@@ -207,8 +207,10 @@ export class InterceptorRegistry implements Interceptor {
 
   /**
    * Array of interceptors managed by this registry, sorted by their order property.
+   *
+   * @internal
    */
-  private sortedInterceptors: Interceptor[] = [];
+  sortedInterceptors: Interceptor[] = [];
 
   /**
    * Initializes a new InterceptorRegistry instance.

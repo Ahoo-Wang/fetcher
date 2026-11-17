@@ -12,6 +12,10 @@
  */
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
+import {
+  browserTargets,
+  missingBrowserTargets,
+} from './verify-storybook-targets.mjs';
 
 const index = JSON.parse(
   await readFile(process.argv[2] ?? 'storybook-static/index.json', 'utf8'),
@@ -32,6 +36,13 @@ for (const file of storyFiles) {
 assert.ok(targets.size > 0, 'Stories must link to executable examples');
 for (const id of targets)
   assert.ok(index.entries[id], `Missing navigation target: ${id}`);
+// The browser acceptance script opens these by id; fail here, not mid-run.
+const missingBrowser = missingBrowserTargets(index);
+assert.equal(
+  missingBrowser.length,
+  0,
+  `Browser acceptance targets missing from the index: ${missingBrowser.join(', ')}`,
+);
 const stories = Object.values(index.entries).filter(
   entry => entry.type === 'story',
 );
@@ -50,5 +61,5 @@ for (const entry of regression) {
   );
 }
 console.log(
-  `Verified ${targets.size} navigation targets and ${regression.length} regression stories.`,
+  `Verified ${targets.size} navigation targets, ${Object.keys(browserTargets).length} browser targets and ${regression.length} regression stories.`,
 );

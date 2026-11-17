@@ -68,3 +68,38 @@ jobs:
       - name: Build documentation
         if: needs.changes.outputs.wiki == 'true'
         run: pnpm --dir wiki build
+  # Packs each published package, installs the tarballs and loads every entry
+  # with require() and import() on the lowest Node versions a package
+  # declares: a CommonJS entry that requires an ES-module-only dependency
+  # fails where require(esm) is unavailable. A package whose engines.node
+  # excludes the version is skipped.
+  package-load:
+    name: Package load (Node ${{ matrix.node-version }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.19.0, 22.12.0]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.6
+      # Build with the workspace's Node, then load with the consumer's.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: pnpm -r --filter './packages/*' build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Load published packages
+        run: node .github/scripts/package-load.mjs

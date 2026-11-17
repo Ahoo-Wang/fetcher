@@ -276,3 +276,52 @@ describe('mergeRequestOptions', () => {
     expect(result.attributes).toBe(second.attributes);
   });
 });
+
+describe('header removals through merges (#2002)', () => {
+  it('mergeHeaderOverrides keeps a removal as undefined, case-insensitively', async () => {
+    const { mergeHeaderOverrides } = await import('../src');
+    const merged = mergeHeaderOverrides(
+      { Authorization: 'a', 'X-A': 'x' },
+      { authorization: undefined },
+      { 'X-B': null as unknown as undefined },
+    );
+    expect(Object.entries(merged)).toEqual([
+      ['X-A', 'x'],
+      ['authorization', undefined],
+      ['X-B', undefined],
+    ]);
+    expect(mergeHeaderOverrides({ A: undefined }, { a: 'set' })).toEqual({
+      a: 'set',
+    });
+  });
+
+  it('mergeRequest keeps a removal in every branch', () => {
+    const removal = { headers: { Authorization: undefined } };
+    for (const merged of [
+      mergeRequest({}, removal),
+      mergeRequest(removal, {}),
+      mergeRequest({ method: HttpMethod.GET }, removal),
+    ]) {
+      expect(Object.keys(merged.headers!)).toEqual(['Authorization']);
+      expect(merged.headers!.Authorization).toBeUndefined();
+    }
+  });
+
+  it('a Fetcher drops the removal and its own default', async () => {
+    const { Fetcher } = await import('../src');
+    const fetcher = new Fetcher({
+      baseURL: 'https://merge.test',
+      headers: { Authorization: 'Bearer default', Accept: 'text/plain' },
+    });
+    const exchange = fetcher.resolveExchange(
+      mergeRequest(
+        { url: '/x', headers: { 'X-A': 'a' } },
+        { headers: { authorization: undefined } },
+      ) as any,
+    );
+    expect(exchange.request.headers).toEqual({
+      Accept: 'text/plain',
+      'X-A': 'a',
+    });
+  });
+});

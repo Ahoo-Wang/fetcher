@@ -17,21 +17,47 @@ import {
 } from './interceptor.js';
 import type { FetchExchange } from './fetchExchange.js';
 import { ExchangeError } from './fetcherError.js';
+import {
+  isProblemDetailsResponse,
+  type ProblemDetails,
+  readProblemDetails,
+} from './problemDetails.js';
 
 /**
  * Error thrown when response status validation fails.
  *
  * This error is thrown by ValidateStatusInterceptor when the response status
  * does not pass the validation defined by the validateStatus function.
+ *
+ * When the response is `application/problem+json` (RFC 9457), `problem` holds
+ * its problem details; the response body itself is left unread.
  */
 export class HttpStatusValidationError extends ExchangeError {
-  constructor(exchange: FetchExchange) {
+  /**
+   * @param exchange - The exchange whose response failed validation
+   * @param problem - The response's problem details, if it has any
+   */
+  constructor(
+    exchange: FetchExchange,
+    readonly problem?: ProblemDetails,
+  ) {
     super(
       exchange,
       `Request failed with status code ${exchange.response?.status} for ${exchange.request.url}`,
     );
     this.name = 'HttpStatusValidationError';
   }
+}
+
+/** Options of a {@link ValidateStatusInterceptor}. */
+export interface ValidateStatusOptions {
+  /**
+   * Whether a rejected `application/problem+json` response has its problem
+   * details read onto {@link HttpStatusValidationError.problem}.
+   *
+   * @default true
+   */
+  problemDetails?: boolean;
 }
 
 /**
@@ -142,13 +168,23 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
   }
 
   /**
+   * Whether a rejected `application/problem+json` response has its problem
+   * details read onto the error.
+   */
+  readonly problemDetails: boolean;
+
+  /**
    * Creates a new ValidateStatusInterceptor instance.
    *
    * @param validateStatus - Function that determines if a status code is valid
+   * @param options - Whether to read problem details (`true` by default)
    */
   constructor(
-    private readonly validateStatus: ValidateStatus = DEFAULT_VALIDATE_STATUS,
-  ) {}
+    readonly validateStatus: ValidateStatus = DEFAULT_VALIDATE_STATUS,
+    options: ValidateStatusOptions = {},
+  ) {
+    this.problemDetails = options.problemDetails ?? true;
+  }
 
   /**
    * Validates the response status code.
@@ -165,8 +201,12 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
    *
    * If the exchange attributes contain IGNORE_VALIDATE_STATUS set to true, status
    * validation is skipped entirely, allowing any response status to pass through.
+   *
+   * A rejected `application/problem+json` response has its problem details
+   * read from a copy of the body onto the error's `problem`, unless the
+   * `problemDetails` option is `false`. Any other response is not read.
    */
-  intercept(exchange: FetchExchange) {
+  intercept(exchange: FetchExchange): void | Promise<void> {
     // Skip validation if IGNORE_VALIDATE_STATUS is set to true
     if (exchange.attributes.get(IGNORE_VALIDATE_STATUS) === true) {
       return;
@@ -181,6 +221,22 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
     if (this.validateStatus(status)) {
       return;
     }
+    // Only a problem details response is read, and so rejects asynchronously;
+    // any other rejected response throws at once, as it always has.
+    if (this.problemDetails && isProblemDetailsResponse(exchange.response)) {
+      return this.rejectWithProblem(exchange, exchange.response);
+    }
     throw new HttpStatusValidationError(exchange);
+  }
+
+  /** @internal Rejects with the response's problem details, if it has any. */
+  async rejectWithProblem(
+    exchange: FetchExchange,
+    response: Response,
+  ): Promise<never> {
+    throw new HttpStatusValidationError(
+      exchange,
+      await readProblemDetails(response),
+    );
   }
 }

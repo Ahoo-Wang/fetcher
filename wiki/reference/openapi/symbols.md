@@ -13,6 +13,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | Symbol                  | Reference                                                                  |
 | ----------------------- | -------------------------------------------------------------------------- |
 | `Callback`              | [Documents and operations](documents-and-operations#callback)              |
+| `CallbackExpression`    | [Documents and operations](documents-and-operations#callbackexpression)    |
 | `CommonExtensions`      | [Security and extensions](security-and-extensions#commonextensions)        |
 | `ComponentTypeMap`      | [Schemas and references](schemas-and-references#componenttypemap)          |
 | `Components`            | [Schemas and references](schemas-and-references#components)                |
@@ -24,6 +25,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `ExternalDocumentation` | [Documents and operations](documents-and-operations#externaldocumentation) |
 | `HTTPMethod`            | [Documents and operations](documents-and-operations#httpmethod)            |
 | `Header`                | [Documents and operations](documents-and-operations#header)                |
+| `HttpStatusCodeKey`     | [Documents and operations](documents-and-operations#httpstatuscodekey)     |
 | `Info`                  | [Documents and operations](documents-and-operations#info)                  |
 | `IsReference`           | [Schemas and references](schemas-and-references#isreference)               |
 | `License`               | [Documents and operations](documents-and-operations#license)               |
@@ -36,6 +38,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `Parameter`             | [Documents and operations](documents-and-operations#parameter)             |
 | `ParameterLocation`     | [Documents and operations](documents-and-operations#parameterlocation)     |
 | `PathItem`              | [Documents and operations](documents-and-operations#pathitem)              |
+| `PathKey`               | [Documents and operations](documents-and-operations#pathkey)               |
 | `Paths`                 | [Documents and operations](documents-and-operations#paths)                 |
 | `Reference`             | [Schemas and references](schemas-and-references#reference)                 |
 | `RequestBody`           | [Documents and operations](documents-and-operations#requestbody)           |

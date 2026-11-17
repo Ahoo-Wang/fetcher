@@ -23,22 +23,22 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 
 ## 读写与生命周期 {#operations}
 
-| 方法                   | 返回值                               | 行为                                                                                                                                                        |
-| ---------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。                                                        |
-| `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本未变时保留缓存对象；键不存在时返回默认值。                                |
-| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                    |
-| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                            |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数仅在该名称下注册的仍是此处理器时将其移除。                                                                |
-| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。 |
+| 方法                   | 返回值                               | 行为                                                                                                                                                                                                                   |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。                                                                                                                   |
+| `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本仍表示同一个值时保留缓存对象（格式差异或序列化器仍能读取的旧格式不会替换它），调用方修改过的缓存对象则被替换；键不存在时返回默认值。 |
+| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                                                                               |
+| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                                                                                       |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数只移除这一次注册：不会移除同名的其他处理器，也不会移除之后通过 `addListener` 再次注册的同一处理器对象。                                                              |
+| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用`ownEventBus()`（公开但标记为 `@internal`，供子类使用）标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。                              |
 
-`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。实例内部的缓存监听器先于所有其他监听器执行（order 为 `Number.MIN_SAFE_INTEGER`），因此慢监听器不会让较旧事件覆盖较新的缓存值。销毁拥有的总线前自行解绑外部监听器。
+`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。`set()`/`remove()` 投递的每个变更都按顺序带有时间戳，实例缓存会忽略比当前所持变更更旧的带戳变更，因此慢监听器、忽略 `order` 的 `ParallelTypedEventBus` 以及乱序到达的广播都不会把缓存回退到旧值。直接在总线上投递的事件没有时间戳，按到达顺序应用。内部缓存监听器使用总线上无其他处理器占用的名称，因此包的两份副本（ES 模块与 CommonJS 构建）可以共享总线，`destroy()` 也只移除该监听器。销毁拥有的总线前自行解绑外部监听器。
 
 后端读写、JSON 解析、序列化失败同步传出；通知失败后不会回滚写入。emit 拒绝会被捕获并 `console.warn`，普通串行处理器失败则已由总线隔离。非空缓存不会因直接修改后端而刷新；调用 `reload()` 重新读取。`get()` 返回对象引用，修改引用不会自动持久化。
 
 ## 共享与广播 {#broadcast}
 
-显式传入同一个本地总线以协调多个实例。跨上下文通知使用 [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md)。若广播总线尚无 wire transformer，`KeyStorage` 会安装基于序列化器的转换器，在本地处理器修改对象前快照序列化新值，接收方恢复自定义类型，并在 DataCloneError 时回退到字符串快照。无效旧快照会被视为不可用，不丢弃有效新值。`deserializeLegacy` 可解码旧结构化消息。
+显式传入同一个本地总线以协调多个实例。跨上下文通知使用 [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md)。若广播总线尚无 wire transformer，`KeyStorage` 会安装基于序列化器的转换器，在本地处理器修改对象前快照序列化新值，接收方恢复自定义类型，并在 DataCloneError 时回退到字符串快照。无效旧快照会被视为不可用，不丢弃有效新值。自动转换器还携带变更的顺序时间戳（基于设备时间的混合逻辑时钟），即使发送方的慢监听器推迟了较旧的广播，接收方也保留最新变更；调用方配置的转换器不携带时间戳。`deserializeLegacy` 可解码旧结构化消息。
 
 共享广播总线在整个生命周期必须使用相同存储键；使用自动转换时还必须使用相同序列化器实例（默认 JSON 实例会统一）。违反约束会在构造时抛错。已有自定义转换器仍由调用者负责。接收到事件只更新内存缓存，不写入接收方后端。销毁 KeyStorage 保留共享总线所有权。
 
@@ -68,12 +68,12 @@ settings.destroy();
 
 ## 公开符号与源码 {#symbols}
 
-| 符号                                                      | 实现                                                                                                      |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28) |
-| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36) |
-| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38) |
-| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91) |
+| 符号                                                      | 实现                                                                                                        |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L45)   |
+| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L53)   |
+| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L55)   |
+| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L69)   |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L113) |
 
 [包索引](./index.md)
