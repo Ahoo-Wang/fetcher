@@ -14,7 +14,7 @@ CoSec request metadata, resource attribution, JWT storage and refresh integrated
 pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-storage
 ```
 
-The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. Default token/device storages construct broadcast transports immediately. For SSR request isolation, inject request-owned storage and local buses as described in [configuration](./configuration.md).
+The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. Default token/device/space storages broadcast across tabs only when they keep their value in the browser's `localStorage`; elsewhere (Node SSR, `sessionStorage`, an injected store) each default storage gets a bus of its own, so per-request storages never share state through a `BroadcastChannel`. For SSR request isolation, inject request-owned storage as described in [configuration](./configuration.md).
 
 Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 

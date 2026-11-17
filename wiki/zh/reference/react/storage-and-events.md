@@ -7,12 +7,12 @@ description: '存储与事件订阅 — @ahoo-wang/fetcher-react 6.0.0'
 
 这些 Hook 将共享外部资源接入组件。保持 `KeyStorage` 和事件总线实例稳定，由创建者负责销毁。组件卸载只退订监听，不销毁共享存储或总线。
 
-| API                                          | 输入 / 返回 / 默认值                                                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                 |
-| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                            |
-| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                          |
-| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。 |
+| API                                          | 输入 / 返回 / 默认值                                                                                                                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                                                                                                                                                          |
+| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                                                                                                                                                                     |
+| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                                                                                                                                                                   |
+| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；清理（包括 `unsubscribe()`）只移除该 Hook 自己的订阅（也包括由 `subscribe()` 注册的订阅，例如在 layout effect 中调用），不会移除 `once` 处理器执行后或 `unsubscribe()` 后复用同名的新订阅。 |
 
 存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
 
@@ -100,7 +100,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)
+[packages/react/src/eventbus/useEventSubscription.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L98)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 

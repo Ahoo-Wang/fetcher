@@ -16,7 +16,7 @@ import type { CompositeToken } from './tokenRefresher.js';
 import type { CoSecJwtPayload, EarlyPeriodCapable } from './jwts.js';
 import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
-import { storageEventBus } from './storageEventBus.js';
+import { isSharedAcrossTabs, storageEventBus } from './storageEventBus.js';
 import { setRefreshLockName } from './refreshLock.js';
 
 /**
@@ -66,7 +66,7 @@ export class TokenStorage
    * Creates a new TokenStorage instance.
    * @param options - Configuration options for the token storage.
    * @param options.key - The storage key for tokens. Defaults to DEFAULT_COSEC_TOKEN_KEY.
-   * @param options.eventBus - Event bus for token change notifications. Defaults to a BroadcastTypedEventBus whose channel name is derived from the storage key.
+   * @param options.eventBus - Event bus for token change notifications. Defaults to a SerialTypedEventBus named for the storage key, broadcast across tabs (BroadcastTypedEventBus) only when the storage is the browser's localStorage.
    * @param options.earlyPeriod - Early period for token refresh in seconds. Defaults to 0. Instances sharing an eventBus must use the same period; separate buses on the same channel can use different periods.
    * @param reset - Additional options passed to KeyStorage.
    */
@@ -87,7 +87,7 @@ export class TokenStorage
     serializer ??= new JwtCompositeTokenSerializer(earlyPeriod);
     super({
       key,
-      eventBus: storageEventBus(key, eventBus),
+      eventBus: storageEventBus(key, eventBus, reset.storage),
       ...reset,
       serializer,
     });
@@ -143,15 +143,5 @@ export class TokenStorage
       return null;
     }
     return this.get()?.access.payload ?? null;
-  }
-}
-
-function isSharedAcrossTabs(storage: Storage | undefined): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return (storage ?? window.localStorage) === window.localStorage;
-  } catch {
-    // localStorage is unavailable (e.g. a sandboxed frame): nothing is shared.
-    return false;
   }
 }
