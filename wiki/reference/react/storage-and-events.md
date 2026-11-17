@@ -7,12 +7,12 @@ description: 'Storage and event subscriptions — @ahoo-wang/fetcher-react 6.0.0
 
 These hooks adapt shared external resources to a component. Keep `KeyStorage` and bus instances stable, and let their creator own destruction. Component unmount unsubscribes listeners; it does not destroy shared storage or the bus.
 
-| API                                          | Input / return / default                                                                                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                   |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                     |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                              |
-| `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
+| API                                          | Input / return / default                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                                                                                                                                                                                                        |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                                                                                                                                                                                                          |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                                                                                                                                                                                                                   |
+| `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup, `unsubscribe()` included, removes only the hook's own subscription (also one registered by `subscribe()`, for example from a layout effect), never a newer one that reused the name after a `once` handler ran or after `unsubscribe()`. |
 
 Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
@@ -100,7 +100,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)
+[packages/react/src/eventbus/useEventSubscription.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L98)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 
