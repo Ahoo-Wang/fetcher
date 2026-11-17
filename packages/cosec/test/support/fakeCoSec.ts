@@ -261,6 +261,16 @@ export class FakeCoSecHost {
     return { generation: session.generation, revoked: session.revoked };
   }
 
+  /** Every session reaches its lifetime (`token-expired` on refresh). */
+  expireSessions(): void {
+    for (const session of this.sessions.values()) session.endsAt = 0;
+  }
+
+  /** The server knows no session of the pairs it issued (`token-invalid` on refresh). */
+  forgetSessions(): void {
+    this.sessions.clear();
+  }
+
   /** What `StatusMapping.denied` calls the authentication result. */
   private authenticate(
     headers: Headers,

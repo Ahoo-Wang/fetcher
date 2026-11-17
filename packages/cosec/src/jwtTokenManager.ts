@@ -47,17 +47,35 @@ export {
 } from './errors.js';
 
 /**
- * Whether the refresh endpoint rejected the refresh token: it answered with a
- * 4xx (read from the `ExchangeError` the refresh client rejects with, so a
- * custom TokenRefresher signals a rejection the same way) or with a body that
- * is not a composite token.
+ * Whether a failed refresh ends the session: the refresh route answered
+ * `401` (CoSec 8.0: `token-revoked`, `token-expired` or `token-invalid` for a
+ * session that is over or a pair that is not one; the status the application
+ * is recommended to give a refresh it refuses), or answered with a body that
+ * is not a composite token. Read from the `ExchangeError` the refresh client
+ * rejects with, so a custom TokenRefresher signals a rejection the same way.
+ *
+ * Anything else is no verdict on the session and keeps it: `429` (a rate
+ * limit, not a refusal), `400`/`403`/`404`, `5xx`, a network error, a timeout.
+ * An application whose refresh route refuses with another status passes its
+ * own `isRefreshRejected` to {@link JwtTokenManager}.
  */
-function isRefreshRejected(error: unknown): boolean {
+export function isRefreshRejection(error: unknown): boolean {
   if (error instanceof InvalidRefreshResponseError) return true;
   const status = (
     error as { exchange?: { response?: { status?: unknown } } } | undefined
   )?.exchange?.response?.status;
-  return typeof status === 'number' && status >= 400 && status < 500;
+  return status === 401;
+}
+
+/** Options of a {@link JwtTokenManager}. */
+export interface JwtTokenManagerOptions {
+  /**
+   * Whether the error of a failed refresh means the session is over (the
+   * stored token is removed, `RefreshTokenError`, `onUnauthorized`) rather
+   * than "no answer" (the session is kept, `RefreshUnavailableError`).
+   * Defaults to {@link isRefreshRejection}: only a `401`.
+   */
+  isRefreshRejected?: (error: unknown) => boolean;
 }
 
 /**
@@ -79,6 +97,7 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
   constructor(
     public readonly tokenStorage: TokenStorage,
     public readonly tokenRefresher: TokenRefresher,
+    public readonly options: JwtTokenManagerOptions = {},
   ) {}
 
   /**
@@ -203,7 +222,9 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
             if (isSameToken(jwtToken, currentToken)) {
               // Only the server rejecting the refresh token ends the session;
               // a failure to reach it (offline, timeout, 5xx) keeps it.
-              if (!isRefreshRejected(error)) {
+              if (
+                !(this.options.isRefreshRejected ?? isRefreshRejection)(error)
+              ) {
                 throw new RefreshUnavailableError(jwtToken, error);
               }
               this.tokenStorage.remove();

@@ -282,6 +282,14 @@ export interface CoSecConfig
   ) => Promise<void>;
 
   /**
+   * Whether the error of a failed refresh ends the session. By default only a
+   * `401` does (see {@link isRefreshRejection}); a `429`, a `5xx`, a network
+   * error and every other status keep it. Set it for an application whose
+   * refresh route refuses a dead pair with another status, say `400`.
+   */
+  readonly isRefreshRejected?: (error: unknown) => boolean;
+
+  /**
    * Callback invoked for a `403 scope-rejected` (see
    * {@link ForbiddenErrorInterceptorOptions.onScopeRejected}). Without it,
    * `onForbidden` receives it too, with the problem as its second argument.
@@ -440,6 +448,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
       this.tokenManager = new JwtTokenManager(
         this.tokenStorage,
         config.tokenRefresher,
+        { isRefreshRejected: config.isRefreshRejected },
       );
     }
   }
