@@ -21,18 +21,23 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Merge rules {#merge}
 
-`mergeRequest(first, second): FetchRequestInit` merges path and query records one level deep, and merges headers case-insensitively. The second request wins. For `method`, `body`, `timeout`, `signal`, and `abortController`, a nullish second value falls back to the first; `body: null` therefore does not clear an existing body in this helper. Other native fields follow object spread semantics. Empty-input shortcuts may return an original object when there are no headers; this is not a deep clone.
+`mergeRequest(first, second): FetchRequestInit` merges path and query records one level deep, and merges headers case-insensitively with `mergeHeaderOverrides`, so a removal (`{ Authorization: undefined }`) stays in the result and the Fetcher that sends it still removes its own default. The second request wins. For `method`, `body`, `timeout`, `signal`, and `abortController`, a nullish second value falls back to the first; `body: null` therefore does not clear an existing body in this helper. Other native fields follow object spread semantics. Empty-input shortcuts may return an original object when there are no headers; this is not a deep clone.
 
 `mergeRequestOptions(first?, second?)` chooses the second non-nullish `resultExtractor` and `attributes`, then the first; its extractor fallback is Exchange. Attributes are replaced as a whole, not merged. `mergeRecords(first?, second?)` does a shallow second-wins merge and can return an existing record when only one exists. `mergeRecordToMap(record?, map?)` writes a record or map into the supplied map (or a new map) and returns that same map.
 
 ## Header helpers {#headers}
 
-| Function                          | Result and mutation                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------- |
-| `getHeader(headers, name)`        | Last case-insensitive matching value, or `undefined`; no mutation.               |
-| `deleteHeader(headers, name)`     | Removes all case variants; returns `void`.                                       |
-| `setHeader(headers, name, value)` | Removes all variants, then sets the supplied spelling; `undefined` means delete. |
-| `mergeHeaders(...records)`        | New record, later values win; later `undefined` removes an inherited header.     |
+| Function                           | Result and mutation                                                                                                                                                                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getHeader(headers, name)`         | Last case-insensitive matching value, or `undefined`; no mutation.                                                                                                                                                                                         |
+| `deleteHeader(headers, name)`      | Removes all case variants; returns `void`.                                                                                                                                                                                                                 |
+| `setHeader(headers, name, value)`  | Removes all variants, then sets the supplied spelling; `undefined` means delete.                                                                                                                                                                           |
+| `mergeHeaders(...records)`         | New record, later values win; later `undefined` removes an inherited header.                                                                                                                                                                               |
+| `mergeHeaderOverrides(...records)` | Like `mergeHeaders`, but a later `undefined`/`null` stays as an `undefined` entry, so a later merge (the Fetcher's defaults) removes the header too. For requests not yet sent; the Fetcher's own merge drops the markers before interceptors and `fetch`. |
+
+## Realm-independent checks {#realm}
+
+`isPlainObject(value)`, `isMap(value)`, `isAbortSignal(value)` and `isAbortController(value)` hold for values made in another realm (a same-origin iframe, a Node `vm` context) as well as this one. `isMap`, `isAbortSignal` and `isAbortController` try `instanceof`, then the built-in's own brand check (a prototype getter that reads internal slots), so an object that only claims the type fails. `isPlainObject` accepts an object whose prototype is `null` or some realm's `Object.prototype`: an object literal, parsed JSON, `Object.create(null)`. Class instances, arrays and built-ins are not plain. Fetcher uses the same checks for request bodies, dates and attributes; the decorator package uses them to bind arguments.
 
 ## Body conversion {#body}
 
@@ -75,12 +80,17 @@ console.assert(exchange.request.timeout === 0);
 | <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
 | <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
 | <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
-| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L63)     |
+| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L67)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [requestOptions.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L41) |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
 | <a id="deleteheader"></a>`deleteHeader`                   | [requestHeaders.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L29) |
-| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L39) |
-| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L56) |
+| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L54) |
+| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L64) |
+| <a id="mergeheaderoverrides"></a>`mergeHeaderOverrides`   | [requestHeaders.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L85) |
+| <a id="isplainobject"></a>`isPlainObject`                 | [realm.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L144)                 |
+| <a id="ismap"></a>`isMap`                                 | [realm.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L83)                   |
+| <a id="isabortsignal"></a>`isAbortSignal`                 | [realm.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L122)                 |
+| <a id="isabortcontroller"></a>`isAbortController`         | [realm.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L129)                 |
 | <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                   |
 | <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L71)                   |
 

@@ -22,7 +22,8 @@
  * anything that does not have them, whatever realm made it. A plain object
  * that only claims the type (through `Symbol.toStringTag`, say) fails.
  *
- * @internal
+ * The package entry exports the checks other packages need (`isPlainObject`,
+ * `isMap`, `isAbortSignal`, `isAbortController`); the rest are internal.
  */
 
 type BrandProbe = (value: object) => unknown;
@@ -112,4 +113,52 @@ export function isReadableStream(value: unknown): value is ReadableStream {
   return hasBrand(value, 'ReadableStream', () =>
     getterProbe('ReadableStream', 'locked'),
   );
+}
+
+/**
+ * Whether `value` is an `AbortSignal`, from any realm (a same-origin
+ * iframe's, say).
+ */
+export function isAbortSignal(value: unknown): value is AbortSignal {
+  return hasBrand(value, 'AbortSignal', () =>
+    getterProbe('AbortSignal', 'aborted'),
+  );
+}
+
+/** Whether `value` is an `AbortController`, from any realm. */
+export function isAbortController(value: unknown): value is AbortController {
+  return hasBrand(value, 'AbortController', () =>
+    getterProbe('AbortController', 'signal'),
+  );
+}
+
+const objectSource = Function.prototype.toString.call(Object);
+
+/**
+ * Whether `value` is a plain object, from any realm: an object literal, a
+ * parsed JSON object or `Object.create(null)`. Its prototype is `null` or
+ * some realm's `Object.prototype` (the end of that realm's chain, whose
+ * `constructor` is the built-in `Object`). Class instances, arrays and
+ * built-ins are not plain.
+ */
+export function isPlainObject(
+  value: unknown,
+): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  try {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype === null || prototype === Object.prototype) return true;
+    if (Object.getPrototypeOf(prototype) !== null) return false;
+    const constructor = Object.getOwnPropertyDescriptor(
+      prototype,
+      'constructor',
+    )?.value;
+    return (
+      typeof constructor === 'function' &&
+      Function.prototype.toString.call(constructor) === objectSource
+    );
+  } catch {
+    // A proxy whose getPrototypeOf trap throws.
+    return false;
+  }
 }
