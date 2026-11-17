@@ -93,7 +93,11 @@ it('retries an uncloneable wire value with only its prepared snapshot', async ()
   await expect(emitted.mock.results[0].value).resolves.toBeUndefined();
   expect(postMessage).toHaveBeenCalledTimes(2);
   const wire = postMessage.mock.results[1].value;
-  expect(Object.keys(wire)).toEqual(['__fetcher_storage_snapshot__']);
+  expect(Object.keys(wire)).toEqual([
+    '__fetcher_storage_snapshot__',
+    '__fetcher_storage_stamp__',
+  ]);
+  expect(() => structuredClone(wire)).not.toThrow();
   await onmessage?.(wire);
   expect(storage.get()?.method()).toBe(1);
   storage.destroy();

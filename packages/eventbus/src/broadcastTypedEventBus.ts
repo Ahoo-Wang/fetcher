@@ -251,9 +251,14 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * continues to work through the delegate bus: a later emit() runs local
    * handlers and posts nothing.
    *
+   * Destroying an already destroyed bus does nothing: a messenger passed in
+   * `options` is back with its owner after the first destroy() (which may
+   * have handed it to a new bus), and one this bus created is closed once.
+   *
    * Note: This does not remove event handlers or affect local event processing.
    */
   destroy(): void {
+    if (closedBuses.has(this)) return;
     closedBuses.add(this);
     if (this.ownsMessenger) {
       this.messenger.close();
