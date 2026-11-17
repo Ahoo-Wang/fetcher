@@ -13,7 +13,10 @@
 
 import type { FetchExchange } from '@ahoo-wang/fetcher';
 import { setHeader, type RequestInterceptor } from '@ahoo-wang/fetcher';
-import { COSEC_REQUEST_INTERCEPTOR_ORDER } from './constants.js';
+import {
+  COSEC_REQUEST_INTERCEPTOR_ORDER,
+  CREDENTIALS_WITHHELD_ATTRIBUTE,
+} from './constants.js';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
 import { CoSecHeaders } from './types.js';
 import { idGenerator } from './idGenerator.js';
@@ -83,6 +86,9 @@ export interface CoSecRequestOptions
  * ```
  */
 export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
+
+/** Attribute key holding the space an exchange was first sent to. */
+const SPACE_ID_ATTRIBUTE = 'CoSec-Space-Id';
 
 export {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
@@ -324,6 +330,7 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     // The device ID and the other CoSec headers identify this client: only
     // trusted origins receive them.
     if (!isTrustedRequest(exchange, this.isTrusted)) {
+      exchange.attributes.set(CREDENTIALS_WITHHELD_ATTRIBUTE, true);
       return;
     }
     // Generate a unique request ID for this request
@@ -333,7 +340,16 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     const deviceId = this.deviceIdStorage.getOrCreate();
 
     // Resolve space ID for multi-tenant support
-    const spaceId = this.spaceIdProvider.resolveSpaceId(exchange);
+    // The space is resolved once per exchange: a retry (after a 401 refresh)
+    // is the same operation, so it keeps the space it was first sent to even
+    // if the current space changed meanwhile.
+    let spaceId: string | null | undefined;
+    if (exchange.attributes.has(SPACE_ID_ATTRIBUTE)) {
+      spaceId = exchange.attributes.get(SPACE_ID_ATTRIBUTE);
+    } else {
+      spaceId = this.spaceIdProvider.resolveSpaceId(exchange);
+      exchange.attributes.set(SPACE_ID_ATTRIBUTE, spaceId ?? null);
+    }
 
     // Ensure request headers object exists
     const requestHeaders = exchange.ensureRequestHeaders();
