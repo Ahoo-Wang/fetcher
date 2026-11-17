@@ -37,7 +37,7 @@ export class DeviceIdStorage extends KeyStorage<string> {
   }: DeviceIdStorageOptions = {}) {
     super({
       key,
-      eventBus: storageEventBus(key, eventBus),
+      eventBus: storageEventBus(key, eventBus, reset.storage),
       ...reset,
       serializer: typedIdentitySerializer(),
     });

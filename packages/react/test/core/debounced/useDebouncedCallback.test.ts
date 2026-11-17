@@ -253,10 +253,16 @@ describe('useDebouncedCallback', () => {
     rerender({ options: { leading: true } });
 
     act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(mockCallback).toHaveBeenCalledTimes(1);
+
+    // The burst is over; the new options make the next call a leading one.
+    act(() => {
       result.current.run();
     });
 
-    expect(mockCallback).toHaveBeenCalledTimes(1);
+    expect(mockCallback).toHaveBeenCalledTimes(2);
   });
 
   it('should clean up timeout on unmount', () => {

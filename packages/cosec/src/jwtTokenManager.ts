@@ -38,6 +38,7 @@ import {
   RefreshUnavailableError,
 } from './errors.js';
 import { withRefreshLock } from './refreshLock.js';
+import { isCompositeToken } from './compositeToken.js';
 
 export {
   RefreshSessionChangedError,
@@ -57,15 +58,6 @@ function isRefreshRejected(error: unknown): boolean {
     error as { exchange?: { response?: { status?: unknown } } } | undefined
   )?.exchange?.response?.status;
   return typeof status === 'number' && status >= 400 && status < 500;
-}
-
-function isCompositeToken(token: unknown): token is CompositeToken {
-  return (
-    typeof token === 'object' &&
-    token !== null &&
-    typeof (token as CompositeToken).accessToken === 'string' &&
-    typeof (token as CompositeToken).refreshToken === 'string'
-  );
 }
 
 /**

@@ -21,11 +21,11 @@ Token 解析只进行本地解码与过期管理，不验证签名、issuer、au
 
 `JwtPayload` 声明必填 jti/sub/exp/iat，可选 iss/aud/nbf。`CoSecJwtPayload` 添加 tenantId、policies、roles、attributes。`IJwtToken<Payload>` 将 token/payload/isExpired 与 `EarlyPeriodCapable` 合并。`RefreshTokenStatusCapable` 提供 readonly isRefreshNeeded/isRefreshable。`AccessToken`、`RefreshToken` 各有一个字符串字段，`CompositeToken` 合并二者。
 
-deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
+deserialize 的 JSON 解析错误会传播；解析结果不是 composite token（非数组对象且 accessToken、refreshToken 均为字符串）时抛 TypeError，TokenStorage 随即移除该存储记录并视为不存在，不会发送 `Bearer undefined`。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
 
 ## TokenStorage
 
-`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key；由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
+`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、以实际 key 命名的 serial 总线，仅当存储为浏览器 `localStorage` 时再包装为跨标签页广播总线（由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
 
 | 成员                                | 结果                                     |
 | ----------------------------------- | ---------------------------------------- |
@@ -104,27 +104,27 @@ try {
 
 <span id="ijwttoken"></span>
 
-**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L46)
+**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L47)
 
 <span id="jwttoken"></span>
 
-**`JwtToken`** — [packages/cosec/src/jwtToken.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L81)
+**`JwtToken`** — [packages/cosec/src/jwtToken.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L82)
 
 <span id="refreshtokenstatuscapable"></span>
 
-**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L129)
+**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L130)
 
 <span id="jwtcompositetoken"></span>
 
-**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L168)
+**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L169)
 
 <span id="jwtcompositetokenserializer"></span>
 
-**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L257)
+**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L258)
 
 <span id="jwtcompositetokenserializer-instance"></span>
 
-**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L329)
+**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:332](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L332)
 
 <span id="refreshtokenerror"></span>
 
@@ -140,7 +140,7 @@ try {
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L66)
 
 <span id="default_cosec_token_key"></span>
 

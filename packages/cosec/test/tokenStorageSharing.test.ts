@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import {
   BroadcastTypedEventBus,
   SerialTypedEventBus,
@@ -77,6 +77,7 @@ it('rejects sharing a bus with another earlyPeriod before registering a handler'
 it('keeps independent early periods for separate default buses on the same channel', async () => {
   const key = randomUUID();
   const storage = new InMemoryStorage();
+  vi.stubGlobal('window', { localStorage: storage });
   const first = new TokenStorage({ key, storage, earlyPeriod: 0 });
   const second = new TokenStorage({ key, storage, earlyPeriod: 60 });
   try {

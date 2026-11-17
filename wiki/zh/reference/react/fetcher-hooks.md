@@ -79,7 +79,7 @@ export function useFetcher<R, E = FetcherError>(
 ): UseFetcherReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L67)
+[packages/react/src/fetcher/useFetcher.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L63)
 
 ### UseFetcherOptions {#api-UseFetcherOptions}
 
@@ -88,7 +88,7 @@ export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L34)
+[packages/react/src/fetcher/useFetcher.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L30)
 
 ### UseFetcherReturn {#api-UseFetcherReturn}
 
@@ -102,7 +102,7 @@ export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37)
+[packages/react/src/fetcher/useFetcher.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L33)
 
 ### useFetcherQuery {#api-useFetcherQuery}
 
