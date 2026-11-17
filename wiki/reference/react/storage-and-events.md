@@ -10,11 +10,11 @@ These hooks adapt shared external resources to a component. Keep `KeyStorage` an
 | API                                          | Input / return / default                                                                                                                                                                                                                                                                                                                                 |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                                                                                                                                                                                                        |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                                                                                                                                                                                                          |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                                                                                                                                                                                                                   |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted. A default that may be `null` or `undefined` returns `T \| null`, as at runtime.                                                                                                                                                          |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key. The updater receives `Draft<T>` (`Draft<T> \| null` without a non-nullish default), so readonly state is mutable in it.                                                                                                                                           |
 | `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup, `unsubscribe()` included, removes only the hook's own subscription (also one registered by `subscribe()`, for example from a layout effect), never a newer one that reused the name after a `once` handler ran or after `unsubscribe()`. |
 
-Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
+Storage uses `useSyncExternalStore` and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. A stored value is the snapshot as `KeyStorage.get()` returns it, never compared by content, so values a custom serializer restores (class instances with private fields, cyclic structures) update the hook. Only the default fallback is compared deeply, so an inline default object stays one reference across renders. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
 Event handlers have names; use a distinct name per subscriber. Duplicate names can reject registration, which logs a warning; cleanup then leaves the name alone, so the other subscriber's handler stays registered. The hook subscribes once per `bus` and handler `name`/`order`/`once`, and each event calls the latest `handle`, so an inline handler object does not resubscribe on every render; changing the bus, name, order or once does. The bus controls handler failure propagation and delivery order; this hook neither changes those policies nor awaits delivery on behalf of publishers.
 
@@ -63,11 +63,20 @@ export function useKeyStorage<T>(
 ```ts
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
+  defaultValue: NonNullable<T>,
 ): [T, (value: T) => void, () => void];
 ```
 
 [packages/react/src/storage/useKeyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useKeyStorage.ts#L23)
+
+```ts
+export function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [T | null, (value: T) => void, () => void];
+```
+
+[packages/react/src/storage/useKeyStorage.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useKeyStorage.ts#L29)
 
 ### useImmerKeyStorage {#api-useImmerKeyStorage}
 
@@ -76,21 +85,34 @@ export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [
   T | null,
-  (updater: (draft: T | null) => T | null | void) => void,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
   () => void,
 ];
 ```
 
-[packages/react/src/storage/useImmerKeyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L23)
+[packages/react/src/storage/useImmerKeyStorage.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L24)
 
 ```ts
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
-): [T, (updater: (draft: T) => T | null | void) => void, () => void];
+  defaultValue: NonNullable<T>,
+): [T, (updater: (draft: Draft<T>) => T | null | void) => void, () => void];
 ```
 
-[packages/react/src/storage/useImmerKeyStorage.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L31)
+[packages/react/src/storage/useImmerKeyStorage.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L32)
+
+```ts
+export function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [
+  T | null,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
+  () => void,
+];
+```
+
+[packages/react/src/storage/useImmerKeyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L38)
 
 ### useEventSubscription {#api-useEventSubscription}
 

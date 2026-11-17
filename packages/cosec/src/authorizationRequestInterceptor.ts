@@ -19,6 +19,7 @@ import {
 } from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
+  CREDENTIALS_WITHHELD_ATTRIBUTE,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
   TOKEN_SESSION_ATTRIBUTE,
 } from './constants.js';
@@ -71,6 +72,7 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
     // The token goes only where the configuration trusts, never to an origin
     // just because a request URL happened to be absolute.
     if (!isTrustedRequest(exchange, this.options.isTrusted)) {
+      exchange.attributes.set(CREDENTIALS_WITHHELD_ATTRIBUTE, true);
       return;
     }
     // Get the current token from token manager

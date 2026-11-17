@@ -74,3 +74,9 @@ export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
 
 /** Exchange attribute holding the token session a request was sent with. */
 export const TOKEN_SESSION_ATTRIBUTE = 'CoSec-Token-Session';
+
+/**
+ * Set on an exchange whose request the trust policy kept the CoSec headers or
+ * credentials from: its 401 is not about this application's session.
+ */
+export const CREDENTIALS_WITHHELD_ATTRIBUTE = 'CoSec-Credentials-Withheld';

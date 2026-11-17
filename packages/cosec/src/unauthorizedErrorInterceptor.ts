@@ -13,11 +13,15 @@
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types.js';
 import {
+  NonReplayableRequestError,
   RefreshSessionChangedError,
   RefreshTokenError,
   RefreshUnavailableError,
 } from './errors.js';
-import { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
+import {
+  CREDENTIALS_WITHHELD_ATTRIBUTE,
+  UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
+} from './constants.js';
 
 export { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
 
@@ -117,6 +121,8 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
       exchange.error instanceof RefreshSessionChangedError ||
       // A refresh that could not reach the server keeps the session.
       exchange.error instanceof RefreshUnavailableError ||
+      exchange.error instanceof NonReplayableRequestError ||
+      exchange.attributes?.get(CREDENTIALS_WITHHELD_ATTRIBUTE) === true ||
       notification === true
     ) {
       return;

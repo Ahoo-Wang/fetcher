@@ -14,11 +14,11 @@ description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 6.0.0'
 | `useFetcher<R,E>(options?)`       | `RequestOptions`、执行器回调及 `fetcher` 实例/名称，默认 `fetcherRegistrar.default`            | `loading`、`status`、`result`、`error`、`exchange`、`execute(request)`、`abort`、`reset` |
 | `execute(request)`                | 完整 `FetchRequest`；Hook 发送带有自己 `abortController` 的副本，不修改你的对象                | 提取完成后的 `Promise<PromiseState<R,E>>`；从不拒绝                                      |
 | `exchange`                        | 由状态派生：`result` 背后的 exchange，或 `error` 为 `ExchangeError` 时其背后的 exchange        | `FetchExchange \| undefined`；idle 或非 exchange 失败时为 undefined                      |
-| `useFetcherQuery<Q,R,E>(options)` | 必填 `url`、受控 `query`、`autoExecute`（默认 true）；默认 `JsonResultExtractor`，调用者可覆盖 | 执行状态加 `exchange`；`execute()` 将当前查询作为 POST body 发送                         |
+| `useFetcherQuery<Q,R,E>(options)` | 必填 `url`、受控 `query`、`autoExecute`（默认 true）；默认 `JsonResultExtractor`，调用者可覆盖 | 执行状态加 `exchange`；`execute()` 将当前查询作为 POST JSON body 发送                    |
 
 Fetcher 注册在发送请求时解析，缺失的命名注册会进入错误状态。`useFetcher` 本身不会独立于选定的 Fetcher/options 默认使用 JSON；需要 JSON 时显式选提取器。HTTP 状态、超时和提取失败遵循该 Fetcher 的拦截器管线。
 
-`exchange` 不单独存储，而是跟随 `result` 和 `error`。HTTP 404 之后，`error` 是 `ExchangeError`，`exchange.response?.status` 为 `404`；`abort()` 或 `reset()` 之后两者都被清除。`useFetcherQuery` 遵循[受控查询契约](./promise-and-query-state#controlled-queries)：查询保存在你的状态中，`undefined` 表示未就绪，深相等的查询不会重新发送。`url` 或其他选项变化只更新下次执行读取的值，本身不会发送新请求。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。
+`exchange` 不单独存储，而是跟随 `result` 和 `error`。HTTP 404 之后，`error` 是 `ExchangeError`，`exchange.response?.status` 为 `404`；`abort()` 或 `reset()` 之后两者都被清除。`useFetcherQuery` 遵循[受控查询契约](./promise-and-query-state#controlled-queries)：查询保存在你的状态中，`undefined` 表示未就绪，深相等的查询不会重新发送。其他查询都以 JSON 发送，`Content-Type: application/json`：字符串、数字、布尔值和 `null` 查询同样会编码（`'Ada'` 发送为 `"Ada"`，`null` 发送为 `null`），`useDebouncedFetcherQuery` 发送相同的正文。`url` 或其他选项变化只更新下次执行读取的值，本身不会发送新请求。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。
 
 ## HTTP 取消与超时 {#http-cancellation}
 
@@ -112,7 +112,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
 ): UseFetcherQueryReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L45)
+[packages/react/src/fetcher/useFetcherQuery.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L64)
 
 ### UseFetcherQueryOptions {#api-UseFetcherQueryOptions}
 
@@ -140,7 +140,7 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L32)
+[packages/react/src/fetcher/useFetcherQuery.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L35)
 
 ## 相关专题
 
