@@ -24,7 +24,7 @@ The package declares Node **^22.12.0 || ^24.0.0 || >=26.0.0** for consumers. Rep
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-const cosec = new CoSecConfigurer({});
+const cosec = new CoSecConfigurer({ appId: 'example-app' });
 cosec.applyTo(fetcher);
 ```
 
