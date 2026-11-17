@@ -12,11 +12,11 @@
  */
 
 import type { TokenStorage } from './tokenStorage.js';
+import type { CompositeToken, TokenRefresher } from './tokenRefresher.js';
 import {
-  CoSecTokenRefresher,
-  type CompositeToken,
-  type TokenRefresher,
-} from './tokenRefresher.js';
+  isNotificationGuardRefresher,
+  type NotificationGuardRefresher,
+} from './refreshProtocol.js';
 import {
   JwtCompositeToken,
   type RefreshTokenStatusCapable,
@@ -134,8 +134,10 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
       hasHandler: false,
       handled: false,
     };
+    const tokenRefresher = this.tokenRefresher as NotificationGuardRefresher;
+    const guarded = isNotificationGuardRefresher(tokenRefresher);
     notification.hasHandler ||=
-      this.tokenRefresher instanceof CoSecTokenRefresher &&
+      guarded &&
       (exchange?.fetcher.interceptors.error.interceptors.some(
         interceptor => interceptor.name === UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
       ) ??
@@ -143,20 +145,29 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
     let promise = inProgress?.promise;
     if (!promise) {
       const refreshAndStore = (): Promise<JwtCompositeToken> =>
-        (this.tokenRefresher instanceof CoSecTokenRefresher
-          ? this.tokenRefresher.refresh(jwtToken.token, () => {
-              if (
-                !isSameToken(jwtToken, this.currentToken) ||
-                notification.hasHandler
-              )
-                return false;
-              notification.handled = true;
-              return true;
-            })
-          : this.tokenRefresher.refresh(jwtToken.token)
+        // A refresher that throws instead of rejecting gets the same error
+        // handling (classification, cleanup, notification) as a rejection.
+        new Promise<CompositeToken>(resolve =>
+          resolve(
+            guarded
+              ? tokenRefresher.refresh(jwtToken.token, () => {
+                  if (
+                    !isSameToken(jwtToken, this.currentToken) ||
+                    notification.hasHandler
+                  )
+                    return false;
+                  notification.handled = true;
+                  return true;
+                })
+              : tokenRefresher.refresh(jwtToken.token),
+          ),
         )
           .then(newToken => {
-            const currentToken = this.currentToken;
+            // Another tab may have signed out, signed in or refreshed while
+            // this refresh was in flight, before its change event reached
+            // this tab (Web Locks do not cover sign-in and sign-out): decide
+            // from storage, not the cache, whether the result may be stored.
+            const currentToken = this.tokenStorage.reload();
             if (!currentToken || !isSameTokenSession(jwtToken, currentToken)) {
               throw new RefreshSessionChangedError();
             }
