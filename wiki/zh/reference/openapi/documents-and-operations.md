@@ -16,14 +16,14 @@ description: '文档与操作 — Fetcher 6.0.0'
 | `Contact`、`License`              | Contact 字段均可选；License 必填 name，可选 SPDX identifier（3.1）或 url                                                                           |
 | `Server`、`ServerVariable`        | Server 必填 url；变量必填 default；这里不执行 URL 插值                                                                                             |
 | `Tag`、`ExternalDocumentation`    | 分别必填 name、url；仅描述元数据                                                                                                                   |
-| `Paths`、`PathItem`、`HTTPMethod` | Paths 将字符串映射到路径项；支持八种小写方法键、共享参数/servers、可选 `$ref`                                                                      |
+| `Paths`、`PathItem`、`HTTPMethod` | Paths 将以 `/` 开头的路径（`PathKey`）映射到路径项，并可带 `x-*` 扩展；支持八种小写方法键、共享参数/servers、可选 `$ref`                           |
 | `Operation`                       | 必填 responses；可选 operationId、tags、parameters、body、callbacks、security、servers                                                             |
 
 ## 参数与响应
 
 `Parameter` 必填 `name` 和 `in`（`query`、`header`、`path`、`cookie`）。序列化提示（`style`、`explode`、`allowReserved`、`allowEmptyValue`）均可选，本包不提供运行时默认值。不强制路径参数设置 `required: true`，也不强制 schema/content 或 example/examples 互斥。
 
-`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态字符串映射到 `Response | Reference | undefined`，可配置 default。Response 必填 description。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式字符串映射到 PathItem。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
+`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态码与范围（`HttpStatusCodeKey`，如 `200`、`2XX`）映射到 `Response | Reference | undefined`，可配置 default。Response 必填 description。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式（`CallbackExpression`：`$request.body#/url`，或内嵌 `{$...}` 的字符串）映射到 PathItem。Paths、Responses 与 Callback 也接受任意值的 `x-*` 扩展。它们的键是模板字面量类型而不是 `string`，因为 `string` 索引签名会要求每个扩展值都是 PathItem 或 Response；按这样的键索引（`noImplicitAny` 下普通 `string` 键无法编译），或用 `Object.entries` 遍历（也会得到扩展项）。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
 
 ## 完整文档
 
@@ -198,12 +198,20 @@ export interface PathItem extends Extensible {
 
 ### Paths {#paths}
 
-[packages/openapi/src/paths.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L95)
+[packages/openapi/src/paths.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L100)
 
 ```ts
 export interface Paths extends Extensible {
-  [path: string]: PathItem;
+  [path: PathKey]: PathItem;
 }
+```
+
+### PathKey {#pathkey}
+
+[packages/openapi/src/paths.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L107)
+
+```ts
+export type PathKey = `/${string}`;
 ```
 
 ### Parameter {#parameter}
@@ -297,24 +305,40 @@ export interface Response extends Extensible {
 
 ### Responses {#responses}
 
-[packages/openapi/src/responses.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L62)
+[packages/openapi/src/responses.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L73)
 
 ```ts
 export interface Responses extends Extensible {
   default?: Response | Reference;
 
-  [httpCode: string]: Response | Reference | undefined;
+  [httpCode: HttpStatusCodeKey]: Response | Reference | undefined;
 }
+```
+
+### HttpStatusCodeKey {#httpstatuscodekey}
+
+[packages/openapi/src/responses.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L63)
+
+```ts
+export type HttpStatusCodeKey = `${1 | 2 | 3 | 4 | 5}${string}`;
 ```
 
 ### Callback {#callback}
 
-[packages/openapi/src/responses.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L71)
+[packages/openapi/src/responses.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L93)
 
 ```ts
 export interface Callback extends Extensible {
-  [expression: string]: PathItem;
+  [expression: CallbackExpression]: PathItem;
 }
+```
+
+### CallbackExpression {#callbackexpression}
+
+[packages/openapi/src/responses.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L84)
+
+```ts
+export type CallbackExpression = `$${string}` | `${string}{$${string}`;
 ```
 
 ### Tag {#tag}

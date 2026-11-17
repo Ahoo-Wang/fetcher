@@ -12,7 +12,7 @@ Two small hooks underlie the request hooks and are exported for your own effects
 | `useLatest(value)`      | `RefObject` updated after each render commits (insertion effect), so a discarded concurrent render never leaves its value behind. Read it in callbacks and effects; read in render it holds the last committed value. |
 | `useStableValue(value)` | Returns `value`, but keeps the previous reference while the content is deeply equal (`dequal`). An inline object can drive an effect's dependencies without re-running it on every render.                            |
 
-`useStableValue` is how query hooks decide that a query changed: `{ page: 1 }` written inline in every render stays one value until its content differs. It compares content only; it does not clone, freeze or validate. For values that should follow input after a quiet period, use [`useDebouncedValue`](./debounce#api-useDebouncedValue); to debounce calls, use [`useDebouncedCallback`](./debounce#api-useDebouncedCallback).
+`useStableValue` is how query hooks decide that a query changed: `{ page: 1 }` written inline in every render stays one value until its content differs. It compares content only; it does not clone, freeze or validate. A function is a value like any other: it is returned, never called as an initializer (the same holds for `useDebouncedValue`). For values that should follow input after a quiet period, use [`useDebouncedValue`](./debounce#api-useDebouncedValue); to debounce calls, use [`useDebouncedCallback`](./debounce#api-useDebouncedCallback).
 
 ## Removed in 6.0 {#removed-in-6-0}
 

@@ -62,7 +62,7 @@ export class JsonServerSentEventTransform<DATA> extends SafeTransformer<
   ServerSentEvent,
   JsonServerSentEvent<DATA>
 > {
-  constructor(private readonly terminateDetector?: TerminateDetector) {
+  constructor(readonly terminateDetector?: TerminateDetector) {
     super();
   }
 

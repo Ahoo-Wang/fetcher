@@ -19,19 +19,40 @@ import {
 } from '@ahoo-wang/fetcher-eventbus';
 
 /**
- * The event bus a CoSec storage uses: the given one, or a new cross-tab bus
- * whose channel name is the storage key, so that storages for different keys
- * never cross-talk over the same channel. A storage that gets a new bus owns
- * it (`ownEventBus()`), and closes it on destroy.
+ * Whether a storage backend is the browser's `localStorage`, the one store
+ * every tab of an origin shares. `undefined` stands for the default backend,
+ * which is `localStorage` in a browser and a new `InMemoryStorage` elsewhere.
+ */
+export function isSharedAcrossTabs(storage: Storage | undefined): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return (storage ?? window.localStorage) === window.localStorage;
+  } catch {
+    // localStorage is unavailable (e.g. a sandboxed frame): nothing is shared.
+    return false;
+  }
+}
+
+/**
+ * The event bus a CoSec storage uses: the given one, or a new bus of its own.
+ *
+ * The new bus is a cross-tab bus (a `BroadcastChannel` named after the
+ * storage key, so storages for different keys never cross-talk) only when
+ * the storage keeps its value in the browser's `localStorage`, the one
+ * backend other tabs read too. Any other backend — the `InMemoryStorage` a
+ * server process gets for each request, `sessionStorage`, a custom store —
+ * is private to this storage, so its changes stay in this storage instead of
+ * reaching every other storage with the same key in the process. A storage
+ * that gets a new bus owns it (`ownEventBus()`), and closes it on destroy.
  */
 export function storageEventBus<T>(
   key: string,
-  eventBus?: TypedEventBus<StorageEvent<T>>,
+  eventBus: TypedEventBus<StorageEvent<T>> | undefined,
+  storage: Storage | undefined,
 ): TypedEventBus<StorageEvent<T>> {
-  return (
-    eventBus ??
-    new BroadcastTypedEventBus({
-      delegate: new SerialTypedEventBus<StorageEvent<T>>(key),
-    })
-  );
+  if (eventBus) return eventBus;
+  const delegate = new SerialTypedEventBus<StorageEvent<T>>(key);
+  return isSharedAcrossTabs(storage)
+    ? new BroadcastTypedEventBus({ delegate })
+    : delegate;
 }

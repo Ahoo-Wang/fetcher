@@ -49,15 +49,27 @@
  * ```
  */
 export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
-  private readonly reader: ReadableStreamDefaultReader<T>;
-  private _locked: boolean = true;
+  /** @internal */
+  readonly reader: ReadableStreamDefaultReader<T>;
+  /** @internal */
+  readonly preventCancel: boolean;
+  /** @internal */
+  _locked: boolean = true;
 
   /**
    * Creates a new ReadableStreamAsyncIterable instance.
    * @param stream - The ReadableStream to wrap.
+   * @param options - The options of the standard `ReadableStream` async
+   *                  iterator. With `preventCancel: true`, ending the
+   *                  iteration early (`return()`/`throw()`, `break`) only
+   *                  releases the lock and leaves the stream readable.
    */
-  constructor(private readonly stream: ReadableStream<T>) {
+  constructor(
+    readonly stream: ReadableStream<T>,
+    options?: ReadableStreamIteratorOptions,
+  ) {
     this.reader = stream.getReader();
+    this.preventCancel = Boolean(options?.preventCancel);
   }
 
   /**
@@ -120,38 +132,37 @@ export class ReadableStreamAsyncIterable<T> implements AsyncIterable<T> {
   /**
    * Implements the return method of the async iterator: cancels the stream,
    * so its source stops producing, and releases the lock. `break` out of a
-   * for-await loop calls it.
+   * for-await loop calls it. With `preventCancel`, it only releases the lock.
    * @returns A promise that resolves to a done IteratorResult.
    */
   async return(): Promise<IteratorResult<T>> {
-    if (this._locked) {
-      try {
-        await this.reader.cancel();
-      } catch {
-        // Already errored: nothing left to cancel.
-      } finally {
-        this.releaseLock();
-      }
-    }
+    await this.finish();
     return { done: true, value: undefined };
   }
 
   /**
    * Implements the throw method of the async iterator: cancels the stream
    * with `error` as the reason, releases the lock and rethrows `error`, as an
-   * async generator that does not catch it would.
+   * async generator that does not catch it would. With `preventCancel`, it
+   * only releases the lock.
    * @param error - The error to be thrown.
    */
   async throw(error: any): Promise<IteratorResult<T>> {
-    if (this._locked) {
-      try {
-        await this.reader.cancel(error);
-      } catch {
-        // Already errored: nothing left to cancel.
-      } finally {
-        this.releaseLock();
-      }
-    }
+    await this.finish(error);
     throw error;
+  }
+
+  /** @internal */
+  async finish(reason?: any) {
+    if (!this._locked) return;
+    try {
+      if (!this.preventCancel) {
+        await this.reader.cancel(reason);
+      }
+    } catch {
+      // Already errored: nothing left to cancel.
+    } finally {
+      this.releaseLock();
+    }
   }
 }

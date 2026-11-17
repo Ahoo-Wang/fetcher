@@ -21,7 +21,10 @@ import {
   type TerminateDetector,
   toJsonServerSentEventStream,
 } from './jsonServerSentEventTransformStream.js';
-import { CONTENT_TYPE_HEADER, ContentTypeValues } from '@ahoo-wang/fetcher';
+import {
+  isEventStreamResponse,
+  responseContentType,
+} from './responseEventStreams.js';
 
 declare global {
   interface Response {
@@ -113,7 +116,7 @@ if (typeof Response !== 'undefined') {
   ) {
     Object.defineProperty(Response.prototype, CONTENT_TYPE_PROPERTY_NAME, {
       get() {
-        return this.headers.get(CONTENT_TYPE_HEADER);
+        return responseContentType(this);
       },
       configurable: true,
     });
@@ -132,14 +135,7 @@ if (typeof Response !== 'undefined') {
   ) {
     Object.defineProperty(Response.prototype, IS_EVENT_STREAM_PROPERTY_NAME, {
       get() {
-        const contentType = this.contentType;
-        if (!contentType) {
-          return false;
-        }
-        return (
-          contentType.split(';', 1)[0].trim().toLowerCase() ===
-          ContentTypeValues.TEXT_EVENT_STREAM
-        );
+        return isEventStreamResponse(this);
       },
       configurable: true,
     });

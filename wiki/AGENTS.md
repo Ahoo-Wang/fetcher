@@ -7,7 +7,7 @@ pnpm install              # Install dependencies
 pnpm dev                  # Start dev server
 pnpm build                # Build static site
 pnpm preview              # Preview built site
-pnpm fix:mermaid          # Auto-fix Mermaid syntax issues
+pnpm fix:mermaid          # Validate/fix Mermaid (needs mmdc; exit 2 = validator unavailable, nothing written)
 ```
 
 ## Wiki Structure

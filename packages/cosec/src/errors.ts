@@ -56,3 +56,18 @@ export class InvalidRefreshResponseError extends Error {
     this.name = 'InvalidRefreshResponseError';
   }
 }
+
+/**
+ * A request answered 401 could not be retried after the refresh, because its
+ * body (a `ReadableStream` or another async iterable) was consumed by the
+ * first attempt. The session was refreshed: send the request again with a
+ * new body.
+ */
+export class NonReplayableRequestError extends FetcherError {
+  constructor() {
+    super(
+      'The request body can be sent only once; the token was refreshed, send the request again with a new body.',
+    );
+    this.name = 'NonReplayableRequestError';
+  }
+}

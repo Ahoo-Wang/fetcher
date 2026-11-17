@@ -90,7 +90,7 @@ const userStorage = new KeyStorage<{ name: string; age: number }>({
 - `set(value: T): void` — Store value with caching and emit change event. `set(undefined)` removes the value (same as `remove()`).
 - `remove(): void` — Remove value, clear cache, emit change event.
 - `reload(): T | null` — Re-reads the key bypassing the cache, for a value another tab may have written before its change event arrived. Keeps the cached object when the stored text is unchanged; returns `defaultValue` (or `null`) when the key is missing.
-- `destroy(): void` — Removes this instance's internal cache handler from the bus and destroys the bus this instance created (the default `SerialTypedEventBus`, or one a subclass marked with the protected `ownEventBus()`). It does not destroy a bus passed in `eventBus`, does not remove listeners added with `addListener`, and leaves any automatic codec installed on a broadcast bus.
+- `destroy(): void` — Removes this instance's internal cache handler from the bus and destroys the bus this instance created (the default `SerialTypedEventBus`, or one a subclass marked with `ownEventBus()`, public but `@internal`). It does not destroy a bus passed in `eventBus`, does not remove listeners added with `addListener`, and leaves any automatic codec installed on a broadcast bus.
 - `addListener(handler: EventHandler<StorageEvent<T>>): RemoveStorageListener` — Registers on `eventBus` via `on()`. When the `name` is already taken on that bus, the handler is not added and the returned remover does nothing; otherwise the remover removes exactly this handler.
 - `eventBus` — Public readonly; the supplied bus or a default `SerialTypedEventBus` with type `KeyStorage:{key}`.
 

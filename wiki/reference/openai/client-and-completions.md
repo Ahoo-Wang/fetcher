@@ -7,7 +7,7 @@ description: 'Client and chat completions — Fetcher 6.0.0'
 
 This package implements Chat Completions. It does not expose Responses, embeddings, images, files, audio, or realtime clients. The following contract describes this SDK's implementation, not a guarantee of a provider's current model availability or limits.
 
-`OpenAI` always creates its own Fetcher and Authorization header. To use an existing authenticated proxy, construct `ChatClient({ fetcher })` instead; this also preserves that Fetcher's headers, timeout and interceptors. Pass ApiMetadata to the constructor: the decorator executor caches per-method metadata and rebuilds it only when the `apiMetadata` object is replaced, so mutating it in place has no effect.
+`OpenAI` always creates its own Fetcher and Authorization header. To use an existing authenticated proxy, construct `ChatClient({ fetcher })` instead; this also preserves that Fetcher's headers, timeout and interceptors. Pass `ChatClientOptions` (ApiMetadata without `resultExtractor` and `returnType`, which would make `completions` return something other than its declared ChatResponse or stream; call a Fetcher directly for a raw Response or FetchExchange) to the constructor: the decorator executor caches per-method metadata and rebuilds it only when the `apiMetadata` object is replaced, so mutating it in place has no effect.
 
 ## Client contract
 
@@ -15,7 +15,8 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `OpenAI(options)`                                 | Required `baseURL: string` and `apiKey: string`; no default endpoint                                             | Owns readonly fetcher and chat; creates Fetcher with the other options and Authorization: Bearer apiKey |
 | `OpenAIOptions`                                   | Required `baseURL`, `apiKey`; plus any other `FetcherOptions` (`timeout`, `fetch`, `headers`, `interceptors`, …) | Type only; keys are not validated; `apiKey` overrides an `Authorization` header                         |
-| `ChatClient(apiMetadata?)`                        | Optional decorator ApiMetadata, e.g. `{ fetcher }`                                                               | Uses class basePath `chat`                                                                              |
+| `ChatClient(apiMetadata?)`                        | Optional `ChatClientOptions`, e.g. `{ fetcher }`                                                                 | Uses class basePath `chat`                                                                              |
+| `ChatClientOptions`                               | Decorator ApiMetadata without `resultExtractor` and `returnType`                                                 | Type only; those two would change what `completions` returns, so they are rejected                      |
 | `ChatClient.completions<T>(chatRequest, signal?)` | Required ChatRequest, optional AbortSignal; POST `/completions` under chat basePath                              | Promise of ChatResponse or JSON SSE stream based on stream flag                                         |
 | `ChatClient.beforeExecute(exchange)`              | FetchExchange; called by decorator runtime                                                                       | void; truthy request.body.stream selects CompletionStreamResultExtractor                                |
 
@@ -25,9 +26,9 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 
 `ChatRequest` requires model:string and messages:Message[]. Optional fields: frequency_penalty, presence_penalty, temperature, top_p, max_tokens, n and seed are numbers; logit_bias is Record&lt;string, number&gt; or null; response_format is Record&lt;string, unknown&gt;; stop is string/string[]/null; stream is boolean; stream_options is `{ include_usage?: boolean }`; user is string; tools and tool_choice are described below. These are forwarded; the SDK neither assigns provider defaults nor validates ranges or model capability.
 
-`Message` has optional string content and role plus arbitrary properties. `ChatToolFunction` requires name, optionally description and parameters:Record&lt;string, unknown&gt;. `ChatTool` requires type:'function' and function. `ChatToolChoice` permits 'none', 'auto', or `{ type: 'function', function: { name } }`; this version does not declare a 'required' literal.
+`Message` has optional content (string or null: an assistant message that only makes tool calls has `content: null`, in a response and when sent back in `messages`) and optional string role, plus arbitrary properties. `ChatToolFunction` requires name, optionally description and parameters:Record&lt;string, unknown&gt;. `ChatTool` requires type:'function' and function. `ChatToolChoice` permits 'none', 'auto', or `{ type: 'function', function: { name } }`; this version does not declare a 'required' literal.
 
-`ChatResponse` requires choices:Choice[], created:number, id:string, object:string; usage?:Usage is optional. `Choice` has optional finish_reason, index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; streamed chunks carry no usage, except a final chunk when the request sets `stream_options: { include_usage: true }`, so consume only fields present.
+`ChatResponse` requires choices:Choice[], created:number, id:string, object:string; usage?:Usage | null is optional. `Choice` has optional finish_reason (string or null), index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; streamed chunks carry no usage; when the request sets `stream_options: { include_usage: true }` every chunk but the last has `usage: null` and the last carries the totals. finish_reason and delta content are null on streamed chunks until set. Check for both null and undefined (`usage?.total_tokens`, `content ?? ''`) before reading these fields.
 
 ## Complete request
 
@@ -64,7 +65,11 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L98)
+
+<span id="chatclientoptions"></span>
+
+**`ChatClientOptions`** — [packages/openai/src/chat/chatClient.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L41)
 
 <span id="chatrequest"></span>
 
@@ -88,12 +93,12 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L151)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
+**`Choice`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
+**`Usage`** — [packages/openai/src/chat/types.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L183)

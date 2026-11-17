@@ -39,6 +39,8 @@ pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
 
+`fix:mermaid` validates each diagram with the Mermaid CLI, which the repository does not install. Install it once with `npm install --global @mermaid-js/mermaid-cli`, or set `MMDC` to an `mmdc` executable; it drives Chrome (on macOS the installed Google Chrome, elsewhere set `PUPPETEER_EXECUTABLE_PATH`). It rewrites a diagram only after mmdc accepts the fixed version. When mmdc or its browser cannot run, it exits with 2 and changes no file; exit 1 means some diagrams are still invalid and were left as they were. `node --test wiki/test/fix-mermaid.test.mjs` covers this behaviour.
+
 Do not hand-edit llms.txt, llms-full.txt or .vitepress/dist. Public SDK API changes must update the matching skills/*/references/api.md in the same change.
 
 Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at the first and last page with `prev: false` and `next: false`. Shared runnable sources use full-file `<<< @/examples/http/client.ts` or `<<< @/../stories/docs/Filename.tsx` references; do not use regions or line ranges. The LLM generator expands these files and rejects missing or out-of-repository targets.

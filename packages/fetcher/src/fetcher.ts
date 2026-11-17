@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
+import { copyQuery, UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
 import {
   resolveTimeout,
   type FetchImplementation,
@@ -95,6 +95,17 @@ export interface FetcherOptions
    * new Fetcher({ baseURL, fetch: (input, init) => tauriFetch(input, init) });
    */
   fetch?: FetchImplementation;
+
+  /**
+   * Whether a response rejected by status validation that is
+   * `application/problem+json` (RFC 9457) has its problem details read onto
+   * `HttpStatusValidationError.problem`, from a copy of the body. Like
+   * `validateStatus`, it configures the default interceptors, so it has no
+   * effect if a custom InterceptorManager is provided via `interceptors`.
+   *
+   * @default true
+   */
+  problemDetails?: boolean;
 }
 
 // No default Content-Type: it describes a body, so the RequestBodyInterceptor
@@ -154,7 +165,9 @@ export class Fetcher
     this.timeout = options.timeout;
     this.interceptors =
       options.interceptors ??
-      new InterceptorManager(options.validateStatus, options.fetch);
+      new InterceptorManager(options.validateStatus, options.fetch, {
+        problemDetails: options.problemDetails,
+      });
   }
 
   /**
@@ -183,7 +196,7 @@ export class Fetcher
     const mergedHeaders = mergeHeaders(this.headers, request.headers);
     const urlParams = request.urlParams && {
       path: request.urlParams.path && { ...request.urlParams.path },
-      query: request.urlParams.query && { ...request.urlParams.query },
+      query: request.urlParams.query && copyQuery(request.urlParams.query),
     };
     const fetchRequest: FetchRequest = {
       ...request,
@@ -297,8 +310,10 @@ export class Fetcher
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
+   *
+   * @internal
    */
-  private async methodFetch<R = Response>(
+  async methodFetch<R = Response>(
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},

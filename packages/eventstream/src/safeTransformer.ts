@@ -47,9 +47,11 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
   /**
    * Guard flag indicating the stream has been terminated or errored.
    * Once set, subsequent chunks are silently dropped in `transform()`.
+   *
+   * @internal
    */
 
-  protected terminated = false;
+  terminated = false;
 
   /**
    * Transforms an input chunk. Drops immediately if terminated.
@@ -94,8 +96,10 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
   /**
    * Safely invokes `onError()`, catching any exception to prevent
    * cleanup logic from breaking the error boundary guarantee.
+   *
+   * @internal
    */
-  private safeOnError(error: unknown, phase: TransformerPhase): void {
+  safeOnError(error: unknown, phase: TransformerPhase): void {
     try {
       this.onError(error, phase);
     } catch {
@@ -106,10 +110,10 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
   /**
    * Marks the transformer as terminated and safely terminates the controller.
    * After calling this, all subsequent chunks are silently dropped.
+   *
+   * @internal
    */
-  protected terminate(
-    controller: TransformStreamDefaultController<O>,
-  ): boolean {
+  terminate(controller: TransformStreamDefaultController<O>): boolean {
     this.terminated = true;
     return safeTerminate(controller);
   }
@@ -117,11 +121,10 @@ export abstract class SafeTransformer<I, O> implements NonNullable<
   /**
    * Safely enqueues a chunk to the controller.
    * Suppresses TypeError if the stream is already closed.
+   *
+   * @internal
    */
-  protected enqueue(
-    controller: TransformStreamDefaultController<O>,
-    chunk: O,
-  ): boolean {
+  enqueue(controller: TransformStreamDefaultController<O>, chunk: O): boolean {
     return safeEnqueue(controller, chunk);
   }
 

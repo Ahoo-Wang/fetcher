@@ -544,6 +544,7 @@ export class CoSecConfigurer implements FetcherConfigurer {
       fetcher.interceptors.response.use(
         new AuthorizationResponseInterceptor({
           tokenManager: this.tokenManager,
+          isTrusted: this.config.isTrusted,
         }),
       );
     }

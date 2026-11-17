@@ -25,7 +25,10 @@ import { useFetcher } from './useFetcher.js';
 
 export interface UseFetcherQueryOptions<Q, R, E = FetcherError>
   extends UseFetcherOptions<R, E>, QueryOptions<Q>, AutoExecuteCapable {
-  /** The endpoint; each query is sent to it as a `POST` JSON body. */
+  /**
+   * The endpoint; each query is sent to it as a `POST` JSON body. A string,
+   * number, boolean or `null` query is JSON-encoded too (`'Ada'` → `"Ada"`).
+   */
   url: string;
 }
 
@@ -35,6 +38,22 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 > {
   /** Sends the current query now; `idle` when the query is `undefined`. */
   execute: () => Promise<PromiseState<R, E>>;
+}
+
+/**
+ * The request body for `query` as JSON. Fetcher's request body interceptor
+ * serializes objects and arrays, but sends a string as is (pre-serialized
+ * JSON) and `null` as no body, so primitives and `null` are encoded here.
+ */
+function toJsonBody(query: unknown): any {
+  switch (typeof query) {
+    case 'string':
+    case 'number':
+    case 'boolean':
+      return JSON.stringify(query);
+    default:
+      return query === null ? 'null' : query;
+  }
 }
 
 /**
@@ -60,7 +79,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
     send({
       url: latestOptions.current.url,
       method: 'POST',
-      body: query as Record<string, any>,
+      body: toJsonBody(query),
     }),
   );
   return { ...state, execute };

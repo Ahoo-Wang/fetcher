@@ -271,4 +271,34 @@ describe('ReadableStreamAsyncIterable', () => {
     const error = new Error('Test error');
     await expect(iterator.throw!(error)).rejects.toBe(error);
   });
+
+  it.each(['return', 'throw'] as const)(
+    'releases without cancelling on %s() with preventCancel',
+    async method => {
+      const cancel = vi.fn();
+      const stream = new ReadableStream<string>({
+        start(controller) {
+          controller.enqueue('first');
+          controller.enqueue('second');
+        },
+        cancel,
+      });
+      const iterable = new ReadableStreamAsyncIterable(stream, {
+        preventCancel: true,
+      });
+      expect(await iterable.next()).toEqual({ done: false, value: 'first' });
+      const error = new Error('stop');
+      if (method === 'return') {
+        await iterable.return();
+      } else {
+        await expect(iterable.throw(error)).rejects.toBe(error);
+      }
+      expect(cancel).not.toHaveBeenCalled();
+      expect(iterable.locked).toBe(false);
+      expect(await iterable.next()).toEqual({ done: true, value: undefined });
+      const reader = stream.getReader();
+      expect(await reader.read()).toEqual({ done: false, value: 'second' });
+      reader.releaseLock();
+    },
+  );
 });

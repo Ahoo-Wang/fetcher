@@ -39,17 +39,64 @@ export function overrides(packagesDir, packsDir) {
   return result;
 }
 
-/** Wow's pnpm-workspace.yaml with an `overrides:` block for the packages. */
+/**
+ * The package an override key targets: `a>b@<2` overrides `b`, `@s/c@^1`
+ * overrides `@s/c`. A `>` followed by a name separates parent from child;
+ * one followed by `=`, a digit or a space belongs to a version range.
+ */
+export function overrideTarget(key) {
+  const separators = [...key.matchAll(/>(?=[@\w])(?!\d)/g)];
+  const target = key.slice((separators.at(-1)?.index ?? -1) + 1);
+  const at = target.indexOf('@', 1);
+  return at === -1 ? target : target.slice(0, at);
+}
+
+/**
+ * Wow's pnpm-workspace.yaml with the packages' overrides added to its own.
+ *
+ * Wow's `overrides:` block (security pins for its tooling) is kept as written,
+ * comments included; the packed packages go at its top. A Wow override that
+ * already targets one of them fails instead: it is a deliberate pin, and
+ * replacing it would test something other than what Wow runs.
+ */
 export function withOverrides(workspaceYaml, entries) {
-  assert.doesNotMatch(
-    workspaceYaml,
-    /^overrides:/m,
-    'Wow already declares overrides; merge them here instead of replacing them',
+  const lines = workspaceYaml.replace(/\n*$/, '').split('\n');
+  const start = lines.findIndex(line => /^overrides:/.test(line));
+  const quote = name => `'${name}'`;
+  if (start === -1) {
+    const block = Object.entries(entries).map(
+      ([name, spec]) => `  ${quote(name)}: ${quote(spec)}`,
+    );
+    return `${lines.join('\n')}\n\noverrides:\n${block.join('\n')}\n`;
+  }
+  assert.match(
+    lines[start],
+    /^overrides:\s*(#.*)?$/,
+    'Wow declares overrides in flow style; extend downstream-overrides.mjs',
   );
-  const lines = Object.entries(entries).map(
-    ([name, spec]) => `  '${name}': '${spec}'`,
+  let end = start + 1;
+  while (end < lines.length && !/^[^\s#]/.test(lines[end])) end++;
+  const body = lines.slice(start + 1, end);
+  const keyLines = body.filter(line => /^\s+[^\s#]/.test(line));
+  const indent = keyLines[0]?.match(/^\s+/)[0] ?? '  ';
+  for (const line of keyLines) {
+    const key = line.trim().match(/^(['"]?)(.+?)\1\s*:/)?.[2];
+    assert.ok(key, `Unrecognised override line in Wow: ${line}`);
+    assert.ok(
+      !Object.hasOwn(entries, overrideTarget(key)),
+      `Wow already overrides ${overrideTarget(key)} (${key}); drop that ` +
+        'override in Wow or decide here which one the downstream check uses',
+    );
+  }
+  const added = Object.entries(entries).map(
+    ([name, spec]) => `${indent}${quote(name)}: ${quote(spec)}`,
   );
-  return `${workspaceYaml.replace(/\n*$/, '\n')}\noverrides:\n${lines.join('\n')}\n`;
+  return `${[
+    ...lines.slice(0, start + 1),
+    `${indent}# Packed builds of this fetcher commit (downstream-wow.yml).`,
+    ...added,
+    ...lines.slice(start + 1),
+  ].join('\n')}\n`;
 }
 
 if (
@@ -64,6 +111,16 @@ if (
   const entries = overrides(
     new URL('../../packages/', import.meta.url).pathname,
     packsDir,
+  );
+  // Overrides in Wow's package.json would sit beside the workspace ones and
+  // could pin a fetcher package unseen; Wow keeps them in the workspace file.
+  const wowPackage = JSON.parse(
+    readFileSync(join(wowDir, 'package.json'), 'utf8'),
+  );
+  assert.equal(
+    wowPackage.pnpm?.overrides,
+    undefined,
+    'Wow declares pnpm.overrides in package.json; merge them here as well',
   );
   const file = join(wowDir, 'pnpm-workspace.yaml');
   writeFileSync(file, withOverrides(readFileSync(file, 'utf8'), entries));

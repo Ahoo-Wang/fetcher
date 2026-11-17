@@ -25,7 +25,8 @@
     "build-storybook": "storybook build --docs && node scripts/verify-storybook.mjs",
     "test:storybook": "vitest run --project=storybook",
     "eval:skills": "node scripts/eval-skills.mjs",
-    "check:package-types": "node .github/scripts/package-types.mjs"
+    "check:package-types": "node .github/scripts/package-types.mjs",
+    "check:package-load": "node .github/scripts/package-load.mjs"
   },
   "keywords": [
     "fetcher",

@@ -12,7 +12,8 @@
  */
 
 export class InMemoryStorage implements Storage {
-  private readonly store: Map<string, string> = new Map();
+  /** @internal */
+  readonly store: Map<string, string> = new Map();
 
   /**
    * Gets the number of items stored in the storage.

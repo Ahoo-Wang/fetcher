@@ -13,6 +13,8 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus \
 
 Peer dependencies: `fetcher`, `fetcher-eventbus`, and `fetcher-storage`.
 
+Requires Node `^20.19.0 || >=22.12.0`. Its dependency nanoid is ES modules only, so the CommonJS entry (`require`) loads only where `require()` of an ES module works.
+
 ## Example
 
 ```ts
