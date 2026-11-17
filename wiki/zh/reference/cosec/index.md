@@ -14,7 +14,7 @@ description: 'Cosec 参考 — Fetcher 6.0.0'
 pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-storage
 ```
 
-命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。默认 token/device 存储会立即创建广播传输。SSR 请求隔离应注入请求独有的存储与本地总线，见[配置](./configuration.md)。
+命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。CoSec 需要 Node `^20.19.0 || >=22.12.0`（其他包声明 `>=18.20.8`）：nanoid 仅提供 ES 模块，CoSec 的 CommonJS 入口需要支持 `require()` 加载 ES 模块的 Node。默认 token/device 存储会立即创建广播传输。SSR 请求隔离应注入请求独有的存储与本地总线，见[配置](./configuration.md)。
 
 版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
