@@ -40,7 +40,7 @@ The replacement method receives only the actual argument list; default parameter
 
 An `AbortSignal` or `AbortController` argument is recognized before decorator metadata, even without a decorator. If multiple are supplied the last of each kind wins; a request parameter can override them. A signal or controller applies together with the Fetcher timeout, whichever fires first, as described in [cancellation](../fetcher/errors-and-cancellation.md).
 
-Parameter metadata uses copy-on-write when inherited, so decorating an override does not mutate the parent's Map. An override without its own endpoint decorator keeps its own implementation; `@api` does not replace it with the parent's request. Class binding walks inherited string- and symbol-named methods. Static methods are not part of that binding traversal. Keep explicit parameter names on inherited/overridden endpoints too.
+Parameter metadata uses copy-on-write when inherited, so decorating an override does not mutate the parent's Map. An override without its own endpoint decorator keeps its own implementation, and so do the subclasses that inherit it; `@api` does not replace it with the parent's request. Class binding walks inherited string- and symbol-named methods. Static methods are not part of that binding traversal. Keep explicit parameter names on inherited/overridden endpoints too.
 
 ## Complete example {#example}
 
@@ -90,15 +90,15 @@ void updateUser;
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | <a id="parametertype"></a>`ParameterType`                   | [parameterDecorator.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L19)   |
 | <a id="parametermetadata"></a>`ParameterMetadata`           | [parameterDecorator.ts:136](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L136) |
-| <a id="parameter_metadata_key"></a>`PARAMETER_METADATA_KEY` | [parameterDecorator.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L168) |
-| <a id="parameter"></a>`parameter`                           | [parameterDecorator.ts:206](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L206) |
-| <a id="path"></a>`path`                                     | [parameterDecorator.ts:273](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L273) |
-| <a id="query"></a>`query`                                   | [parameterDecorator.ts:305](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L305) |
-| <a id="header"></a>`header`                                 | [parameterDecorator.ts:337](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L337) |
-| <a id="body"></a>`body`                                     | [parameterDecorator.ts:355](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L355) |
-| <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367) |
-| <a id="request"></a>`request`                               | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387) |
-| <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423) |
+| <a id="parameter_metadata_key"></a>`PARAMETER_METADATA_KEY` | [parameterDecorator.ts:172](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L172) |
+| <a id="parameter"></a>`parameter`                           | [parameterDecorator.ts:212](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L212) |
+| <a id="path"></a>`path`                                     | [parameterDecorator.ts:279](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L279) |
+| <a id="query"></a>`query`                                   | [parameterDecorator.ts:311](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L311) |
+| <a id="header"></a>`header`                                 | [parameterDecorator.ts:343](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L343) |
+| <a id="body"></a>`body`                                     | [parameterDecorator.ts:361](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L361) |
+| <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:373](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L373) |
+| <a id="request"></a>`request`                               | [parameterDecorator.ts:393](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L393) |
+| <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:429](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L429) |
 | <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L55)                   |
 | <a id="getparametername"></a>`getParameterName`             | [reflection.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L101)                 |
 
