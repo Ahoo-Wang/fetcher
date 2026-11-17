@@ -232,5 +232,13 @@ describe('request trust', () => {
         sent['https://api.example.com/v1/\\evil.example.net/collect'];
       expect(headers.get('authorization')).toMatch(/^Bearer /);
     });
+
+    it('does not trust a relative URL whose target does not parse', async () => {
+      const isTrusted = vi.fn(() => true);
+      const fetcher = configured(isTrusted, 'https://[invalid');
+      await fetcher.get('/users');
+      expect(isTrusted).not.toHaveBeenCalled();
+      expectNoCredentials(sent['https://[invalid/users']);
+    });
   });
 });
