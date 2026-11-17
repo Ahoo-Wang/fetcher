@@ -390,7 +390,7 @@ export class DefaultSpaceIdProvider implements SpaceIdProvider {
    * });
    * ```
    */
-  constructor(private options: SpaceIdProviderOptions) {}
+  constructor(public options: SpaceIdProviderOptions) {}
 
   /**
    * Resolves the space identifier for a given fetch exchange.

@@ -68,8 +68,8 @@ export class RequestExecutor {
    * @param metadata - The function metadata containing all request information
    */
   constructor(
-    private readonly target: any,
-    private readonly metadata: FunctionMetadata,
+    readonly target: any,
+    readonly metadata: FunctionMetadata,
   ) {}
 
   /**

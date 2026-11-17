@@ -64,7 +64,8 @@ function isRefreshRejected(error: unknown): boolean {
  * Manages JWT token refreshing operations and provides status information
  */
 export class JwtTokenManager implements RefreshTokenStatusCapable {
-  private refreshInProgress?: {
+  /** @internal */
+  refreshInProgress?: {
     token: JwtCompositeToken;
     promise: Promise<JwtCompositeToken>;
     notification: { hasHandler: boolean; handled: boolean };

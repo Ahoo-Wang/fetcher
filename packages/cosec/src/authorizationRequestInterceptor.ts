@@ -55,7 +55,7 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
    *
    * @param options - Configuration options containing the token manager
    */
-  constructor(private readonly options: AuthorizationInterceptorOptions) {}
+  constructor(readonly options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the request exchange to add authorization headers.

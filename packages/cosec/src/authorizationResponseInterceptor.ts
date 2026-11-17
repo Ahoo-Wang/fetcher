@@ -81,7 +81,7 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    * Creates a new AuthorizationResponseInterceptor instance.
    * @param options - The CoSec configuration options including token storage and refresher
    */
-  constructor(private options: AuthorizationInterceptorOptions) {}
+  constructor(public options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the response and handles unauthorized responses by refreshing tokens.
@@ -184,8 +184,10 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    * fresh response, so each of them runs once. The error phase is not
    * replayed either: a failed retry propagates to the outer exchange, whose
    * error interceptors run once and see the original error unwrapped.
+   *
+   * @internal
    */
-  private async retry(exchange: FetchExchange): Promise<void> {
+  async retry(exchange: FetchExchange): Promise<void> {
     const { request, response } = exchange.fetcher.interceptors;
     await request.intercept(exchange);
     for (const interceptor of response.interceptors) {

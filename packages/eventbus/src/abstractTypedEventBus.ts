@@ -17,7 +17,8 @@ import type { EventHandler, EventType } from './types.js';
 export abstract class AbstractTypedEventBus<
   EVENT,
 > implements TypedEventBus<EVENT> {
-  protected eventHandlers: EventHandler<EVENT>[] = [];
+  /** @internal */
+  eventHandlers: EventHandler<EVENT>[] = [];
   abstract type: EventType;
 
   /**
@@ -36,11 +37,10 @@ export abstract class AbstractTypedEventBus<
   /**
    * Runs one handler, logging (not propagating) any error it throws or
    * rejects with, so one failing handler never fails emit().
+   *
+   * @internal
    */
-  protected async handleEvent(
-    handler: EventHandler<EVENT>,
-    event: EVENT,
-  ): Promise<void> {
+  async handleEvent(handler: EventHandler<EVENT>, event: EVENT): Promise<void> {
     try {
       await handler.handle(event);
     } catch (e) {

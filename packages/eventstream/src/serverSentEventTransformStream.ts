@@ -89,14 +89,16 @@ export class ServerSentEventTransformer extends SafeTransformer<
   string,
   ServerSentEvent
 > {
-  private currentEventState: EventState = {
+  /** @internal */
+  currentEventState: EventState = {
     event: DEFAULT_EVENT_TYPE,
     id: undefined,
     retry: undefined,
     data: [],
   };
 
-  private resetEventState() {
+  /** @internal */
+  resetEventState() {
     this.currentEventState.event = DEFAULT_EVENT_TYPE;
     this.currentEventState.id = undefined;
     this.currentEventState.retry = undefined;

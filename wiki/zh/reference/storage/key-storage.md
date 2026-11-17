@@ -30,7 +30,7 @@ description: 'KeyStorage 与变更监听 — @ahoo-wang/fetcher-storage 5.0.0'
 | `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                                                                               |
 | `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                                                                                       |
 | `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数只移除这一次注册：不会移除同名的其他处理器，也不会移除之后通过 `addListener` 再次注册的同一处理器对象。                                                              |
-| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。                                                            |
+| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用`ownEventBus()`（公开但标记为 `@internal`，供子类使用）标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。                              |
 
 `StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。`set()`/`remove()` 投递的每个变更都按顺序带有时间戳，实例缓存会忽略比当前所持变更更旧的带戳变更，因此慢监听器、忽略 `order` 的 `ParallelTypedEventBus` 以及乱序到达的广播都不会把缓存回退到旧值。直接在总线上投递的事件没有时间戳，按到达顺序应用。内部缓存监听器使用总线上无其他处理器占用的名称，因此包的两份副本（ES 模块与 CommonJS 构建）可以共享总线，`destroy()` 也只移除该监听器。销毁拥有的总线前自行解绑外部监听器。
 

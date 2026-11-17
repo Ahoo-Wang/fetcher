@@ -28,7 +28,7 @@ ReadableStream 同时只能有一个活动 reader。将流交给 UI 或其他转
 
 `SafeTransformer<I, O>` 实现原生 `Transformer<I, O>`。子类实现 protected `onTransform(chunk, controller): void | Promise<void>`，可重写 `onFlush(controller)`、`onError(error, phase)`；`TransformerPhase` 为 `'transform' | 'flush'`。
 
-终止后 `transform` 忽略后续 chunk。钩子出错时会捕获、标记终止、调用受保护的错误钩子，再 `safeError` 让 reader 观察到失败。`flush` 同样捕获，并在 finally 标记终止。`onError` 自身抛错被抑制，避免替换原始失败。protected `enqueue`、`terminate` 返回布尔值；`terminate` 操作控制器前先标记状态。
+终止后 `transform` 忽略后续 chunk。钩子出错时会捕获、标记终止、调用受保护的错误钩子，再 `safeError` 让 reader 观察到失败。`flush` 同样捕获，并在 finally 标记终止。`onError` 自身抛错被抑制，避免替换原始失败。`enqueue`、`terminate`（公开但标记为 `@internal`，供子类使用）返回布尔值；`terminate` 操作控制器前先标记状态。
 
 ## 控制器辅助函数 {#controllers}
 

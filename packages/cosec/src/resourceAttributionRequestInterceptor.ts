@@ -63,9 +63,12 @@ export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
 export class ResourceAttributionRequestInterceptor implements RequestInterceptor {
   readonly name = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME;
   readonly order = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER;
-  private readonly tenantIdPathKey: string;
-  private readonly ownerIdPathKey: string;
-  private readonly tokenStorage: TokenStorage;
+  /** @internal */
+  readonly tenantIdPathKey: string;
+  /** @internal */
+  readonly ownerIdPathKey: string;
+  /** @internal */
+  readonly tokenStorage: TokenStorage;
 
   /**
    * Creates a new ResourceAttributionRequestInterceptor

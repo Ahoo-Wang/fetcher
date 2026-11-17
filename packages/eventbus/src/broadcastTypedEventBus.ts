@@ -126,10 +126,16 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
  */
 export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
-  private readonly delegate: TypedEventBus<EVENT>;
-  private messenger: CrossTabMessenger;
-  /** Whether this bus created its messenger, and so closes it on destroy. */
-  private readonly ownsMessenger: boolean;
+  /** @internal */
+  readonly delegate: TypedEventBus<EVENT>;
+  /** @internal */
+  messenger: CrossTabMessenger;
+  /**
+   * Whether this bus created its messenger, and so closes it on destroy.
+   *
+   * @internal
+   */
+  readonly ownsMessenger: boolean;
   public messageTransformer?: BroadcastTypedEventBusOptions<EVENT>['messageTransformer'];
 
   /**
