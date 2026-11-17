@@ -22,8 +22,14 @@ export function useKeyStorage<T>(
 
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
+  defaultValue: NonNullable<T>,
 ): [T, (value: T) => void, () => void];
+
+/** A default that may be `null` or `undefined` leaves the value nullable. */
+export function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [T | null, (value: T) => void, () => void];
 
 /**
  * A React hook that provides reactive state management for a KeyStorage instance.
@@ -40,7 +46,8 @@ export function useKeyStorage<T>(
  * @param keyStorage - The KeyStorage instance to subscribe to and manage. This should be a
  *                     stable reference (useRef, memo, or module-level instance)
  * @param defaultValue - Optional default value to use when storage is empty.
- *                      When provided, the returned value is guaranteed to be non-null.
+ *                      A non-nullish default makes the returned value non-null;
+ *                      a `null` or `undefined` one returns `null`.
  * @returns A tuple containing the current stored value (or default/null), a function to update it,
  *          and a function to remove the stored value.
  *          The value will be null if no default is provided and storage is empty.
@@ -112,15 +119,16 @@ export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
   defaultValue?: T,
 ): [T | null, (value: T) => void, () => void] {
-  // Cache of the last snapshot returned by getSnapshot. useSyncExternalStore
-  // requires getSnapshot to return a referentially-stable value for unchanged
-  // logical state, otherwise React warns "getSnapshot should be cached to
-  // avoid an infinite loop". KeyStorage.get() returns a stable reference on
-  // cache hits, but the inline defaultValue fallback is a fresh object each
-  // render (e.g. `useKeyStorage(ks, { theme: 'light' })`). We capture the
-  // snapshot once and only replace it when the content actually changes (deep
-  // equality via dequal), so Object.is stays stable across renders.
-  const snapshotRef = useRef<T | null | undefined>(undefined);
+  // Cache of the last default snapshot returned by getSnapshot.
+  // useSyncExternalStore requires getSnapshot to return a referentially-stable
+  // value for unchanged logical state, otherwise React warns "getSnapshot
+  // should be cached to avoid an infinite loop". KeyStorage.get() returns a
+  // stable reference on cache hits, so a stored value is returned as is: its
+  // content may be anything a serializer restores (private fields, cycles)
+  // and is never compared. Only the inline defaultValue fallback is a fresh
+  // object each render (e.g. `useKeyStorage(ks, { theme: 'light' })`); it is
+  // captured once and replaced only when its content changes (dequal).
+  const defaultSnapshotRef = useRef<{ value: T | null } | undefined>(undefined);
 
   // Create subscription function for useSyncExternalStore
   // This function returns an unsubscribe function that will be called on cleanup
@@ -138,19 +146,20 @@ export function useKeyStorage<T>(
   // This function is called by useSyncExternalStore to get the current value
   const getSnapshot = useCallback((): T | null => {
     const storedValue = keyStorage.get();
-    const current = storedValue !== null ? storedValue : (defaultValue ?? null);
-
+    if (storedValue !== null) return storedValue;
+    const current = defaultValue ?? null;
+    const cached = defaultSnapshotRef.current;
     // First call, or a genuine content change: adopt the new reference.
-    // dequal also handles primitives (via ===), so the cached branch below is
-    // safe for all value types.
+    // dequal also handles primitives (via ===).
     if (
-      snapshotRef.current === undefined ||
-      !dequal(current, snapshotRef.current)
+      cached === undefined ||
+      (cached.value !== current && !dequal(current, cached.value))
     ) {
-      snapshotRef.current = current;
+      defaultSnapshotRef.current = { value: current };
+      return current;
     }
-    // Return the (possibly cached, stable) reference.
-    return snapshotRef.current as T | null;
+    // Return the cached, stable reference.
+    return cached.value;
   }, [keyStorage, defaultValue]);
 
   // Use React's useSyncExternalStore for reactive external store connection

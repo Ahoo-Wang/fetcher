@@ -11,32 +11,37 @@ description: '请求、请求头与正文 — @ahoo-wang/fetcher 5.0.0'
 
 ## 请求字段 {#fields}
 
-| 字段/类型                                  | 契约                                                                                                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string \| undefined`，不是原生 `Headers` 实例。                                                        |
-| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`；省略正文时保持缺失。                                                      |
-| `BaseURLCapable`                           | 必填 `baseURL: string`；`UrlParamsCapable` 提供可选 `urlParams`。                                                              |
-| `HttpMethod`                               | GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、TRACE 字符串枚举；仍受平台限制。                                                 |
-| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`；`ContentTypeValues.APPLICATION_JSON` 为 `'application/json'`，`TEXT_EVENT_STREAM` 为 `'text/event-stream'`。 |
+| 字段/类型                                  | 契约                                                                                                                                                                                       |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `RequestHeaders` / `RequestHeadersCapable` | 普通字符串键记录，值为 `string \| undefined`，不是原生 `Headers` 实例。                                                                                                                    |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`；省略正文时保持缺失。                                                                                                                  |
+| `BaseURLCapable`                           | 必填 `baseURL: string`；`UrlParamsCapable` 提供可选 `urlParams`。                                                                                                                          |
+| `HttpMethod`                               | GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS、TRACE 字符串枚举；仍受平台限制。                                                                                                             |
+| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`；`ContentTypeValues.APPLICATION_JSON` 为 `'application/json'`，`APPLICATION_PROBLEM_JSON` 为 `'application/problem+json'`，`TEXT_EVENT_STREAM` 为 `'text/event-stream'`。 |
 
 ## 合并规则 {#merge}
 
-`mergeRequest(first, second): FetchRequestInit` 对 path/query 记录做一层合并，对请求头按大小写不敏感规则合并，第二个请求优先。`method`、`body`、`timeout`、`signal`、`abortController` 的第二个值为 nullish 时回退到第一个，因此此辅助函数中的 `body: null` 不能清空已有正文。其他原生字段遵循对象展开规则。空输入快捷路径在没有头时可能返回原对象，并非深复制。
+`mergeRequest(first, second): FetchRequestInit` 对 path/query 记录做一层合并，对请求头用 `mergeHeaderOverrides` 按大小写不敏感规则合并，删除标记（`{ Authorization: undefined }`）会保留在结果中，发送它的 Fetcher 因而仍会删除自己的默认值。第二个请求优先。`method`、`body`、`timeout`、`signal`、`abortController` 的第二个值为 nullish 时回退到第一个，因此此辅助函数中的 `body: null` 不能清空已有正文。其他原生字段遵循对象展开规则。空输入快捷路径在没有头时可能返回原对象，并非深复制。
 
 `mergeRequestOptions(first?, second?)` 按第二个、第一个的顺序选择非 nullish 的 `resultExtractor` 和 `attributes`，提取器最终回退到 Exchange。attributes 整体替换，不做合并。`mergeRecords(first?, second?)` 浅合并且后者优先，仅一个记录存在时可能返回原记录。`mergeRecordToMap(record?, map?)` 将记录或 Map 写入给定 Map（未传则新建），并返回同一个 Map。
 
 ## 请求头辅助函数 {#headers}
 
-| 函数                              | 返回值与修改行为                                           |
-| --------------------------------- | ---------------------------------------------------------- |
-| `getHeader(headers, name)`        | 返回最后一个大小写不敏感匹配值或 `undefined`，不修改输入。 |
-| `deleteHeader(headers, name)`     | 删除所有大小写变体，返回 `void`。                          |
-| `setHeader(headers, name, value)` | 先删除所有变体，再按给定拼写设置；`undefined` 表示删除。   |
-| `mergeHeaders(...records)`        | 返回新记录；后值优先，后续 `undefined` 删除继承头。        |
+| 函数                               | 返回值与修改行为                                                                                                                                                                                           |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getHeader(headers, name)`         | 返回最后一个大小写不敏感匹配值或 `undefined`，不修改输入。                                                                                                                                                 |
+| `deleteHeader(headers, name)`      | 删除所有大小写变体，返回 `void`。                                                                                                                                                                          |
+| `setHeader(headers, name, value)`  | 先删除所有变体，再按给定拼写设置；`undefined` 表示删除。                                                                                                                                                   |
+| `mergeHeaders(...records)`         | 返回新记录；后值优先，后续 `undefined` 删除继承头。                                                                                                                                                        |
+| `mergeHeaderOverrides(...records)` | 与 `mergeHeaders` 相同，但后续 `undefined`/`null` 以 `undefined` 条目保留，因此之后的合并（Fetcher 默认请求头）也会删除该头。用于尚未发送的请求；Fetcher 自身的合并会在拦截器和 `fetch` 之前去掉这些标记。 |
+
+## 跨 realm 类型判断 {#realm}
+
+`isPlainObject(value)`、`isMap(value)`、`isAbortSignal(value)`、`isAbortController(value)` 对其他 realm（同源 iframe、Node `vm` 上下文）创建的值与本 realm 的值同样成立。`isMap`、`isAbortSignal`、`isAbortController` 先尝试 `instanceof`，再使用内置类型自身的品牌检查（读取内部槽的原型 getter），因此只是声称该类型的对象不会通过。`isPlainObject` 接受原型为 `null` 或某个 realm 的 `Object.prototype` 的对象：对象字面量、解析得到的 JSON、`Object.create(null)`。类实例、数组和内置对象不是纯对象。Fetcher 对请求正文、日期和属性使用同样的判断；decorator 包用它们绑定参数。
 
 ## 正文转换 {#body}
 
-`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。客户端没有默认 Content-Type，由正文决定；客户端或请求上设置的 Content-Type 会保留，下文另有说明的除外。nullish 正文原样通过，因此无正文请求（GET 等）不带 Content-Type，跨域时也不会因此触发 CORS 预检。字符串原样发送，仅在未设置 Content-Type 时补 `application/json`。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不添加 Content-Type；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
+`RequestBodyInterceptor` 在普通 order 为零的请求拦截器之前运行。客户端没有默认 Content-Type，由正文决定；客户端或请求上设置的 Content-Type 会保留，下文另有说明的除外。nullish 正文原样通过，因此无正文请求（GET 等）不带 Content-Type，跨域时也不会因此触发 CORS 预检。字符串原样发送，仅在未设置 Content-Type 时补 `application/json`；调用方设置的空 Content-Type 会保留。正文类型的识别与创建它的 realm 无关，因此 iframe 中的 File 不会被序列化为 JSON。Blob、File、FormData、URLSearchParams 保持原值，但移除所有 Content-Type 拼写，让 Fetch 决定类型与边界。ArrayBuffer、类型化数组/DataView、ReadableStream 原样通过，不添加 Content-Type；ReadableStream 正文在未设置 `duplex` 时还会得到 Fetch 要求的 `duplex: 'half'`。其他对象（含数组）使用 `JSON.stringify`，仅在缺少 Content-Type 时补 JSON 类型。显式非 JSON Content-Type 不会阻止 JSON 序列化。循环对象或 BigInt 可能序列化失败并进入错误管线。
 
 运行时是否支持流式上传，以及额外的运行时特有请求字段，仍由调用者负责。插入正文转换器前请阅读[管线顺序](./interceptors.md)。
 
@@ -70,18 +75,23 @@ console.assert(exchange.request.timeout === 0);
 | <a id="urlparamscapable"></a>`UrlParamsCapable`           | [fetchRequest.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L48)     |
 | <a id="content_type_header"></a>`CONTENT_TYPE_HEADER`     | [fetchRequest.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L55)     |
 | <a id="contenttypevalues"></a>`ContentTypeValues`         | [fetchRequest.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L57)     |
-| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L68)     |
-| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
-| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
-| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
-| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L63)     |
+| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L70)     |
+| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L83)     |
+| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L90)     |
+| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L117)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:188](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L188)   |
+| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L67)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [requestOptions.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L41) |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
 | <a id="deleteheader"></a>`deleteHeader`                   | [requestHeaders.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L29) |
-| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L39) |
-| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L56) |
-| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                   |
-| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L71)                   |
+| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L54) |
+| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L64) |
+| <a id="mergeheaderoverrides"></a>`mergeHeaderOverrides`   | [requestHeaders.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L85) |
+| <a id="isplainobject"></a>`isPlainObject`                 | [realm.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L144)                 |
+| <a id="ismap"></a>`isMap`                                 | [realm.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L83)                   |
+| <a id="isabortsignal"></a>`isAbortSignal`                 | [realm.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L122)                 |
+| <a id="isabortcontroller"></a>`isAbortController`         | [realm.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L129)                 |
+| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L44)                   |
+| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L73)                   |
 
 [包索引](./index.md)

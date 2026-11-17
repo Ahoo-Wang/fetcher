@@ -186,6 +186,87 @@ describe('reflection', () => {
     });
   });
 
+  describe('getParameterNames source forms', () => {
+    // Built from source so the test transform cannot reformat the signature
+    // (it adds parentheses around a lone arrow parameter).
+    const fromSource = (source: string): ((...args: any[]) => any) =>
+      (0, eval)(`(${source})`);
+
+    it.each([
+      ['value => value'],
+      ['value => Math.max(value, 1)'],
+      ['value => Math.max(1, value)'],
+      ['value => value.trim()'],
+      ['async value => value'],
+      ['async value => await f(value, 2)'],
+      ['(value) => Math.max(value, 1)'],
+      ['async (value) => value'],
+      ['function (value) { return f(1, 2); }'],
+      ['async function named(value) { return f(1, 2); }'],
+      ['function* gen(value) { yield f(1, 2); }'],
+      ['$value => $value'],
+    ])('reads the signature of %s, not its body', source => {
+      const names = getParameterNames(fromSource(source));
+      expect(names).toEqual([source.includes('$value') ? '$value' : 'value']);
+    });
+
+    it('reads a parameter named async', () => {
+      expect(getParameterNames(fromSource('async => async'))).toEqual([
+        'async',
+      ]);
+    });
+
+    it('does not split on commas or parentheses inside a default RegExp', () => {
+      expect(
+        getParameterNames(
+          fromSource(String.raw`function (pattern = /a,b/, id) {}`),
+        ),
+      ).toEqual(['pattern', 'id']);
+      expect(
+        getParameterNames(fromSource(String.raw`function (p = /\)/, id) {}`)),
+      ).toEqual(['p', 'id']);
+      expect(
+        getParameterNames(
+          fromSource(String.raw`function (p = /[)/,(]/gi, id) {}`),
+        ),
+      ).toEqual(['p', 'id']);
+      expect(
+        getParameterNames(
+          fromSource(String.raw`function (p = /a\/,b/, q = [/,/], id) {}`),
+        ),
+      ).toEqual(['p', 'q', 'id']);
+      expect(
+        getParameterNames(fromSource(String.raw`(p = !/,/.test(x), id) => p`)),
+      ).toEqual(['p', 'id']);
+      expect(
+        getParameterNames(
+          fromSource(String.raw`function (p = typeof /,/, id) {}`),
+        ),
+      ).toEqual(['p', 'id']);
+    });
+
+    it('still reads a division in a default as a division', () => {
+      expect(
+        getParameterNames(fromSource('function (a = 1 / 2, b = a / 2, c) {}')),
+      ).toEqual(['a', 'b', 'c']);
+      expect(
+        getParameterNames(
+          fromSource('function (a = (1) / 2, b = x[0] / 2, c) {}'),
+        ),
+      ).toEqual(['a', 'b', 'c']);
+    });
+
+    it('reads Unicode parameter names whole', () => {
+      expect(
+        getParameterNames(fromSource('function sample(搜索, café, ñ_1) {}')),
+      ).toEqual(['搜索', 'café', 'ñ_1']);
+      expect(getParameterNames(fromSource('名 => 名'))).toEqual(['名']);
+      expect(
+        getParameterNames(fromSource('function (\\u0061b, ...ré) {}')),
+      ).toEqual(['ab', 'ré']);
+    });
+  });
+
   describe('getParameterName', () => {
     it('should return provided name when explicitly given', () => {
       class TestClass {

@@ -37,7 +37,7 @@ The `@ahoo-wang/fetcher-openapi` package provides type-only source definitions f
 | `License`               | License information (name, `identifier` (3.1 SPDX expression), url)                                            |
 | `Server`                | Server configuration with URL template variables                                                               |
 | `ServerVariable`        | Variable substitution for server URLs (enum, default, description)                                             |
-| `Paths`                 | Map of API paths to PathItem objects (plus `x-*` keys); `OpenAPI.paths` is required                            |
+| `Paths`                 | Map of `/`-prefixed paths (`PathKey`) to PathItem objects, plus `x-*` keys; `OpenAPI.paths` is required        |
 | `PathItem`              | Per-path `get`…`trace` operations, `$ref`, `summary`, `servers`, `parameters`                                  |
 | `Components`            | Reusable components (schemas, responses, parameters, and more; `pathItems` is 3.1)                             |
 | `ComponentTypeMap`      | Maps each `Components` key to its non-reference interface (e.g. `schemas` → `Schema`)                          |
@@ -130,7 +130,7 @@ const polymorphicSchema: Schema = {
 | `RequestBody` | Request body definition with content types                                         |
 | `MediaType`   | Content type definition: `schema`, `example`, `examples`, `encoding`               |
 | `Encoding`    | Serialization rules: `contentType`, `headers`, `style`, `explode`, `allowReserved` |
-| `Callback`    | Map of callback expressions to PathItem objects                                    |
+| `Callback`    | Map of runtime expressions (`CallbackExpression`) to PathItem objects, plus `x-*`  |
 
 **Operation properties:** `tags`, `summary`, `description`, `externalDocs`, `operationId`, `parameters`, `requestBody`, `responses` (required), `callbacks`, `deprecated`, `security`, `servers`
 
@@ -185,12 +185,12 @@ const userIdParam: Parameter = {
 
 ### Response Types
 
-| Type        | Description                                                                                           |
-| ----------- | ----------------------------------------------------------------------------------------------------- |
-| `Response`  | Response definition: `description` (required), `headers`, `content`, `links`                          |
-| `Responses` | `default` plus status-code keys, each `Response \| Reference \| undefined` (plus `x-*` keys)          |
-| `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `description`, `server` |
-| `Example`   | Example object: `summary`, `description`, `value`, `externalValue`                                    |
+| Type        | Description                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------------- |
+| `Response`  | Response definition: `description` (required), `headers`, `content`, `links`                            |
+| `Responses` | `default` plus status keys (`HttpStatusCodeKey`), each `Response \| Reference \| undefined`, plus `x-*` |
+| `Link`      | Design-time link: `operationRef`, `operationId`, `parameters`, `requestBody`, `description`, `server`   |
+| `Example`   | Example object: `summary`, `description`, `value`, `externalValue`                                      |
 
 ```typescript
 import type { Response } from '@ahoo-wang/fetcher-openapi';
@@ -336,6 +336,7 @@ import type {
   Server,
   ServerVariable,
   Paths,
+  PathKey,
   PathItem,
   Operation,
   RequestBody,
@@ -346,9 +347,11 @@ import type {
   Header,
   Response,
   Responses,
+  HttpStatusCodeKey,
   Link,
   Example,
   Callback,
+  CallbackExpression,
   Schema,
   SchemaType,
   Discriminator,

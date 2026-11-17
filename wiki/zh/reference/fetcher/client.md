@@ -11,15 +11,16 @@ description: '客户端与注册 — @ahoo-wang/fetcher 5.0.0'
 
 `new Fetcher(options?: FetcherOptions)` 接受下列选项。传入选项对象时必须包含 `baseURL`；省略整个对象时使用 `DEFAULT_OPTIONS`。
 
-| 选项                                                                                      | 默认值                         | 契约                                                                                                                                                  |
-| ----------------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseURL: string`                                                                         | `''`                           | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。                                                                                             |
-| `headers?: RequestHeaders`                                                                | `{}`                           | 默认没有 `Content-Type`，由[正文拦截器](./requests.md#body)按正文设置；客户端保存传入对象的副本；每个请求防御性复制并按大小写不敏感规则合并。         |
-| `timeout?: number`                                                                        | `undefined`                    | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。                                                                                             |
-| `urlTemplateStyle?`                                                                       | `UrlTemplateStyle.UriTemplate` | 默认 `{id}`；`Express` 使用 `:id`。                                                                                                                   |
-| `interceptors?`                                                                           | 新建 `InterceptorManager`      | 传入管理器时直接使用，也可在客户端间共享。                                                                                                            |
-| `validateStatus?`                                                                         | `200 <= status < 300`          | 仅在创建默认管理器时使用。                                                                                                                            |
-| `fetch?: FetchImplementation`（[类型](./errors-and-cancellation.md#fetchimplementation)） | 全局 `fetch`，调用时读取       | 发送请求所用的 `fetch`，适用于自带实现的运行时或框架（Tauri、埋点）以及测试。超时和信号仍然生效。与 `validateStatus` 相同，仅在创建默认管理器时使用。 |
+| 选项                                                                                      | 默认值                         | 契约                                                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `baseURL: string`                                                                         | `''`                           | 由可修改的 `urlBuilder` 使用；相对 URL 仍要求运行时支持。                                                                                                                                          |
+| `headers?: RequestHeaders`                                                                | `{}`                           | 默认没有 `Content-Type`，由[正文拦截器](./requests.md#body)按正文设置；客户端保存传入对象的副本；每个请求防御性复制并按大小写不敏感规则合并。                                                      |
+| `timeout?: number`                                                                        | `undefined`                    | 单位毫秒；未配置不启用定时器。请求级 `0` 禁用继承的超时。                                                                                                                                          |
+| `urlTemplateStyle?`                                                                       | `UrlTemplateStyle.UriTemplate` | 默认 `{id}`；`Express` 使用 `:id`。                                                                                                                                                                |
+| `interceptors?`                                                                           | 新建 `InterceptorManager`      | 传入管理器时直接使用，也可在客户端间共享。                                                                                                                                                         |
+| `validateStatus?`                                                                         | `200 <= status < 300`          | 仅在创建默认管理器时使用。                                                                                                                                                                         |
+| `fetch?: FetchImplementation`（[类型](./errors-and-cancellation.md#fetchimplementation)） | 全局 `fetch`，调用时读取       | 发送请求所用的 `fetch`，适用于自带实现的运行时或框架（Tauri、埋点）以及测试。超时和信号仍然生效。与 `validateStatus` 相同，仅在创建默认管理器时使用。                                              |
+| `problemDetails?: boolean`                                                                | `true`                         | 把被拒绝的 `application/problem+json` 响应的[问题详情](./errors-and-cancellation.md#problem-details)读到 `HttpStatusValidationError.problem`。与 `validateStatus` 一样，仅在创建默认管理器时使用。 |
 
 可修改 `urlBuilder`、`headers`、`timeout`，影响后续请求。`interceptors` 属性只读，但其中的注册表可修改。每个客户端持有自己的请求头副本，修改 `client.headers` 只影响该客户端；修改导出的 `DEFAULT_OPTIONS.headers` 仍会影响之后创建的所有客户端，应改用请求级头。
 
@@ -42,7 +43,7 @@ description: '客户端与注册 — @ahoo-wang/fetcher 5.0.0'
 
 `FetcherRegistrar.register(name, client): void`、`unregister(name): boolean`、`get(name): Fetcher | undefined` 管理条目。缺失时 `requiredGet(name)` 与 `default` getter 抛出 `Error`。设置 `default` 会注册到 `'default'`；`fetchers` 返回新的 `Map`，值仍是相同客户端。注销不会中止正在进行的请求。
 
-`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
+`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用；`Fetcher` 等导出类没有 `private` 成员，因此 ESM 与 CommonJS 声明可互相接受对方的实例；`check:package-types` 对每个包检查这一点）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
 
 ## 完整示例 {#example}
 
@@ -72,11 +73,11 @@ fetcherRegistrar.unregister('reports');
 | 符号                                                          | 实现                                                                                                                    |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | <a id="fetcheroptions"></a>`FetcherOptions`                   | [fetcher.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L57)                     |
-| <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L105)                   |
+| <a id="default_options"></a>`DEFAULT_OPTIONS`                 | [fetcher.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L116)                   |
 | <a id="requestoptions"></a>`RequestOptions`                   | [requestOptions.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L21)       |
 | <a id="default_request_options"></a>`DEFAULT_REQUEST_OPTIONS` | [requestOptions.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L25)       |
 | <a id="default_fetch_options"></a>`DEFAULT_FETCH_OPTIONS`     | [requestOptions.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L30)       |
-| <a id="fetcher"></a>`Fetcher`                                 | [fetcher.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L129)                   |
+| <a id="fetcher"></a>`Fetcher`                                 | [fetcher.ts:140](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcher.ts#L140)                   |
 | <a id="fetchercapable"></a>`FetcherCapable`                   | [fetcherCapable.ts:22](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L22)       |
 | <a id="getfetcher"></a>`getFetcher`                           | [fetcherCapable.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherCapable.ts#L37)       |
 | <a id="default_fetcher_name"></a>`DEFAULT_FETCHER_NAME`       | [fetcherRegistrar.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetcherRegistrar.ts#L19)   |

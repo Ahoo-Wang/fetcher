@@ -11,32 +11,37 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Request fields {#fields}
 
-| Field/type                                 | Contract                                                                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                          |
-| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                          |
-| `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                 |
-| `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                           |
-| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |
+| Field/type                                 | Contract                                                                                                                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                                                                                      |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                                                                                      |
+| `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                                                                             |
+| `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                                                                                       |
+| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `APPLICATION_PROBLEM_JSON` is `'application/problem+json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |
 
 ## Merge rules {#merge}
 
-`mergeRequest(first, second): FetchRequestInit` merges path and query records one level deep, and merges headers case-insensitively. The second request wins. For `method`, `body`, `timeout`, `signal`, and `abortController`, a nullish second value falls back to the first; `body: null` therefore does not clear an existing body in this helper. Other native fields follow object spread semantics. Empty-input shortcuts may return an original object when there are no headers; this is not a deep clone.
+`mergeRequest(first, second): FetchRequestInit` merges path and query records one level deep, and merges headers case-insensitively with `mergeHeaderOverrides`, so a removal (`{ Authorization: undefined }`) stays in the result and the Fetcher that sends it still removes its own default. The second request wins. For `method`, `body`, `timeout`, `signal`, and `abortController`, a nullish second value falls back to the first; `body: null` therefore does not clear an existing body in this helper. Other native fields follow object spread semantics. Empty-input shortcuts may return an original object when there are no headers; this is not a deep clone.
 
 `mergeRequestOptions(first?, second?)` chooses the second non-nullish `resultExtractor` and `attributes`, then the first; its extractor fallback is Exchange. Attributes are replaced as a whole, not merged. `mergeRecords(first?, second?)` does a shallow second-wins merge and can return an existing record when only one exists. `mergeRecordToMap(record?, map?)` writes a record or map into the supplied map (or a new map) and returns that same map.
 
 ## Header helpers {#headers}
 
-| Function                          | Result and mutation                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------- |
-| `getHeader(headers, name)`        | Last case-insensitive matching value, or `undefined`; no mutation.               |
-| `deleteHeader(headers, name)`     | Removes all case variants; returns `void`.                                       |
-| `setHeader(headers, name, value)` | Removes all variants, then sets the supplied spelling; `undefined` means delete. |
-| `mergeHeaders(...records)`        | New record, later values win; later `undefined` removes an inherited header.     |
+| Function                           | Result and mutation                                                                                                                                                                                                                                        |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getHeader(headers, name)`         | Last case-insensitive matching value, or `undefined`; no mutation.                                                                                                                                                                                         |
+| `deleteHeader(headers, name)`      | Removes all case variants; returns `void`.                                                                                                                                                                                                                 |
+| `setHeader(headers, name, value)`  | Removes all variants, then sets the supplied spelling; `undefined` means delete.                                                                                                                                                                           |
+| `mergeHeaders(...records)`         | New record, later values win; later `undefined` removes an inherited header.                                                                                                                                                                               |
+| `mergeHeaderOverrides(...records)` | Like `mergeHeaders`, but a later `undefined`/`null` stays as an `undefined` entry, so a later merge (the Fetcher's defaults) removes the header too. For requests not yet sent; the Fetcher's own merge drops the markers before interceptors and `fetch`. |
+
+## Realm-independent checks {#realm}
+
+`isPlainObject(value)`, `isMap(value)`, `isAbortSignal(value)` and `isAbortController(value)` hold for values made in another realm (a same-origin iframe, a Node `vm` context) as well as this one. `isMap`, `isAbortSignal` and `isAbortController` try `instanceof`, then the built-in's own brand check (a prototype getter that reads internal slots), so an object that only claims the type fails. `isPlainObject` accepts an object whose prototype is `null` or some realm's `Object.prototype`: an object literal, parsed JSON, `Object.create(null)`. Class instances, arrays and built-ins are not plain. Fetcher uses the same checks for request bodies, dates and attributes; the decorator package uses them to bind arguments.
 
 ## Body conversion {#body}
 
-`RequestBodyInterceptor` runs before normal order-zero request interceptors. The client has no default Content-Type; the body decides it, and one set on the client or request is kept except where noted. Nullish bodies pass through, so a bodyless request (GET and the like) carries no Content-Type and a cross-origin one needs no CORS preflight because of it. A string is sent as is and gets `application/json` only if no Content-Type is set. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through with no Content-Type added; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
+`RequestBodyInterceptor` runs before normal order-zero request interceptors. The client has no default Content-Type; the body decides it, and one set on the client or request is kept except where noted. Nullish bodies pass through, so a bodyless request (GET and the like) carries no Content-Type and a cross-origin one needs no CORS preflight because of it. A string is sent as is and gets `application/json` only if no Content-Type is set; an empty Content-Type the caller set is kept. Body types are recognized whatever realm made them, so an iframe's File is not serialized as JSON. Blob, File, FormData, and URLSearchParams pass through after removing **all** Content-Type spellings so Fetch chooses the type/boundary. ArrayBuffer, typed-array/DataView views, and ReadableStream pass through with no Content-Type added; a ReadableStream body also gets `duplex: 'half'` unless `duplex` is already set, as Fetch requires. Other objects (including arrays) use `JSON.stringify`; JSON Content-Type is added only if absent. An explicit non-JSON Content-Type does not prevent JSON serialization. Circular data or BigInt may fail serialization and enter the error pipeline.
 
 Whether the runtime supports streaming uploads, and additional runtime-specific request fields, remain the caller's responsibility. See [pipeline ordering](./interceptors.md) before inserting a body transformer.
 
@@ -70,18 +75,23 @@ console.assert(exchange.request.timeout === 0);
 | <a id="urlparamscapable"></a>`UrlParamsCapable`           | [fetchRequest.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L48)     |
 | <a id="content_type_header"></a>`CONTENT_TYPE_HEADER`     | [fetchRequest.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L55)     |
 | <a id="contenttypevalues"></a>`ContentTypeValues`         | [fetchRequest.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L57)     |
-| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L68)     |
-| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
-| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
-| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
-| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L63)     |
+| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L70)     |
+| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L83)     |
+| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L90)     |
+| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L117)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:188](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L188)   |
+| <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L67)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [requestOptions.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L41) |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
 | <a id="deleteheader"></a>`deleteHeader`                   | [requestHeaders.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L29) |
-| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:39](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L39) |
-| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L56) |
-| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                   |
-| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L71)                   |
+| <a id="setheader"></a>`setHeader`                         | [requestHeaders.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L54) |
+| <a id="mergeheaders"></a>`mergeHeaders`                   | [requestHeaders.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L64) |
+| <a id="mergeheaderoverrides"></a>`mergeHeaderOverrides`   | [requestHeaders.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L85) |
+| <a id="isplainobject"></a>`isPlainObject`                 | [realm.ts:144](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L144)                 |
+| <a id="ismap"></a>`isMap`                                 | [realm.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L83)                   |
+| <a id="isabortsignal"></a>`isAbortSignal`                 | [realm.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L122)                 |
+| <a id="isabortcontroller"></a>`isAbortController`         | [realm.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L129)                 |
+| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L44)                   |
+| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L73)                   |
 
 [Package index](./index.md)

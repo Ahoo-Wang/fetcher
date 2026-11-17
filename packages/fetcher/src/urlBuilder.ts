@@ -19,6 +19,7 @@ import {
   getUrlTemplateResolver,
   type UrlTemplateResolver,
 } from './urlTemplateResolver.js';
+import { isURLSearchParams } from './realm.js';
 
 /**
  * Container for URL parameters including path and query parameters.
@@ -47,6 +48,8 @@ export interface UrlParams {
    * - an array becomes one parameter per item (`ids=1&ids=2`),
    * - a `Date` becomes its ISO 8601 form,
    * - anything else becomes `String(value)`.
+   *
+   * A `URLSearchParams` is taken as is, repeated keys included.
    *
    * @example
    * ```typescript
@@ -77,12 +80,49 @@ function appendSearchParam(
 export function toSearchParams(
   query: Record<string, unknown> | URLSearchParams,
 ): URLSearchParams {
-  if (query instanceof URLSearchParams) return new URLSearchParams(query);
+  if (isURLSearchParams(query)) return new URLSearchParams(query);
   const params = new URLSearchParams();
   for (const [name, value] of Object.entries(query)) {
     appendSearchParam(params, name, value);
   }
   return params;
+}
+
+/**
+ * A copy of query parameters, of the same kind: a `URLSearchParams` stays one
+ * (spreading it would leave an empty object), a record is copied shallowly.
+ */
+export function copyQuery<Q extends Record<string, any> | URLSearchParams>(
+  query: Q,
+): Q {
+  return (
+    isURLSearchParams(query) ? new URLSearchParams(query) : { ...query }
+  ) as Q;
+}
+
+/**
+ * Merges two sets of query parameters; a name in `second` replaces every
+ * value of that name in `first`. When either is a `URLSearchParams` the
+ * result is one, so repeated keys survive; two records merge as records.
+ */
+export function mergeQuery(
+  first?: Record<string, any> | URLSearchParams,
+  second?: Record<string, any> | URLSearchParams,
+): Record<string, any> | URLSearchParams | undefined {
+  if (first === undefined) return second;
+  if (second === undefined) return first;
+  if (!isURLSearchParams(first) && !isURLSearchParams(second)) {
+    return { ...first, ...second };
+  }
+  const merged = toSearchParams(first);
+  const overrides = toSearchParams(second);
+  for (const name of new Set(overrides.keys())) {
+    merged.delete(name);
+  }
+  for (const [name, value] of overrides) {
+    merged.append(name, value);
+  }
+  return merged;
 }
 
 /**
@@ -152,10 +192,22 @@ export class UrlBuilder implements BaseURLCapable {
    * ```
    */
   build(url: string, params?: UrlParams): string {
+    return this.applyParams(combineURLs(this.baseURL, url), params);
+  }
+
+  /**
+   * Fills path parameters and appends query parameters to a URL that is
+   * already combined with the base URL; the base URL is not prefixed again.
+   *
+   * @param url - URL already combined with the base URL
+   * @param params - URL parameters including path and query parameters
+   * @returns The URL with path parameters interpolated and the query string appended
+   * @throws Error when required path parameters are missing
+   */
+  applyParams(url: string, params?: UrlParams): string {
     const path = params?.path;
     const query = params?.query;
-    const combinedURL = combineURLs(this.baseURL, url);
-    let finalUrl = this.urlTemplateResolver.resolve(combinedURL, path);
+    let finalUrl = this.urlTemplateResolver.resolve(url, path);
     if (query) {
       const queryString = toSearchParams(query).toString();
       if (queryString) {

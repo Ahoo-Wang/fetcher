@@ -10,8 +10,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { expect, it, vi } from 'vitest';
-import { InMemoryStorage, KeyStorage } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  type EventHandler,
+  ParallelTypedEventBus,
+  SerialTypedEventBus,
+} from '@ahoo-wang/fetcher-eventbus';
+import { InMemoryStorage, KeyStorage, type StorageEvent } from '../src';
 
 it('does not let a duplicate-name remover remove the listener that holds the name', async () => {
   const storage = new KeyStorage<string>({
@@ -69,4 +74,97 @@ it('never moves the cache back to an older value behind a slow listener', async 
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(storage.get()).toBe('newer');
   storage.destroy();
+});
+
+describe('a handler object registered again (#2049)', () => {
+  const flush = () => new Promise(resolve => setTimeout(resolve, 0));
+
+  it.each([
+    ['serial', () => new SerialTypedEventBus<StorageEvent<string>>('reuse')],
+    [
+      'parallel',
+      () => new ParallelTypedEventBus<StorageEvent<string>>('reuse'),
+    ],
+  ])(
+    'keeps the new registration when the once remover runs late (%s bus)',
+    async (_kind, createBus) => {
+      const storage = new KeyStorage<string>({
+        key: 'value',
+        storage: new InMemoryStorage(),
+        eventBus: createBus(),
+      });
+      const received: (string | null | undefined)[] = [];
+      const handler: EventHandler<StorageEvent<string>> = {
+        name: 'view',
+        once: true,
+        handle: event => {
+          received.push(event.newValue);
+        },
+      };
+      const removeOld = storage.addListener(handler);
+      storage.set('first');
+      await flush();
+
+      const removeNew = storage.addListener(handler);
+      removeOld();
+      expect(storage.eventBus.handlers).toContain(handler);
+
+      storage.set('second');
+      await flush();
+      expect(received).toEqual(['first', 'second']);
+      removeNew();
+      storage.destroy();
+    },
+  );
+
+  it('keeps the new registration when the old one was removed explicitly', () => {
+    const storage = new KeyStorage<string>({
+      key: 'value',
+      storage: new InMemoryStorage(),
+    });
+    const handler = { name: 'view', handle() {} };
+    const removeOld = storage.addListener(handler);
+    removeOld();
+    const removeNew = storage.addListener(handler);
+    removeOld();
+    expect(storage.eventBus.handlers).toContain(handler);
+    removeNew();
+    expect(storage.eventBus.handlers).not.toContain(handler);
+    storage.destroy();
+  });
+
+  it('keeps a registration made through another instance on the same bus', () => {
+    const eventBus = new SerialTypedEventBus<StorageEvent<string>>('shared');
+    const backend = new InMemoryStorage();
+    const first = new KeyStorage<string>({
+      key: 'value',
+      storage: backend,
+      eventBus,
+    });
+    const second = new KeyStorage<string>({
+      key: 'value',
+      storage: backend,
+      eventBus,
+    });
+    const handler = { name: 'view', handle() {} };
+    const removeOld = first.addListener(handler);
+    removeOld();
+    second.addListener(handler);
+    removeOld();
+    expect(eventBus.handlers).toContain(handler);
+    first.destroy();
+    second.destroy();
+  });
+
+  it('still removes the current registration through its own remover', () => {
+    const storage = new KeyStorage<string>({
+      key: 'value',
+      storage: new InMemoryStorage(),
+    });
+    const handler = { name: 'view', handle() {} };
+    const remove = storage.addListener(handler);
+    remove();
+    expect(storage.eventBus.handlers).not.toContain(handler);
+    storage.destroy();
+  });
 });

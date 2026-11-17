@@ -28,7 +28,9 @@ description: 'JSON 事件、Response 辅助方法与提取器 — @ahoo-wang/fet
 
 ## 集成 Fetcher {#extractors}
 
-`EventStreamResultExtractor` 返回 `exchange.requiredResponse.requiredEventStream()`。`JsonEventStreamResultExtractor` 返回 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它基于 `requiredJsonEventStream<DATA>(detector)` 构建同样的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+`EventStreamResultExtractor` 返回 `exchange.requiredResponse` 的 SSE 流，检查与错误同 `requiredEventStream()`。`JsonEventStreamResultExtractor` 返回其 JSON 事件流，同 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它构建与 `requiredJsonEventStream<DATA>(detector)` 相同的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+
+提取器只读取响应的标准 `headers` 与 `body`，不调用上面的 Response 扩展。因此自定义 `fetch` 可以返回其他 realm（iframe 的 `fetch`）或其他实现（单独安装的 `undici`、polyfill）的 Response，即使本包从未修改其原型。直接调用扩展方法仍需要全局构造器创建的 Response。
 
 Fetcher 状态校验在提取前完成，提取或迭代时正文/媒体类型错误必须由调用者捕获。请求返回流不代表流已结束。
 
@@ -62,15 +64,15 @@ console.assert(chunks.join('') === 'hello');
 | 符号                                                                                | 实现                                                                                                                                                            |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | <a id="eventstreamconverterror"></a>`EventStreamConvertError`                       | [eventStreamConverter.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamConverter.ts#L54)                               |
-| <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)                   |
-| <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L68)                   |
-| <a id="jsoneventstreamresultextractor-factory"></a>`jsonEventStreamResultExtractor` | [eventStreamResultExtractor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L88)                   |
+| <a id="eventstreamresultextractor"></a>`EventStreamResultExtractor`                 | [eventStreamResultExtractor.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L49)                   |
+| <a id="jsoneventstreamresultextractor"></a>`JsonEventStreamResultExtractor`         | [eventStreamResultExtractor.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L77)                   |
+| <a id="jsoneventstreamresultextractor-factory"></a>`jsonEventStreamResultExtractor` | [eventStreamResultExtractor.ts:99](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L99)                   |
 | <a id="eventstreamincompleteerror"></a>`EventStreamIncompleteError`                 | [jsonServerSentEventTransformStream.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L46)   |
 | <a id="terminatedetector"></a>`TerminateDetector`                                   | [jsonServerSentEventTransformStream.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L25)   |
 | <a id="jsonserversentevent"></a>`JsonServerSentEvent`                               | [jsonServerSentEventTransformStream.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L32)   |
-| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L62)   |
-| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L107) |
-| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:121](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L121) |
-| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L133) |
+| <a id="jsonserversenteventtransform"></a>`JsonServerSentEventTransform`             | [jsonServerSentEventTransformStream.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L61)   |
+| <a id="jsonserversenteventtransformstream"></a>`JsonServerSentEventTransformStream` | [jsonServerSentEventTransformStream.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L106) |
+| <a id="jsonserversenteventstream"></a>`JsonServerSentEventStream`                   | [jsonServerSentEventTransformStream.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L120) |
+| <a id="tojsonserversenteventstream"></a>`toJsonServerSentEventStream`               | [jsonServerSentEventTransformStream.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/jsonServerSentEventTransformStream.ts#L132) |
 
 [包索引](./index.md)

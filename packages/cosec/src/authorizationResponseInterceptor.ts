@@ -19,9 +19,16 @@ import {
   type ResponseInterceptor,
 } from '@ahoo-wang/fetcher';
 import {
+  CREDENTIALS_WITHHELD_ATTRIBUTE,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
   TOKEN_SESSION_ATTRIBUTE,
+  UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
 } from './constants.js';
+import { NonReplayableRequestError } from './errors.js';
+import { isTrustedRequest } from './requestTrust.js';
+import { isOneShotBody } from './requestBody.js';
+
+export { NonReplayableRequestError } from './errors.js';
 import { assertTokenSession } from './refreshSession.js';
 import {
   AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
@@ -74,7 +81,7 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    * Creates a new AuthorizationResponseInterceptor instance.
    * @param options - The CoSec configuration options including token storage and refresher
    */
-  constructor(private options: AuthorizationInterceptorOptions) {}
+  constructor(public options: AuthorizationInterceptorOptions) {}
 
   /**
    * Intercepts the response and handles unauthorized responses by refreshing tokens.
@@ -91,6 +98,15 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     if (
       response.status !== ResponseCodes.UNAUTHORIZED ||
       exchange.attributes?.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY)
+    ) {
+      return;
+    }
+    // A request the trust policy kept this application's credentials from:
+    // its 401 says nothing about the session, so it is neither refreshed for
+    // nor replayed.
+    if (
+      exchange.attributes?.get(CREDENTIALS_WITHHELD_ATTRIBUTE) === true ||
+      !isTrustedRequest(exchange, this.options.isTrusted)
     ) {
       return;
     }
@@ -129,9 +145,20 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     }
     attributes.set(AUTHORIZATION_RETRY_COUNT_ATTRIBUTE, retryCount + 1);
 
+    // The 401 is replaced by the retry and never reaches the caller's body
+    // readers: release its body now, so it holds no connection the refresh
+    // and the retry may need (a pool of one would otherwise wait forever).
+    releaseBody(response);
+
     // The manager owns cleanup for the session that started the refresh.
     await this.options.tokenManager.refresh(exchange);
     assertTokenSession(exchange, this.options.tokenManager.currentToken);
+    // A stream body was consumed by the first attempt and cannot be sent
+    // again. The session is refreshed; the caller re-sends with a new body.
+    if (isOneShotBody(exchange.request?.body)) {
+      attributes.set(UNAUTHORIZED_ERROR_INTERCEPTOR_NAME, true);
+      throw new NonReplayableRequestError();
+    }
     // Retrying re-runs the whole request interceptor chain. Drop the stale
     // Authorization header so AuthorizationRequestInterceptor re-adds it
     // with the refreshed token — it skips requests that already carry one.
@@ -141,6 +168,10 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
     // Retry the original request with the new token. A failure of the retry
     // itself (network error, another 401, ...) propagates unchanged: it must
     // not clear the freshly refreshed and still valid token.
+    // The retry's own outcome replaces the 401: should its fetch fail
+    // (offline, timeout, abort), the error chain must not see the old 401
+    // and report the refreshed session as unauthorized.
+    exchange.response = undefined;
     await this.retry(exchange);
   }
 
@@ -153,8 +184,10 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    * fresh response, so each of them runs once. The error phase is not
    * replayed either: a failed retry propagates to the outer exchange, whose
    * error interceptors run once and see the original error unwrapped.
+   *
+   * @internal
    */
-  private async retry(exchange: FetchExchange): Promise<void> {
+  async retry(exchange: FetchExchange): Promise<void> {
     const { request, response } = exchange.fetcher.interceptors;
     await request.intercept(exchange);
     for (const interceptor of response.interceptors) {
@@ -164,4 +197,11 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
       }
     }
   }
+}
+
+function releaseBody(response: Response): void {
+  const body = response.body;
+  if (!body || response.bodyUsed || body.locked) return;
+  // Cleanup must not mask the 401 handling, so a failed cancel is ignored.
+  body.cancel().catch(() => {});
 }

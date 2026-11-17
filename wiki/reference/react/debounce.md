@@ -16,7 +16,7 @@ Two kinds of debounce exist, and they expose different controls. Callback deboun
 | `useDebouncedValue(value, options)`                  | Returns `{ value, pending, flush }`. The first render returns `value` itself; later changes (compared deeply) are applied after the delay.                                                                                           |
 | `useDebouncedQuery` / `useDebouncedFetcherQuery`     | A [controlled query](./promise-and-query-state#controlled-queries) whose `query` is debounced: the first query executes at once, later changes after the delay. Adds `pending` and `flush()`; `execute()` re-runs the applied query. |
 
-With leading and trailing enabled, the initial invocation runs immediately; a lone leading call does not also get a trailing invocation. Later calls inside the delay may schedule trailing execution. `cancel()` removes scheduled work but retains the last-leading timestamp. It does not abort an already running request. Conversely, request `abort()` does not clear a pending debounce timer; call both when cancelling the entire user action. Unmount clears timers and request hooks also abort active execution.
+A burst is a run of calls less than `delay` apart; it ends once `delay` passes without a call. `leading` invokes the first call of a burst at once, `trailing` the last one when the burst ends. With both enabled, a lone leading call does not also get a trailing invocation, and calls that keep coming inside the delay never start a second leading invocation. `cancel()` removes scheduled work but not the burst, so a call right after it is not a new leading call. Unmounting, and the effect cleanup of a StrictMode replay or a hidden `Activity`, ends the burst: the replayed mount effect's first call runs at once again. It does not abort an already running request. Conversely, request `abort()` does not clear a pending debounce timer; call both when cancelling the entire user action. Unmount clears timers and request hooks also abort active execution.
 
 Query variants keep the query in your state like `useQuery`. `pending` is true while the query you pass differs from the applied one; `flush()` applies it now (for an Apply button or Enter). Reverting your query to the applied value drops the waiting change. Applying a new query cancels the request in flight when the new execution starts, not on each keystroke. A debounced `undefined` makes the query not ready; it does not cancel work already running. Callback exceptions and rejected promises in callback variants need their own handling; a timer does not expose a rejection to the caller of `run`. The executor's error state covers the request hooks.
 
@@ -103,7 +103,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 ): UseDebouncedCallbackReturn<T>;
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L43)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L52)
 
 ### UseDebouncedCallbackOptions {#api-UseDebouncedCallbackOptions}
 
@@ -127,7 +127,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
 }
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L26)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L29)
 
 ### useDebouncedValue {#api-useDebouncedValue}
 

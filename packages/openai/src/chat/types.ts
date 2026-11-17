@@ -137,7 +137,12 @@ export type ChatToolChoice =
   'none' | 'auto' | { type: 'function'; function: { name: string } };
 
 export interface Message {
-  content?: string;
+  /**
+   * The message text. `null` on an assistant message that only makes tool
+   * calls, both in a response and when sent back in `ChatRequest.messages`,
+   * and on streamed deltas that carry no text.
+   */
+  content?: string | null;
   role?: string;
 
   [property: string]: any;
@@ -149,16 +154,21 @@ export interface ChatResponse {
   id: string;
   object: string;
   /**
-   * Token usage. Absent on streamed chunks, except the last one when the
-   * request sets `stream_options: { include_usage: true }`.
+   * Token usage. On streamed chunks it is absent, or `null` when the request
+   * sets `stream_options: { include_usage: true }`, except on the last chunk,
+   * which then carries the usage of the whole request.
    */
-  usage?: Usage;
+  usage?: Usage | null;
 
   [property: string]: any;
 }
 
 export interface Choice {
-  finish_reason?: string;
+  /**
+   * Why the model stopped, such as `stop`, `length` or `tool_calls`. `null`
+   * on streamed chunks until the last one of the choice.
+   */
+  finish_reason?: string | null;
   index?: number;
   message?: Message;
   /**

@@ -123,8 +123,10 @@ export class FetchExchange implements RequiredBy<
   resultExtractor: ResultExtractor<any>;
   /**
    * The response object, undefined until the request completes successfully.
+   *
+   * @internal
    */
-  private _response?: Response;
+  _response?: Response;
 
   /**
    * Any error that occurred during the request processing, undefined if no error occurred.
@@ -133,9 +135,12 @@ export class FetchExchange implements RequiredBy<
 
   /**
    * Cached result of the extracted result to avoid repeated computations.
+   *
+   * @internal
    */
-  private cachedExtractedResult?: any | Promise<any>;
-  private hasCachedResult = false;
+  cachedExtractedResult?: any | Promise<any>;
+  /** @internal */
+  hasCachedResult = false;
   /**
    * Shared attributes for passing data between interceptors.
    *

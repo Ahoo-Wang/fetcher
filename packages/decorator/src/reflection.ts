@@ -19,10 +19,14 @@ const parameterNameCache = new WeakMap<Function, string[]>();
  *
  * This function parses the string representation of a function to extract
  * the names of its parameters. It handles various function formats including
- * regular functions, arrow functions, and methods.
+ * regular functions, arrow functions (a lone parameter without parentheses,
+ * `value => value`, included), and methods. Only the signature is read, never
+ * the body.
  *
- * Commas, parentheses and brackets inside default values, strings and comments
- * do not split parameters. A destructured parameter (`{ a, b }` or `[a, b]`)
+ * Commas, parentheses and brackets inside default values, strings, template
+ * and regular expression literals, and comments do not split parameters.
+ * Names are read whole by the ECMAScript identifier rules, so `搜索` and
+ * `café` are kept as written (a `\u` escape is decoded). A destructured parameter (`{ a, b }` or `[a, b]`)
  * has no name and yields `''`, which keeps the other names at their index; a
  * rest parameter yields its name without `...`.
  *
@@ -125,11 +129,75 @@ function hasParameters(paramsStr: string): boolean {
   return paramsStr.trim() !== '';
 }
 
+/** One identifier character, or a `\u` escape, as ECMAScript allows. */
+const IDENTIFIER_START = String.raw`(?:[\p{ID_Start}$_]|\\u[0-9a-fA-F]{4}|\\u\{[0-9a-fA-F]+\})`;
+const IDENTIFIER_PART = String.raw`(?:[\p{ID_Continue}$]|\u200C|\u200D|\\u[0-9a-fA-F]{4}|\\u\{[0-9a-fA-F]+\})`;
+const IDENTIFIER = `${IDENTIFIER_START}${IDENTIFIER_PART}*`;
+const LEADING_IDENTIFIER = new RegExp(`^${IDENTIFIER}`, 'u');
+/** `value => …` or `async value => …`: an arrow whose lone parameter has no parentheses. */
+const BARE_ARROW = new RegExp(`^(?:async\\s+)?(${IDENTIFIER})\\s*=>`, 'u');
+const IDENTIFIER_CHAR = /[\p{ID_Continue}$\\]|\u200C|\u200D/u;
+
+/** Keywords after which a `/` starts a regular expression, not a division. */
+const REGEXP_AFTER_WORDS = new Set([
+  'await',
+  'case',
+  'delete',
+  'do',
+  'else',
+  'in',
+  'instanceof',
+  'new',
+  'of',
+  'return',
+  'throw',
+  'typeof',
+  'void',
+  'yield',
+]);
+
 /**
- * Walks `source` from `from`, skipping string and template literals and
- * comments, and calls `visit` for every other character with the bracket
- * depth before it. Stops when `visit` returns `true`; returns that index, or
- * -1.
+ * Whether the `/` at `index` starts a regular expression literal rather than
+ * a division: it does unless it follows an operand (a name, number, string,
+ * or a closing bracket). Enough for the expressions of default values.
+ */
+function startsRegExp(source: string, index: number): boolean {
+  let j = index - 1;
+  while (j >= 0 && /\s/.test(source[j])) j--;
+  if (j < 0) return true;
+  const char = source[j];
+  if (char === ')' || char === ']' || char === '}') return false;
+  if (char === '"' || char === "'" || char === '`') return false;
+  // `a++ / 2`, `a-- / 2`: a postfix update ends an operand.
+  if ((char === '+' || char === '-') && source[j - 1] === char) return false;
+  if (!IDENTIFIER_CHAR.test(char)) return true;
+  let start = j;
+  while (start > 0 && IDENTIFIER_CHAR.test(source[start - 1])) start--;
+  return REGEXP_AFTER_WORDS.has(source.substring(start, j + 1));
+}
+
+/**
+ * The index of the `/` that closes the regular expression opened at `index`,
+ * skipping escapes and character classes; -1 if the line ends first.
+ */
+function regExpEnd(source: string, index: number): number {
+  let inClass = false;
+  for (let i = index + 1; i < source.length; i++) {
+    const char = source[i];
+    if (char === '\\') i++;
+    else if (char === '\n' || char === '\r') return -1;
+    else if (char === '[') inClass = true;
+    else if (char === ']') inClass = false;
+    else if (char === '/' && !inClass) return i;
+  }
+  return -1;
+}
+
+/**
+ * Walks `source` from `from`, skipping string, template and regular
+ * expression literals and comments, and calls `visit` for every other
+ * character with the bracket depth before it. Stops when `visit` returns
+ * `true`; returns that index, or -1.
  */
 function scan(
   source: string,
@@ -155,6 +223,14 @@ function scan(
       i = end < 0 ? source.length : end + 1;
       continue;
     }
+    if (char === '/' && startsRegExp(source, i)) {
+      const end = regExpEnd(source, i);
+      if (end !== -1) {
+        // Flags that follow are plain identifier characters.
+        i = end;
+        continue;
+      }
+    }
     if (visit(char, i, depth)) return i;
     if (char === '(' || char === '[' || char === '{') depth++;
     else if (char === ')' || char === ']' || char === '}') depth--;
@@ -163,6 +239,8 @@ function scan(
 }
 
 function extractParameterString(fnStr: string): string {
+  const bareArrow = BARE_ARROW.exec(fnStr);
+  if (bareArrow) return bareArrow[1];
   const open = fnStr.indexOf('(');
   if (open === -1) return '';
   const close = scan(
@@ -184,12 +262,37 @@ function parseParameterNames(paramsStr: string): string[] {
   });
   parts.push(paramsStr.substring(start));
   return parts
-    .map(part => part.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').trim())
+    .map(part => stripLeadingComments(part).trim())
     .filter(part => part.length > 0)
     .map(extractParameterName);
 }
 
-/** The identifier a parameter binds; `''` for a destructuring pattern. */
+/** Removes the comments before a parameter, where its name would be. */
+function stripLeadingComments(part: string): string {
+  let rest = part.trimStart();
+  for (;;) {
+    if (rest.startsWith('//')) {
+      const end = rest.indexOf('\n');
+      rest = end < 0 ? '' : rest.substring(end + 1).trimStart();
+    } else if (rest.startsWith('/*')) {
+      const end = rest.indexOf('*/', 2);
+      rest = end < 0 ? '' : rest.substring(end + 2).trimStart();
+    } else {
+      return rest;
+    }
+  }
+}
+
+/**
+ * The identifier a parameter binds, Unicode and `\u` escapes included; `''`
+ * for a destructuring pattern.
+ */
 function extractParameterName(param: string): string {
-  return param.replace(/^\.\.\./, '').match(/^[A-Za-z_$][\w$]*/)?.[0] ?? '';
+  const name =
+    param.replace(/^\.\.\./, '').match(LEADING_IDENTIFIER)?.[0] ?? '';
+  return name.replace(
+    /\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})/g,
+    (_, braced: string | undefined, plain: string | undefined) =>
+      String.fromCodePoint(parseInt(braced ?? plain!, 16)),
+  );
 }

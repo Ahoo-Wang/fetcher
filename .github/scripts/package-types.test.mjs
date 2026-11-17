@@ -17,6 +17,7 @@ import {
   consumerEntries,
   consumerManifest,
   consumerSources,
+  CROSS_EXEMPT,
   consumerWorkspace,
   describe,
   describeDiagnostic,
@@ -167,6 +168,52 @@ test('the dual consumer imports every entry, ES-module-only ones from .mts only'
   assert.match(sources['consumer.cts'], /^import type \* as entry0 from/);
 });
 
+test('the cross consumer holds class instances of both entries to each other', () => {
+  const sources = consumerSources([
+    { specifier: 'dual', import: true, require: true },
+    { specifier: 'dual/esm', import: true, require: false },
+  ]);
+  const cross = sources['consumer.cross.mts'];
+  assert.match(cross, /import type \* as esm0 from 'dual';/);
+  assert.match(
+    cross,
+    /import type \* as cjs0 from 'dual' with \{ 'resolution-mode': 'require' \};/,
+  );
+  assert.match(cross, /fromCjs0: Checked<typeof esm0> = cjsInstances0/);
+  assert.match(cross, /fromEsm0: Checked<typeof cjs0> = esmInstances0/);
+  // Only entries that resolve both ways have two declarations to compare.
+  assert.ok(!cross.includes("'dual/esm'"));
+  assert.equal(
+    consumerSources([{ specifier: 'esm', import: true, require: false }])[
+      'consumer.cross.mts'
+    ],
+    'export {};\n',
+  );
+  const exempted = consumerSources(
+    [{ specifier: 'dual', import: true, require: true }],
+    { exempt: ['Base', 'Derived'] },
+  )['consumer.cross.mts'];
+  assert.match(exempted, /Omit<Instances<M>, 'Base' \| 'Derived'>/);
+  assert.match(
+    consumerSources([{ specifier: 'dual', import: true, require: true }])[
+      'consumer.cross.mts'
+    ],
+    /Omit<Instances<M>, never>/,
+  );
+});
+
+test('every class left out of the cross check is named, with the reason', () => {
+  for (const [name, { classes, reason }] of Object.entries(CROSS_EXEMPT)) {
+    assert.match(name, /^@ahoo-wang\//);
+    assert.ok(classes.length > 0, name);
+    assert.ok(reason.length > 0, name);
+  }
+  // Whole packages are not exempt: every other class of theirs is checked.
+  assert.deepEqual(Object.keys(CROSS_EXEMPT), [
+    '@ahoo-wang/fetcher-eventstream',
+  ]);
+});
+
 test('an entry without conditions, or a package without exports, resolves from both', () => {
   assert.deepEqual(
     consumerEntries({ name: 'plain', exports: { '.': './index.js' } }),
@@ -199,7 +246,11 @@ test('the dual consumer is one strict program with both files, lib checked', () 
     assert.equal(compilerOptions.moduleResolution, module);
     assert.equal(compilerOptions.strict, true);
     assert.equal(compilerOptions.skipLibCheck, false);
-    assert.deepEqual(files, ['consumer.mts', 'consumer.cts']);
+    assert.deepEqual(files, [
+      'consumer.mts',
+      'consumer.cts',
+      'consumer.cross.mts',
+    ]);
   }
 });
 

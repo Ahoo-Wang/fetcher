@@ -33,14 +33,15 @@ export type TypeEventBusSupplier = (type: EventType) => TypedEventBus<unknown>;
  * ```
  */
 export class EventBus<Events extends Record<EventType, unknown>> {
-  private readonly buses: Map<EventType, TypedEventBus<unknown>> = new Map();
+  /** @internal */
+  readonly buses: Map<EventType, TypedEventBus<unknown>> = new Map();
 
   /**
    * Creates a generic event bus
    *
    * @param typeEventBusSupplier - Function to create TypedEventBus for specific event types
    */
-  constructor(private readonly typeEventBusSupplier: TypeEventBusSupplier) {}
+  constructor(readonly typeEventBusSupplier: TypeEventBusSupplier) {}
 
   /**
    * Adds an event handler for a specific event type
@@ -88,8 +89,12 @@ export class EventBus<Events extends Record<EventType, unknown>> {
     return this.bus(type).emit(event);
   }
 
-  /** Returns the bus for the type, creating it with the supplier on first use. */
-  private bus(type: EventType): TypedEventBus<unknown> {
+  /**
+   * Returns the bus for the type, creating it with the supplier on first use.
+   *
+   * @internal
+   */
+  bus(type: EventType): TypedEventBus<unknown> {
     let bus = this.buses.get(type);
     if (!bus) {
       bus = this.typeEventBusSupplier(type);

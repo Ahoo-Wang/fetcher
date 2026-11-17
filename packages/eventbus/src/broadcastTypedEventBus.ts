@@ -126,10 +126,16 @@ export interface BroadcastTypedEventBusOptions<EVENT> {
  */
 export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
   public readonly type: EventType;
-  private readonly delegate: TypedEventBus<EVENT>;
-  private messenger: CrossTabMessenger;
-  /** Whether this bus created its messenger, and so closes it on destroy. */
-  private readonly ownsMessenger: boolean;
+  /** @internal */
+  readonly delegate: TypedEventBus<EVENT>;
+  /** @internal */
+  messenger: CrossTabMessenger;
+  /**
+   * Whether this bus created its messenger, and so closes it on destroy.
+   *
+   * @internal
+   */
+  readonly ownsMessenger: boolean;
   public messageTransformer?: BroadcastTypedEventBusOptions<EVENT>['messageTransformer'];
 
   /**
@@ -251,9 +257,14 @@ export class BroadcastTypedEventBus<EVENT> implements TypedEventBus<EVENT> {
    * continues to work through the delegate bus: a later emit() runs local
    * handlers and posts nothing.
    *
+   * Destroying an already destroyed bus does nothing: a messenger passed in
+   * `options` is back with its owner after the first destroy() (which may
+   * have handed it to a new bus), and one this bus created is closed once.
+   *
    * Note: This does not remove event handlers or affect local event processing.
    */
   destroy(): void {
+    if (closedBuses.has(this)) return;
     closedBuses.add(this);
     if (this.ownsMessenger) {
       this.messenger.close();

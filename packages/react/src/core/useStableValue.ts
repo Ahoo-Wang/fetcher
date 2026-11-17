@@ -20,7 +20,8 @@ import { dequal } from 'dequal';
  * it on every render.
  */
 export function useStableValue<T>(value: T): T {
-  const [stable, setStable] = useState(value);
+  // An initializer, so a function value is stored rather than called.
+  const [stable, setStable] = useState(() => value);
   if (stable !== value && !dequal(stable, value)) {
     // Adjusting state from the previous render: React re-renders at once.
     setStable(() => value);

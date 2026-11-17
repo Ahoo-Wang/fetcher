@@ -5,14 +5,14 @@ description: 'API Hook 工厂 — @ahoo-wang/fetcher-react 6.0.0'
 
 # API Hook 工厂
 
-两个工厂把现有服务对象的异步方法转换为稳定 Hook 名称，例如 `getUser` 变成 `useGetUser`。在渲染之外创建 Hook 集合。它们保留服务 `this`，扫描自身及原型链方法，同名属性以最近的定义为准。
+两个工厂把现有服务对象的异步方法转换为稳定 Hook 名称，例如 `getUser` 变成 `useGetUser`。在渲染之外创建 Hook 集合。它们保留服务 `this`，扫描自身及原型链方法，同名属性以最近的定义为准。两个不同方法生成相同 Hook 名称时（`load` 与 `Load` 都生成 `useLoad`），工厂会抛出指明这两个方法的错误，而不是静默只保留其一。
 
-| 工厂 / 工具                      | 契约                                                                                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createExecuteApiHooks({ api })` | 各 Hook 接受执行器选项，返回状态和 `execute(...原参数): Promise<PromiseState>`；不自动调用。                                                                          |
-| `createQueryApiHooks({ api })`   | 各 Hook 接受[受控查询](./promise-and-query-state#controlled-queries)选项（`query`、`attributes`、`autoExecute`），调用 `method(query, attributes, abortController)`。 |
-| `methodNameToHookName(name)`     | 添加 `use` 并大写首字符；空名称抛错。                                                                                                                                 |
-| `collectMethods(obj)`            | 返回绑定方法的 Map：自身及原型链上的函数属性，最近的定义优先。跳过 `constructor`、`Object.prototype` 和访问器，因此收集时不会执行 getter。                            |
+| 工厂 / 工具                      | 契约                                                                                                                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createExecuteApiHooks({ api })` | 各 Hook 接受执行器选项，返回状态和 `execute(...原参数): Promise<PromiseState>`；不自动调用。                                                                                        |
+| `createQueryApiHooks({ api })`   | 各 Hook 接受[受控查询](./promise-and-query-state#controlled-queries)选项（`query`、`attributes`、`autoExecute`），调用 `method(query, attributes, abortController)`。               |
+| `methodNameToHookName(name)`     | 添加 `use` 并大写首字符；空名称抛错。                                                                                                                                               |
+| `collectMethods(obj)`            | 返回绑定方法的 Map：自身及原型链上的函数属性，最近的定义优先。跳过 `constructor`、`Object.prototype`（任意 realm，例如 iframe 或 `vm` 上下文）和访问器，因此收集时不会执行 getter。 |
 
 只有 Hook 设置 `appendAbortController: true` 时，执行 Hook 才传入 controller：方法以 `method(...params, abortController)` 调用，`@api` 方法无论 controller 落在哪个位置都能识别，因此替换、中止或卸载执行会取消其请求。方法带可选尾参数时不要开启，否则 controller 会占据参数位置；这时可在自己的服务方法中包装它。查询工厂自动转发 attributes 和 controller。两种 `execute` 都解析为最终状态，从不拒绝。
 
@@ -74,7 +74,7 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
 ): Map<string, T>;
 ```
 
-[packages/react/src/api/apiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L28)
+[packages/react/src/api/apiHooks.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L47)
 
 ### CreateApiHooksOptions {#api-CreateApiHooksOptions}
 
@@ -84,7 +84,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 }
 ```
 
-[packages/react/src/api/apiHooks.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L50)
+[packages/react/src/api/apiHooks.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L69)
 
 ### HookName {#api-HookName}
 
@@ -92,7 +92,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 export type HookName<K extends string> = `use${Capitalize<K>}`;
 ```
 
-[packages/react/src/api/apiHooks.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L54)
+[packages/react/src/api/apiHooks.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L73)
 
 ### IsPromiseFunction {#api-IsPromiseFunction}
 
@@ -102,7 +102,7 @@ export type IsPromiseFunction<T> = T extends (...args: any[]) => Promise<any>
   : false;
 ```
 
-[packages/react/src/api/apiHooks.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L56)
+[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
 
 ### FunctionParameters {#api-FunctionParameters}
 
@@ -112,7 +112,7 @@ export type FunctionParameters<T> = T extends (...args: infer P) => Promise<any>
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L60)
+[packages/react/src/api/apiHooks.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L79)
 
 ### FunctionReturnType {#api-FunctionReturnType}
 
@@ -124,7 +124,7 @@ export type FunctionReturnType<T> = T extends (
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L64)
+[packages/react/src/api/apiHooks.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L83)
 
 ### ApiMethod {#api-ApiMethod}
 
@@ -134,7 +134,7 @@ export type ApiMethod<TArgs extends any[] = any[], TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L70)
+[packages/react/src/api/apiHooks.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L89)
 
 ### QueryMethod {#api-QueryMethod}
 
@@ -146,7 +146,7 @@ export type QueryMethod<Q = any, TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
+[packages/react/src/api/apiHooks.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L94)
 
 ### ApiHooksMapping {#api-ApiHooksMapping}
 
@@ -162,7 +162,7 @@ export type ApiHooksMapping<
 };
 ```
 
-[packages/react/src/api/apiHooks.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L81)
+[packages/react/src/api/apiHooks.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L100)
 
 ### createExecuteApiHooks {#api-createExecuteApiHooks}
 

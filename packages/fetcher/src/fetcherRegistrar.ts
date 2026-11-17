@@ -41,9 +41,9 @@ export const DEFAULT_FETCHER_NAME = 'default';
 export class FetcherRegistrar {
   /**
    * Internal map for storing registered fetchers
-   * @private
+   * @internal
    */
-  private registrar: Map<string, Fetcher> = new Map();
+  registrar: Map<string, Fetcher> = new Map();
 
   /**
    * Register a Fetcher instance with a given name

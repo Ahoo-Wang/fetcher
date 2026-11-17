@@ -165,7 +165,13 @@ export interface ParameterMetadata {
   explicit?: boolean;
 }
 
-export const PARAMETER_METADATA_KEY = Symbol('parameter:metadata');
+/**
+ * Registered (`Symbol.for`), so the ES module and CommonJS builds of this
+ * package, loaded side by side, read each other's metadata.
+ */
+export const PARAMETER_METADATA_KEY = Symbol.for(
+  '@ahoo-wang/fetcher-decorator:parameter',
+);
 
 /**
  * Decorator factory for method parameters.
