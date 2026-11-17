@@ -271,7 +271,7 @@ export function consumerWorkspace(tarballs) {
   };
 }
 
-function pack(directory, destination) {
+export function pack(directory, destination) {
   const before = new Set(readdirSync(destination));
   // pnpm pack rewrites workspace: and catalog: ranges as publishing does.
   execFileSync('pnpm', ['pack', '--pack-destination', destination], {
@@ -305,7 +305,7 @@ function analyze(root, tarball) {
   return JSON.parse(readFileSync(report, 'utf8')).analysis;
 }
 
-function installConsumer(root, tarballs, destination) {
+export function installConsumer(root, tarballs, destination) {
   const project = join(destination, 'dual-consumer');
   mkdirSync(project);
   // Declarations that import react need its types, at the workspace's version.
