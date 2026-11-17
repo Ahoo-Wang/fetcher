@@ -25,7 +25,7 @@ JSON types are compile-time promises, not runtime validation. The package augmen
 
 ## FetchExchange {#exchange}
 
-`new FetchExchange(init: FetchExchangeInit)` requires `fetcher` and `request`; it accepts optional `resultExtractor`, `response`, `error`, and `attributes`. `AttributesCapable.attributes` accepts a record or Map; the constructor copies entries into a new Map. The extractor defaults to Exchange. The request and response are references, not clones.
+`new FetchExchange(init: FetchExchangeInit)` requires `fetcher` and `request`; it accepts optional `resultExtractor`, `response`, `error`, and `attributes`. `AttributesCapable.attributes` accepts a record or Map (from any realm); the constructor copies entries into a new Map. The extractor defaults to Exchange. The request and response are references, not clones.
 
 | Member                           | Contract                                                                                                                         |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |

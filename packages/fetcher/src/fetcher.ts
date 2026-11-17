@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import { UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
+import { copyQuery, UrlBuilder, type UrlBuilderCapable } from './urlBuilder.js';
 import {
   resolveTimeout,
   type FetchImplementation,
@@ -183,7 +183,7 @@ export class Fetcher
     const mergedHeaders = mergeHeaders(this.headers, request.headers);
     const urlParams = request.urlParams && {
       path: request.urlParams.path && { ...request.urlParams.path },
-      query: request.urlParams.query && { ...request.urlParams.query },
+      query: request.urlParams.query && copyQuery(request.urlParams.query),
     };
     const fetchRequest: FetchRequest = {
       ...request,

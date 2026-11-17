@@ -11,6 +11,8 @@
  * limitations under the License.
  */
 
+import { isDate } from './realm.js';
+
 /**
  * Enumeration of URL template path styles.
  *
@@ -147,7 +149,26 @@ export interface UrlTemplateResolver {
  * absent value means (a missing path parameter, an omitted query parameter).
  */
 export function formatUrlParam(value: unknown): string {
-  return value instanceof Date ? value.toISOString() : String(value);
+  return isDate(value) ? value.toISOString() : String(value);
+}
+
+/**
+ * A path parameter's value. A name the record only inherits from
+ * `Object.prototype` (`constructor`, `toString`, `__proto__`...) is not a
+ * value the caller gave, so it reads as absent.
+ */
+function readPathParam(
+  pathParams: Record<string, any> | null | undefined,
+  key: string,
+): unknown {
+  if (pathParams === undefined || pathParams === null) return undefined;
+  if (
+    !Object.prototype.hasOwnProperty.call(pathParams, key) &&
+    key in Object.prototype
+  ) {
+    return undefined;
+  }
+  return pathParams[key];
 }
 
 /**
@@ -168,7 +189,7 @@ export function urlTemplateRegexResolve(
   pathParams?: Record<string, any> | null,
 ) {
   return urlTemplate.replace(pathParamRegex, (_, key) => {
-    const value = pathParams?.[key];
+    const value = readPathParam(pathParams, key);
     if (value === undefined || value === null) {
       throw new Error(`Missing required path parameter: ${key}`);
     }

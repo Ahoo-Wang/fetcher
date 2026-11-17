@@ -26,9 +26,9 @@ description: '拦截器管线 — @ahoo-wang/fetcher 5.0.0'
 
 ## 失败与恢复 {#recovery}
 
-`new InterceptorManager(validateStatus?, fetchImplementation?)` 创建上述请求/响应注册表和空错误注册表；`fetchImplementation` 传给 `new FetchInterceptor(fetchImplementation?)`，省略时在调用时读取全局 `fetch` 发送。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`，运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
+`new InterceptorManager(validateStatus?, fetchImplementation?)` 创建上述请求/响应注册表和空错误注册表；`fetchImplementation` 传给 `new FetchInterceptor(fetchImplementation?)`，省略时在调用时读取全局 `fetch` 发送。`exchange(exchange)` 先运行 request，再运行 response。拒绝时将抛出的值放到 `exchange.error`（以 `undefined` 或 `null` 拒绝时记录为说明此情况的 `FetcherError`，因为 nullish 的 `error` 表示已恢复），运行 error 注册表；若 `hasError()` 仍为真，则以 `ExchangeError` 拒绝：属于同一 exchange 的 `ExchangeError`（如 `HttpStatusValidationError`）原样抛出，其他值被包装，原值作为 `cause`。恢复时将 `exchange.error` 设为 `undefined` 或 `null`。
 
-错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误拦截器（或它运行的回调）抛错会终止错误链，后续错误拦截器不再执行；抛出的值成为 `exchange.error`，exchange 与其他失败一样以 `ExchangeError` 拒绝，`cause` 为该值。错误拦截器不自动重试，提取器失败发生在此管理器之外。
+错误拦截器通过补齐所需响应/结果状态并清空 `exchange.error` 完成恢复。恢复后**不会重跑响应链**，因此恢复响应必须已满足应用策略。错误拦截器（或它运行的回调）抛错会终止错误链，后续错误拦截器不再执行；抛出的值成为 `exchange.error`（nullish 值同上），exchange 与其他失败一样以 `ExchangeError` 拒绝，`cause` 为该值。错误拦截器不自动重试，提取器失败发生在此管理器之外。
 
 共享客户端中的拦截器会一直保留直到移除。使用独立稳定名称，并在所有者结束时移除请求专属埋点；不要每次请求都追加新拦截器。
 
