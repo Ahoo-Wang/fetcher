@@ -9,7 +9,7 @@ description: 'URL construction and templates — @ahoo-wang/fetcher 5.0.0'
 
 ## Builder {#builder}
 
-`new UrlBuilder(baseURL: string, urlTemplateStyle?)` exposes mutable `baseURL` and `urlTemplateResolver`. `build(url: string, params?: UrlParams): string` resolves both parts; `resolveRequestUrl(request: FetchRequest)` delegates to `build`. `UrlBuilderCapable` requires a `urlBuilder`. `UrlParams.path` and `.query` are optional `Record<string, any>` values.
+`new UrlBuilder(baseURL: string, urlTemplateStyle?)` exposes mutable `baseURL` and `urlTemplateResolver`. `build(url: string, params?: UrlParams): string` resolves both parts; `applyParams(url: string, params?: UrlParams): string` does the same for a URL already combined with the base URL, without prefixing it again; `resolveRequestUrl(request: FetchRequest)` delegates to `build`. `UrlBuilderCapable` requires a `urlBuilder`. `UrlParams.path` and `.query` are optional `Record<string, any>` values.
 
 `combineURLs(baseURL, relativeURL)` trims trailing/leading slash runs at the join. Empty relative URL returns the base unchanged; an absolute or protocol-relative second URL overrides the base. `isAbsoluteURL` recognizes an optional scheme followed by `//`, not every URI scheme (`data:` is not classified as absolute by this helper).
 
@@ -29,7 +29,7 @@ Query values are serialized by `toSearchParams(query)`: `undefined`/`null` value
 | `urlTemplateRegexResolve(template, regex, params?)`        | Same substitution rule for a caller-supplied capture group naming the key.                                                                                                                            |
 | `urlTemplateRegexExtract(template, regex)`                 | Loops through `regex.exec`; use a global regex so matching progresses.                                                                                                                                |
 
-A `Date` value becomes its ISO 8601 text; slashes inside values become `%2F`. `UrlResolveInterceptor` applies the client's builder to `exchange.request.url`, then clears `request.urlParams` to avoid resolving twice. Its name/order constants are listed under [interceptors](./interceptors.md). Missing template parameters fail before network I/O, with or without a map.
+A `Date` value becomes its ISO 8601 text; slashes inside values become `%2F`. `UrlResolveInterceptor` applies the client's builder to `exchange.request.url`, then clears `request.urlParams` and remembers the URL it produced. Re-running it on the same request (as the CoSec 401 retry does) leaves that URL as is, so a relative base URL such as `/api` is not prefixed twice; URL params set before the re-run are applied with `applyParams`, and a replaced URL is resolved in full. Its name/order constants are listed under [interceptors](./interceptors.md). Missing template parameters fail before network I/O, with or without a map.
 
 ## Complete example {#example}
 
@@ -57,7 +57,7 @@ console.assert(
 | <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                     |
 | <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                   |
 | <a id="tosearchparams"></a>`toSearchParams`                                  | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                     |
-| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                   |
+| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:211](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L211)                   |
 | <a id="urltemplatestyle"></a>`UrlTemplateStyle`                              | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)   |
 | <a id="geturltemplateresolver"></a>`getUrlTemplateResolver`                  | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)   |
 | <a id="urltemplateresolver"></a>`UrlTemplateResolver`                        | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)   |

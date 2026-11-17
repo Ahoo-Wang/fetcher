@@ -69,8 +69,8 @@ console.assert(client.interceptors.request.eject('trace'));
 | <a id="request_body_interceptor_name"></a>`REQUEST_BODY_INTERCEPTOR_NAME`     | [requestBodyInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L25) |
 | <a id="request_body_interceptor_order"></a>`REQUEST_BODY_INTERCEPTOR_ORDER`   | [requestBodyInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L30) |
 | <a id="requestbodyinterceptor"></a>`RequestBodyInterceptor`                   | [requestBodyInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L50) |
-| <a id="url_resolve_interceptor_name"></a>`URL_RESOLVE_INTERCEPTOR_NAME`       | [urlResolveInterceptor.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L24)   |
-| <a id="url_resolve_interceptor_order"></a>`URL_RESOLVE_INTERCEPTOR_ORDER`     | [urlResolveInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L29)   |
-| <a id="urlresolveinterceptor"></a>`UrlResolveInterceptor`                     | [urlResolveInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L53)   |
+| <a id="url_resolve_interceptor_name"></a>`URL_RESOLVE_INTERCEPTOR_NAME`       | [urlResolveInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L25)   |
+| <a id="url_resolve_interceptor_order"></a>`URL_RESOLVE_INTERCEPTOR_ORDER`     | [urlResolveInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L30)   |
+| <a id="urlresolveinterceptor"></a>`UrlResolveInterceptor`                     | [urlResolveInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L57)   |
 
 [Package index](./index.md)

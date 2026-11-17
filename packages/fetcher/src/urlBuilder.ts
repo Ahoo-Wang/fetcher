@@ -152,10 +152,22 @@ export class UrlBuilder implements BaseURLCapable {
    * ```
    */
   build(url: string, params?: UrlParams): string {
+    return this.applyParams(combineURLs(this.baseURL, url), params);
+  }
+
+  /**
+   * Fills path parameters and appends query parameters to a URL that is
+   * already combined with the base URL; the base URL is not prefixed again.
+   *
+   * @param url - URL already combined with the base URL
+   * @param params - URL parameters including path and query parameters
+   * @returns The URL with path parameters interpolated and the query string appended
+   * @throws Error when required path parameters are missing
+   */
+  applyParams(url: string, params?: UrlParams): string {
     const path = params?.path;
     const query = params?.query;
-    const combinedURL = combineURLs(this.baseURL, url);
-    let finalUrl = this.urlTemplateResolver.resolve(combinedURL, path);
+    let finalUrl = this.urlTemplateResolver.resolve(url, path);
     if (query) {
       const queryString = toSearchParams(query).toString();
       if (queryString) {

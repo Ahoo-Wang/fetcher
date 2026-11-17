@@ -56,7 +56,7 @@ sequenceDiagram
 
 ## 请求信任 {#request-trust}
 
-`RequestTrust` 为 `(url: string, exchange: FetchExchange) => boolean`；`RequestTrustCapable` 为 `CoSecConfig`、`CoSecRequestOptions` 与 `AuthorizationInterceptorOptions` 增加可选的 `isTrusted`。`isTrustedRequest(exchange, isTrusted?)` 为两个请求拦截器做判断：没有 `isTrusted` 时信任所有请求；有它时，相对请求 URL 始终受信任（它相对 `baseURL` 解析），绝对 URL 仅在 `isTrusted(url, exchange)` 返回 true 时受信任。该判断对每个 exchange（每个谓词）只做一次并保存在 exchange 上：401 重试时 URL 已按 `baseURL` 解析为绝对 URL，仍复用首次判断，因此受信任的相对请求在重试时保留凭据，且每个请求只调用一次 `isTrusted`。`sameOriginTrust` 信任 fetcher `baseURL` 所在源或页面自身源上的绝对 URL；其他源以及无法解析的 URL 都不受信任。
+`RequestTrust` 为 `(url: string, exchange: FetchExchange) => boolean`；`RequestTrustCapable` 为 `CoSecConfig`、`CoSecRequestOptions` 与 `AuthorizationInterceptorOptions` 增加可选的 `isTrusted`。`isTrustedRequest(exchange, isTrusted?)` 为两个请求拦截器做判断：没有 `isTrusted` 时信任所有请求；有它时，相对请求 URL 与 `baseURL` 拼接后若仍在 `baseURL` 的协议与主机上则受信任，绝对 URL 仅在 `isTrusted(url, exchange)` 返回 true 时受信任。经 URL 解析会去往其他主机的相对 URL（`\host/path`、混合斜杠、或含解析器会删除的制表符与换行符）按绝对 URL 判断：`isTrusted` 收到它实际解析到的 URL（相对页面解析；没有页面时相对一个占位源）。该判断对每个 exchange（每个谓词）只做一次并保存在 exchange 上：401 重试时 URL 已按 `baseURL` 解析为绝对 URL，仍复用首次判断，因此受信任的相对请求在重试时保留凭据，且每个请求只调用一次 `isTrusted`。`sameOriginTrust` 信任 fetcher `baseURL` 所在源或页面自身源上的绝对 URL；其他源以及无法解析的 URL 都不受信任。
 
 ::: warning 默认信任所有源
 默认情况下，任意源上的绝对请求 URL 都会收到访问 token 与 CoSec 请求头（含设备 ID）。客户端会请求不受你控制的 URL（如分页链接、下载地址、回调）时，请配置 `isTrusted: sameOriginTrust`（或自己的判断函数）。
@@ -185,19 +185,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="requesttrust"></span>
 
-**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L26)
+**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L32)
 
 <span id="requesttrustcapable"></span>
 
-**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L28)
+**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L34)
 
 <span id="sameorigintrust"></span>
 
-**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L57)
+**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L98)
 
 <span id="istrustedrequest"></span>
 
-**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L73)
+**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L114)
 
 <span id="default_cosec_device_id_key"></span>
 

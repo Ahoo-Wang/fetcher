@@ -56,7 +56,7 @@ sequenceDiagram
 
 ## Request trust {#request-trust}
 
-`RequestTrust` is `(url: string, exchange: FetchExchange) => boolean`; `RequestTrustCapable` adds the optional `isTrusted` to `CoSecConfig`, `CoSecRequestOptions` and `AuthorizationInterceptorOptions`. `isTrustedRequest(exchange, isTrusted?)` decides for both request interceptors: without `isTrusted` every request is trusted; with it a relative request URL is always trusted (it resolves against the `baseURL`) and an absolute one only when `isTrusted(url, exchange)` returns true. The decision is made once per exchange (per predicate) and kept on it: the 401 retry, which sees the URL already resolved against the `baseURL`, reuses it, so a trusted relative request keeps its credentials on the retry and `isTrusted` is asked once per request. `sameOriginTrust` trusts an absolute URL on the origin of the fetcher's `baseURL` or on the page's own origin; every other origin, and a URL that does not parse, is untrusted.
+`RequestTrust` is `(url: string, exchange: FetchExchange) => boolean`; `RequestTrustCapable` adds the optional `isTrusted` to `CoSecConfig`, `CoSecRequestOptions` and `AuthorizationInterceptorOptions`. `isTrustedRequest(exchange, isTrusted?)` decides for both request interceptors: without `isTrusted` every request is trusted; with it a relative request URL is trusted when, joined to the `baseURL`, it stays on the `baseURL`'s scheme and host, and an absolute one only when `isTrusted(url, exchange)` returns true. A relative URL that URL parsing takes to another host — `\host/path`, mixed slashes, or tabs and newlines the parser strips — is judged like an absolute URL: `isTrusted` receives the URL it resolves to (against the page, or a placeholder origin without one). The decision is made once per exchange (per predicate) and kept on it: the 401 retry, which sees the URL already resolved against the `baseURL`, reuses it, so a trusted relative request keeps its credentials on the retry and `isTrusted` is asked once per request. `sameOriginTrust` trusts an absolute URL on the origin of the fetcher's `baseURL` or on the page's own origin; every other origin, and a URL that does not parse, is untrusted.
 
 ::: warning Default trusts every origin
 By default an absolute request URL on any origin receives the access token and the CoSec headers, device ID included. Configure `isTrusted: sameOriginTrust` (or your own predicate) when the client requests URLs it does not control, such as pagination links, download URLs or callbacks.
@@ -185,19 +185,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="requesttrust"></span>
 
-**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L26)
+**`RequestTrust`** — [packages/cosec/src/requestTrust.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L32)
 
 <span id="requesttrustcapable"></span>
 
-**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L28)
+**`RequestTrustCapable`** — [packages/cosec/src/requestTrust.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L34)
 
 <span id="sameorigintrust"></span>
 
-**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L57)
+**`sameOriginTrust`** — [packages/cosec/src/requestTrust.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L98)
 
 <span id="istrustedrequest"></span>
 
-**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L73)
+**`isTrustedRequest`** — [packages/cosec/src/requestTrust.ts:114](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/requestTrust.ts#L114)
 
 <span id="default_cosec_device_id_key"></span>
 

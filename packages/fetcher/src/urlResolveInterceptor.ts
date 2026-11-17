@@ -16,6 +16,7 @@ import {
   type RequestInterceptor,
 } from './interceptor.js';
 import type { FetchExchange } from './fetchExchange.js';
+import type { FetchRequest } from './fetchRequest.js';
 import { FETCH_INTERCEPTOR_ORDER } from './fetchInterceptor.js';
 
 /**
@@ -28,6 +29,9 @@ export const URL_RESOLVE_INTERCEPTOR_NAME = 'UrlResolveInterceptor';
  */
 export const URL_RESOLVE_INTERCEPTOR_ORDER =
   FETCH_INTERCEPTOR_ORDER - BUILT_IN_INTERCEPTOR_ORDER_STEP;
+
+/** The URL each request was last resolved to by this interceptor. */
+const resolvedUrls = new WeakMap<FetchRequest, string>();
 
 /**
  * Interceptor responsible for resolving the final URL for a request.
@@ -69,17 +73,30 @@ export class UrlResolveInterceptor implements RequestInterceptor {
   /**
    * Resolves the final URL by combining the base URL, path parameters, and query parameters.
    *
-   * Resolution consumes the request's URL params, making re-running this
-   * interceptor on an already-resolved request a no-op. This matters when the
-   * same exchange is intercepted twice, e.g. an error interceptor retrying a
-   * request after a token refresh — otherwise the query string would be
-   * appended to the resolved URL a second time.
+   * Resolution consumes the request's URL params and remembers the URL it
+   * produced, making re-running this interceptor on an already-resolved
+   * request a no-op. This matters when the same exchange is intercepted
+   * twice, e.g. an interceptor retrying a request after a token refresh —
+   * otherwise a relative base URL (such as `/api`) would be prefixed and the
+   * query string appended a second time.
+   *
+   * If an interceptor sets new URL params on the resolved request before the
+   * re-run, they are applied to the resolved URL without the base URL being
+   * prefixed again. If it replaces the URL, the new URL is resolved in full.
    *
    * @param exchange - The fetch exchange containing the request information
    */
   intercept(exchange: FetchExchange) {
     const request = exchange.request;
-    request.url = exchange.fetcher.urlBuilder.resolveRequestUrl(request);
+    const resolved = resolvedUrls.get(request) === request.url;
+    if (resolved && request.urlParams === undefined) {
+      return;
+    }
+    const urlBuilder = exchange.fetcher.urlBuilder;
+    request.url = resolved
+      ? urlBuilder.applyParams(request.url, request.urlParams)
+      : urlBuilder.resolveRequestUrl(request);
     request.urlParams = undefined;
+    resolvedUrls.set(request, request.url);
   }
 }
