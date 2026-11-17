@@ -11,16 +11,20 @@ Apply a setup once to a client. Interceptor registration rejects duplicate names
 
 ## CoSecConfig and construction
 
-| Field                           | Default                        | Contract                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| appId:string                    | Required                       | Application identifier sent in headers                                                                                                                                                                                                                                                                                         |
-| tokenStorage:TokenStorage       | new TokenStorage()             | Exposed as configurer.tokenStorage                                                                                                                                                                                                                                                                                             |
-| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage()          | Exposed as configurer.deviceIdStorage                                                                                                                                                                                                                                                                                          |
-| tokenRefresher:TokenRefresher   | Absent                         | Only when present creates JwtTokenManager and installs Authorization request/response interceptors                                                                                                                                                                                                                             |
-| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider            | Resolves optional CoSec-Space-Id                                                                                                                                                                                                                                                                                               |
-| isTrusted:RequestTrust          | Absent (every request trusted) | Which absolute request URLs carry the Authorization token and the CoSec headers (device ID included); `sameOriginTrust` keeps them to the `baseURL` origin and the page origin. Relative URLs on the `baseURL` host are trusted; one that URL parsing takes to another host (e.g. `\host/path`) is judged like an absolute URL |
-| onUnauthorized(exchange)        | Absent                         | Optional void/Promise&lt;void&gt; callback in error pipeline                                                                                                                                                                                                                                                                   |
-| onForbidden(exchange)           | Absent                         | Optional Promise&lt;void&gt; callback in error pipeline                                                                                                                                                                                                                                                                        |
+| Field                              | Default                        | Contract                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| appId?:string                      | Deprecated, ignored            | Does nothing: CoSec 8.0 does not read an app from a request, the app is the `aud` of the token; kept so existing configuration compiles, removed in the next major version                                                                                                                                                     |
+| tokenStorage:TokenStorage          | new TokenStorage()             | Exposed as configurer.tokenStorage                                                                                                                                                                                                                                                                                             |
+| deviceIdStorage:DeviceIdStorage    | new DeviceIdStorage()          | Exposed as configurer.deviceIdStorage                                                                                                                                                                                                                                                                                          |
+| tokenRefresher:TokenRefresher      | Absent                         | Only when present creates JwtTokenManager and installs Authorization request/response interceptors                                                                                                                                                                                                                             |
+| spaceIdProvider:SpaceIdProvider    | NoneSpaceIdProvider            | Resolves optional CoSec-Space-Id                                                                                                                                                                                                                                                                                               |
+| isTrusted:RequestTrust             | Absent (every request trusted) | Which absolute request URLs carry the Authorization token and the CoSec headers (device ID included); `sameOriginTrust` keeps them to the `baseURL` origin and the page origin. Relative URLs on the `baseURL` host are trusted; one that URL parsing takes to another host (e.g. `\host/path`) is judged like an absolute URL |
+| isRefreshRejected(error)           | A `401` from the refresh route | Whether a failed refresh ends the session; see [refresh failures](./tokens-and-refresh#refresh-manager-and-transport)                                                                                                                                                                                                          |
+| rotationLeeway:number              | 30000                          | Milliseconds; **at most the server's `cosec.jwt.session.rotation-leeway`**, which the client cannot read ([refresh under rotation](./tokens-and-refresh#refresh-under-rotation))                                                                                                                                               |
+| refreshRetryDelays:number[]        | [500, 2000]                    | Pauses before the in-call retries of a refresh whose outcome is unknown, inside the window; `[]` for none                                                                                                                                                                                                                      |
+| onUnauthorized(exchange, problem?) | Absent                         | Optional void/Promise&lt;void&gt; callback in error pipeline; `problem` is the CoSec problem of the response, or of the refused refresh, when there is one                                                                                                                                                                     |     |
+| onForbidden(exchange, problem?)    | Absent                         | Optional Promise&lt;void&gt; callback in error pipeline for a 403 (a `scope-rejected` too, when there is no `onScopeRejected`)                                                                                                                                                                                                 |
+| onScopeRejected(exchange, problem) | Absent                         | Optional Promise&lt;void&gt; callback for a `403 scope-rejected`; the application decides, the client neither clears the space nor falls back to the default space                                                                                                                                                             |
 
 `new CoSecConfigurer(config)` initializes storage immediately. `applyTo(fetcher): void` installs CoSecRequestInterceptor and ResourceAttributionRequestInterceptor unconditionally; authorization only with tokenManager; error callbacks only when configured. Merely placing tokens in tokenStorage does **not** enable Authorization injection without tokenRefresher. `isTrusted` is passed to both CoSecRequestInterceptor and AuthorizationRequestInterceptor: an untrusted request gets no CoSec headers, no Authorization and no refresh. `tokenManager` and `spaceIdProvider` are exposed readonly (declared optional); config is readonly as a reference, not deeply immutable.
 
@@ -28,11 +32,11 @@ Apply a setup once to a client. Interceptor registration rejects duplicate names
 Without `isTrusted`, a request to an absolute URL on any origin — a pagination link, a download URL, a callback — receives the access token and the device ID. Pass `isTrusted: sameOriginTrust` (or your own `RequestTrust`) unless every absolute URL the client requests is yours.
 :::
 
-`AppIdCapable`, `DeviceIdStorageCapable`, `JwtTokenManagerCapable` require their corresponding property; `CoSecOptions` combines all three, while CoSecConfig permits omitted storage/refresher. They are dependency shapes, not additional setup functions.
+`DeviceIdStorageCapable` and `JwtTokenManagerCapable` require their corresponding property; `AppIdCapable` is deprecated and its `appId` optional; `CoSecOptions` combines all three, while CoSecConfig permits omitted storage/refresher. They are dependency shapes, not additional setup functions.
 
 ## Complete service setup
 
-The service must implement POST `/auth/refresh`, receiving `{accessToken, refreshToken}` and returning the same shape. This example uses one configured Fetcher; CoSecTokenRefresher marks its own request to avoid recursive refresh. No real credentials are embedded.
+The service must implement POST `/auth/refresh`, receiving `{accessToken, refreshToken}` and returning the same shape, answering `401` when it refuses the pair and `503` when it cannot decide; it must be reachable by an anonymous caller, since the access token it receives has expired (see [what the application must allow](../../guides/integrations/cosec#application-must-allow)). This example uses one configured Fetcher; CoSecTokenRefresher marks its own request to avoid recursive refresh. No real credentials are embedded.
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -46,7 +50,6 @@ import {
 export function createSecureClient(baseURL: string) {
   const fetcher = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
-    appId: 'example-app',
     isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher,
@@ -75,11 +78,11 @@ Keep the configured client/storages for the application/session lifetime. CoSecC
 
 <span id="cosecconfig"></span>
 
-**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L87)
+**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L88)
 
 <span id="cosecconfigurer"></span>
 
-**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:374](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L374)
+**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:396](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L396)
 
 <span id="appidcapable"></span>
 
@@ -87,12 +90,12 @@ Keep the configured client/storages for the application/session lifetime. CoSecC
 
 <span id="deviceidstoragecapable"></span>
 
-**`DeviceIdStorageCapable`** — [packages/cosec/src/types.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L40)
+**`DeviceIdStorageCapable`** — [packages/cosec/src/types.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L44)
 
 <span id="jwttokenmanagercapable"></span>
 
-**`JwtTokenManagerCapable`** — [packages/cosec/src/types.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L44)
+**`JwtTokenManagerCapable`** — [packages/cosec/src/types.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L48)
 
 <span id="cosecoptions"></span>
 
-**`CoSecOptions`** — [packages/cosec/src/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L51)
+**`CoSecOptions`** — [packages/cosec/src/types.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L55)

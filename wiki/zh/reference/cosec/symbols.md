@@ -22,8 +22,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `AuthorizationInterceptorOptions`                | [拦截器与资源归属](interceptors-and-attribution#authorizationinterceptoroptions)                |
 | `AuthorizationRequestInterceptor`                | [拦截器与资源归属](interceptors-and-attribution#authorizationrequestinterceptor)                |
 | `AuthorizationResponseInterceptor`               | [拦截器与资源归属](interceptors-and-attribution#authorizationresponseinterceptor)               |
-| `AuthorizeResult`                                | [拦截器与资源归属](interceptors-and-attribution#authorizeresult)                                |
-| `AuthorizeResults`                               | [拦截器与资源归属](interceptors-and-attribution#authorizeresults)                               |
+| `COSEC_PROBLEM_TYPE_PREFIX`                      | [拦截器与资源归属](interceptors-and-attribution#cosec_problem_type_prefix)                      |
 | `COSEC_REQUEST_INTERCEPTOR_NAME`                 | [拦截器与资源归属](interceptors-and-attribution#cosec_request_interceptor_name)                 |
 | `COSEC_REQUEST_INTERCEPTOR_ORDER`                | [拦截器与资源归属](interceptors-and-attribution#cosec_request_interceptor_order)                |
 | `CoSecConfig`                                    | [CoSec 配置](configuration#cosecconfig)                                                         |
@@ -31,6 +30,9 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `CoSecHeaders`                                   | [拦截器与资源归属](interceptors-and-attribution#cosecheaders)                                   |
 | `CoSecJwtPayload`                                | [Token 与刷新](tokens-and-refresh#cosecjwtpayload)                                              |
 | `CoSecOptions`                                   | [CoSec 配置](configuration#cosecoptions)                                                        |
+| `CoSecProblem`                                   | [拦截器与资源归属](interceptors-and-attribution#cosecproblem)                                   |
+| `CoSecProblemSlug`                               | [拦截器与资源归属](interceptors-and-attribution#cosecproblemslug)                               |
+| `CoSecProblemType`                               | [拦截器与资源归属](interceptors-and-attribution#cosecproblemtype)                               |
 | `CoSecRequestInterceptor`                        | [拦截器与资源归属](interceptors-and-attribution#cosecrequestinterceptor)                        |
 | `CoSecRequestOptions`                            | [拦截器与资源归属](interceptors-and-attribution#cosecrequestoptions)                            |
 | `CoSecTokenRefresher`                            | [Token 与刷新](tokens-and-refresh#cosectokenrefresher)                                          |
@@ -39,6 +41,9 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `DEFAULT_COSEC_DEVICE_ID_KEY`                    | [拦截器与资源归属](interceptors-and-attribution#default_cosec_device_id_key)                    |
 | `DEFAULT_COSEC_SPACE_ID_KEY`                     | [拦截器与资源归属](interceptors-and-attribution#default_cosec_space_id_key)                     |
 | `DEFAULT_COSEC_TOKEN_KEY`                        | [Token 与刷新](tokens-and-refresh#default_cosec_token_key)                                      |
+| `DEFAULT_REFRESH_RETRY_DELAYS`                   | [Token 与刷新](tokens-and-refresh#default_refresh_retry_delays)                                 |
+| `DEFAULT_REFRESH_TIMEOUT`                        | [Token 与刷新](tokens-and-refresh#default_refresh_timeout)                                      |
+| `DEFAULT_ROTATION_LEEWAY`                        | [Token 与刷新](tokens-and-refresh#default_rotation_leeway)                                      |
 | `DefaultSpaceIdProvider`                         | [拦截器与资源归属](interceptors-and-attribution#defaultspaceidprovider)                         |
 | `DeviceIdStorage`                                | [拦截器与资源归属](interceptors-and-attribution#deviceidstorage)                                |
 | `DeviceIdStorageCapable`                         | [CoSec 配置](configuration#deviceidstoragecapable)                                              |
@@ -57,11 +62,13 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `JwtToken`                                       | [Token 与刷新](tokens-and-refresh#jwttoken)                                                     |
 | `JwtTokenManager`                                | [Token 与刷新](tokens-and-refresh#jwttokenmanager)                                              |
 | `JwtTokenManagerCapable`                         | [CoSec 配置](configuration#jwttokenmanagercapable)                                              |
+| `JwtTokenManagerOptions`                         | [Token 与刷新](tokens-and-refresh#jwttokenmanageroptions)                                       |
 | `NanoIdGenerator`                                | [拦截器与资源归属](interceptors-and-attribution#nanoidgenerator)                                |
 | `NonReplayableRequestError`                      | [拦截器与资源归属](interceptors-and-attribution#nonreplayablerequesterror)                      |
 | `NoneSpaceIdProvider`                            | [拦截器与资源归属](interceptors-and-attribution#nonespaceidprovider)                            |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`  | [拦截器与资源归属](interceptors-and-attribution#resource_attribution_request_interceptor_name)  |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER` | [拦截器与资源归属](interceptors-and-attribution#resource_attribution_request_interceptor_order) |
+| `ROTATION_LEEWAY_MARGIN`                         | [Token 与刷新](tokens-and-refresh#rotation_leeway_margin)                                       |
 | `RefreshSessionChangedError`                     | [Token 与刷新](tokens-and-refresh#refreshsessionchangederror)                                   |
 | `RefreshToken`                                   | [Token 与刷新](tokens-and-refresh#refreshtoken)                                                 |
 | `RefreshTokenError`                              | [Token 与刷新](tokens-and-refresh#refreshtokenerror)                                            |
@@ -84,11 +91,15 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`           | [拦截器与资源归属](interceptors-and-attribution#unauthorized_error_interceptor_order)           |
 | `UnauthorizedErrorInterceptor`                   | [拦截器与资源归属](interceptors-and-attribution#unauthorizederrorinterceptor)                   |
 | `UnauthorizedErrorInterceptorOptions`            | [拦截器与资源归属](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
+| `getCoSecProblem`                                | [拦截器与资源归属](interceptors-and-attribution#getcosecproblem)                                |
 | `idGenerator`                                    | [拦截器与资源归属](interceptors-and-attribution#idgenerator-instance)                           |
+| `isRefreshRejection`                             | [Token 与刷新](tokens-and-refresh#isrefreshrejection)                                           |
 | `isTokenExpired`                                 | [Token 与刷新](tokens-and-refresh#istokenexpired)                                               |
 | `isTrustedRequest`                               | [拦截器与资源归属](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Token 与刷新](tokens-and-refresh#jwtcompositetokenserializer-instance)                         |
 | `parseJwtPayload`                                | [Token 与刷新](tokens-and-refresh#parsejwtpayload)                                              |
+| `readCoSecProblem`                               | [拦截器与资源归属](interceptors-and-attribution#readcosecproblem)                               |
+| `retryAfterSeconds`                              | [拦截器与资源归属](interceptors-and-attribution#retryafterseconds)                              |
 | `sameOriginTrust`                                | [拦截器与资源归属](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)

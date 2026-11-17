@@ -24,7 +24,7 @@ pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus
 import { Fetcher } from '@ahoo-wang/fetcher';
 import { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
-const cosec = new CoSecConfigurer({ appId: 'example-app' });
+const cosec = new CoSecConfigurer({});
 cosec.applyTo(fetcher);
 ```
 

@@ -22,8 +22,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `AuthorizationInterceptorOptions`                | [Interceptors and attribution](interceptors-and-attribution#authorizationinterceptoroptions)                |
 | `AuthorizationRequestInterceptor`                | [Interceptors and attribution](interceptors-and-attribution#authorizationrequestinterceptor)                |
 | `AuthorizationResponseInterceptor`               | [Interceptors and attribution](interceptors-and-attribution#authorizationresponseinterceptor)               |
-| `AuthorizeResult`                                | [Interceptors and attribution](interceptors-and-attribution#authorizeresult)                                |
-| `AuthorizeResults`                               | [Interceptors and attribution](interceptors-and-attribution#authorizeresults)                               |
+| `COSEC_PROBLEM_TYPE_PREFIX`                      | [Interceptors and attribution](interceptors-and-attribution#cosec_problem_type_prefix)                      |
 | `COSEC_REQUEST_INTERCEPTOR_NAME`                 | [Interceptors and attribution](interceptors-and-attribution#cosec_request_interceptor_name)                 |
 | `COSEC_REQUEST_INTERCEPTOR_ORDER`                | [Interceptors and attribution](interceptors-and-attribution#cosec_request_interceptor_order)                |
 | `CoSecConfig`                                    | [CoSec configuration](configuration#cosecconfig)                                                            |
@@ -31,6 +30,9 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `CoSecHeaders`                                   | [Interceptors and attribution](interceptors-and-attribution#cosecheaders)                                   |
 | `CoSecJwtPayload`                                | [Tokens and refresh](tokens-and-refresh#cosecjwtpayload)                                                    |
 | `CoSecOptions`                                   | [CoSec configuration](configuration#cosecoptions)                                                           |
+| `CoSecProblem`                                   | [Interceptors and attribution](interceptors-and-attribution#cosecproblem)                                   |
+| `CoSecProblemSlug`                               | [Interceptors and attribution](interceptors-and-attribution#cosecproblemslug)                               |
+| `CoSecProblemType`                               | [Interceptors and attribution](interceptors-and-attribution#cosecproblemtype)                               |
 | `CoSecRequestInterceptor`                        | [Interceptors and attribution](interceptors-and-attribution#cosecrequestinterceptor)                        |
 | `CoSecRequestOptions`                            | [Interceptors and attribution](interceptors-and-attribution#cosecrequestoptions)                            |
 | `CoSecTokenRefresher`                            | [Tokens and refresh](tokens-and-refresh#cosectokenrefresher)                                                |
@@ -39,6 +41,9 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `DEFAULT_COSEC_DEVICE_ID_KEY`                    | [Interceptors and attribution](interceptors-and-attribution#default_cosec_device_id_key)                    |
 | `DEFAULT_COSEC_SPACE_ID_KEY`                     | [Interceptors and attribution](interceptors-and-attribution#default_cosec_space_id_key)                     |
 | `DEFAULT_COSEC_TOKEN_KEY`                        | [Tokens and refresh](tokens-and-refresh#default_cosec_token_key)                                            |
+| `DEFAULT_REFRESH_RETRY_DELAYS`                   | [Tokens and refresh](tokens-and-refresh#default_refresh_retry_delays)                                       |
+| `DEFAULT_REFRESH_TIMEOUT`                        | [Tokens and refresh](tokens-and-refresh#default_refresh_timeout)                                            |
+| `DEFAULT_ROTATION_LEEWAY`                        | [Tokens and refresh](tokens-and-refresh#default_rotation_leeway)                                            |
 | `DefaultSpaceIdProvider`                         | [Interceptors and attribution](interceptors-and-attribution#defaultspaceidprovider)                         |
 | `DeviceIdStorage`                                | [Interceptors and attribution](interceptors-and-attribution#deviceidstorage)                                |
 | `DeviceIdStorageCapable`                         | [CoSec configuration](configuration#deviceidstoragecapable)                                                 |
@@ -57,11 +62,13 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `JwtToken`                                       | [Tokens and refresh](tokens-and-refresh#jwttoken)                                                           |
 | `JwtTokenManager`                                | [Tokens and refresh](tokens-and-refresh#jwttokenmanager)                                                    |
 | `JwtTokenManagerCapable`                         | [CoSec configuration](configuration#jwttokenmanagercapable)                                                 |
+| `JwtTokenManagerOptions`                         | [Tokens and refresh](tokens-and-refresh#jwttokenmanageroptions)                                             |
 | `NanoIdGenerator`                                | [Interceptors and attribution](interceptors-and-attribution#nanoidgenerator)                                |
 | `NonReplayableRequestError`                      | [Interceptors and attribution](interceptors-and-attribution#nonreplayablerequesterror)                      |
 | `NoneSpaceIdProvider`                            | [Interceptors and attribution](interceptors-and-attribution#nonespaceidprovider)                            |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`  | [Interceptors and attribution](interceptors-and-attribution#resource_attribution_request_interceptor_name)  |
 | `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER` | [Interceptors and attribution](interceptors-and-attribution#resource_attribution_request_interceptor_order) |
+| `ROTATION_LEEWAY_MARGIN`                         | [Tokens and refresh](tokens-and-refresh#rotation_leeway_margin)                                             |
 | `RefreshSessionChangedError`                     | [Tokens and refresh](tokens-and-refresh#refreshsessionchangederror)                                         |
 | `RefreshToken`                                   | [Tokens and refresh](tokens-and-refresh#refreshtoken)                                                       |
 | `RefreshTokenError`                              | [Tokens and refresh](tokens-and-refresh#refreshtokenerror)                                                  |
@@ -84,11 +91,15 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`           | [Interceptors and attribution](interceptors-and-attribution#unauthorized_error_interceptor_order)           |
 | `UnauthorizedErrorInterceptor`                   | [Interceptors and attribution](interceptors-and-attribution#unauthorizederrorinterceptor)                   |
 | `UnauthorizedErrorInterceptorOptions`            | [Interceptors and attribution](interceptors-and-attribution#unauthorizederrorinterceptoroptions)            |
+| `getCoSecProblem`                                | [Interceptors and attribution](interceptors-and-attribution#getcosecproblem)                                |
 | `idGenerator`                                    | [Interceptors and attribution](interceptors-and-attribution#idgenerator-instance)                           |
+| `isRefreshRejection`                             | [Tokens and refresh](tokens-and-refresh#isrefreshrejection)                                                 |
 | `isTokenExpired`                                 | [Tokens and refresh](tokens-and-refresh#istokenexpired)                                                     |
 | `isTrustedRequest`                               | [Interceptors and attribution](interceptors-and-attribution#istrustedrequest)                               |
 | `jwtCompositeTokenSerializer`                    | [Tokens and refresh](tokens-and-refresh#jwtcompositetokenserializer-instance)                               |
 | `parseJwtPayload`                                | [Tokens and refresh](tokens-and-refresh#parsejwtpayload)                                                    |
+| `readCoSecProblem`                               | [Interceptors and attribution](interceptors-and-attribution#readcosecproblem)                               |
+| `retryAfterSeconds`                              | [Interceptors and attribution](interceptors-and-attribution#retryafterseconds)                              |
 | `sameOriginTrust`                                | [Interceptors and attribution](interceptors-and-attribution#sameorigintrust)                                |
 
 [packages/cosec/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/index.ts#L14)

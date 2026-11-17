@@ -49,7 +49,9 @@ src/
   requestTrust.ts                           — Which request URLs may carry credentials (isTrusted, sameOriginTrust)
   types.ts                                  — Type definitions
   constants.ts                              — Shared attribute/name/order constants (re-exported from their original modules)
-  errors.ts                                 — RefreshTokenError, RefreshSessionChangedError (re-exported from jwtTokenManager)
+  errors.ts                                 — RefreshTokenError, RefreshUnavailableError, RefreshSessionChangedError (re-exported from jwtTokenManager); the first two carry the CoSec problem
+  problem.ts                                — CoSec 8.0 problem+json: CoSecProblemType, readCoSecProblem, getCoSecProblem, retryAfterSeconds (resolveCoSecProblem is internal)
+  refreshAttempt.ts                         — The time of the first unresolved refresh attempt of a pair, stored next to the pair (internal)
   refreshSession.ts                         — Token-session checks shared by the interceptors (internal)
   refreshLock.ts                            — Cross-tab refresh Web Lock (internal)
   storageEventBus.ts                        — Default cross-tab event bus of the CoSec storages (internal)
@@ -62,9 +64,11 @@ src/
 - **CoSecConfigurer**: Main entry point that wires up all interceptors onto a Fetcher instance
 - **JWT Token Management**: Parse, validate, refresh, and store JWT tokens
 - **Authorization Interceptors**: Automatically attach Bearer tokens to requests; with `isTrusted` only trusted absolute URLs receive the token and CoSec headers (default: every request)
-- **Error Handling**: 401 triggers token refresh + retry; 403 is surfaced as ForbiddenError
+- **Error Handling**: reads the CoSec 8.0 problem type of a refusal. `token-expired` (and a 401 with no CoSec problem) triggers token refresh + retry; `unauthorized`, `token-revoked`, `token-invalid` are not refreshed (the last two remove the stored pair); `forbidden` goes to `onForbidden`, `scope-rejected` to `onScopeRejected`; 429/503/500/400 never touch the session
+- **Refresh under rotation**: only a 401 from the refresh route ends the session. An attempt whose outcome is unknown is retried with the same pair only inside `rotationLeeway` of the first attempt (CoSec 8.0 `IDN-16`); the time is stored with the pair and never slides. After the window one attempt per call, which cannot be made safe. Read the comment of `JwtTokenManager.sendRefresh` before changing it.
 - **Device ID**: Persistent device identification for security tracking
-- **Multi-tenant**: Space ID provider for tenant-scoped authentication
+- **Multi-tenant**: Space ID provider for tenant-scoped authentication. No `CoSec-Space-Id` goes on the refresh call or on a request with no token (an anonymous request that declares a space is `401`, SCP-3)
+- **App**: CoSec 8.0 reads the app from the token's `aud`; `appId` is deprecated and no `CoSec-App-Id` is sent
 
 ## Dependencies
 
@@ -91,5 +95,6 @@ src/
 - ⚠️ Changing token refresh logic — affects all authenticated API calls
 - ⚠️ Modifying JWT parsing — security-sensitive, test thoroughly
 - 🚫 Breaking CoSecConfigurer API
-- 🚫 Changing 401/403 error handling contract — used by react RouteGuard
+- 🚫 Changing 401/403 error handling contract — used by react RouteGuard (callbacks receive the exchange, and the problem as a second argument only when there is one)
+- 🚫 Sending a refresh again after its `rotationLeeway` window without saying so in the docs: it revokes the session if the first attempt was recorded
 - 🚫 Removing token refresh retry logic without replacement

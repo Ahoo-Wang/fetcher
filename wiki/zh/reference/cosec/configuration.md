@@ -11,16 +11,20 @@ description: 'CoSec 配置 — Fetcher 6.0.0'
 
 ## CoSecConfig 与构造
 
-| 字段                            | 默认值                | 契约                                                                                                                                                                                                                                             |
-| ------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| appId:string                    | 必填                  | 在请求头发送的应用标识                                                                                                                                                                                                                           |
-| tokenStorage:TokenStorage       | new TokenStorage()    | 通过 configurer.tokenStorage 暴露                                                                                                                                                                                                                |
-| deviceIdStorage:DeviceIdStorage | new DeviceIdStorage() | 通过 configurer.deviceIdStorage 暴露                                                                                                                                                                                                             |
-| tokenRefresher:TokenRefresher   | 缺省                  | 仅存在时创建 JwtTokenManager 并安装 Authorization 请求/响应拦截器                                                                                                                                                                                |
-| spaceIdProvider:SpaceIdProvider | NoneSpaceIdProvider   | 解析可选 CoSec-Space-Id                                                                                                                                                                                                                          |
-| isTrusted:RequestTrust          | 缺省（信任所有请求）  | 决定哪些绝对请求 URL 携带 Authorization token 与 CoSec 请求头（含设备 ID）；`sameOriginTrust` 只放行 `baseURL` 所在源与页面自身的源。位于 `baseURL` 主机上的相对 URL 受信任；经 URL 解析去往其他主机的相对 URL（如 `\host/path`）按绝对 URL 判断 |
-| onUnauthorized(exchange)        | 缺省                  | 错误管线中的可选 void/Promise&lt;void&gt; 回调                                                                                                                                                                                                   |
-| onForbidden(exchange)           | 缺省                  | 错误管线中的可选 Promise&lt;void&gt; 回调                                                                                                                                                                                                        |
+| 字段                               | 默认值                | 契约                                                                                                                                                                                                                                             |
+| ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| appId?:string                      | 已弃用，被忽略        | 不起作用：CoSec 8.0 不从请求读取应用，应用是令牌的 `aud`；保留只为让现有配置仍能编译，下一个主版本移除                                                                                                                                           |
+| tokenStorage:TokenStorage          | new TokenStorage()    | 通过 configurer.tokenStorage 暴露                                                                                                                                                                                                                |
+| deviceIdStorage:DeviceIdStorage    | new DeviceIdStorage() | 通过 configurer.deviceIdStorage 暴露                                                                                                                                                                                                             |
+| tokenRefresher:TokenRefresher      | 缺省                  | 仅存在时创建 JwtTokenManager 并安装 Authorization 请求/响应拦截器                                                                                                                                                                                |
+| spaceIdProvider:SpaceIdProvider    | NoneSpaceIdProvider   | 解析可选 CoSec-Space-Id                                                                                                                                                                                                                          |
+| isTrusted:RequestTrust             | 缺省（信任所有请求）  | 决定哪些绝对请求 URL 携带 Authorization token 与 CoSec 请求头（含设备 ID）；`sameOriginTrust` 只放行 `baseURL` 所在源与页面自身的源。位于 `baseURL` 主机上的相对 URL 受信任；经 URL 解析去往其他主机的相对 URL（如 `\host/path`）按绝对 URL 判断 |
+| isRefreshRejected(error)           | 刷新路由返回 `401`    | 刷新失败是否结束会话；见[刷新失败](./tokens-and-refresh#刷新管理器与传输)                                                                                                                                                                        |
+| rotationLeeway:number              | 30000                 | 毫秒；**至多等于服务端的 `cosec.jwt.session.rotation-leeway`**，客户端无法读取它（[轮换下的刷新](./tokens-and-refresh#refresh-under-rotation)）                                                                                                  |
+| refreshRetryDelays:number[]        | [500, 2000]           | 结果未知的刷新在窗口内重试前的停顿；`[]` 表示不重试                                                                                                                                                                                              |
+| onUnauthorized(exchange, problem?) | 缺省                  | 错误管线中的可选 void/Promise&lt;void&gt; 回调；有 CoSec problem 时，`problem` 是响应的、或被拒绝的刷新的 problem                                                                                                                                |     |
+| onForbidden(exchange, problem?)    | 缺省                  | 错误管线中针对 403 的可选 Promise&lt;void&gt; 回调（没有 `onScopeRejected` 时，`scope-rejected` 也交给它）                                                                                                                                       |
+| onScopeRejected(exchange, problem) | 缺省                  | 针对 `403 scope-rejected` 的可选 Promise&lt;void&gt; 回调；由应用决定，客户端既不清除空间，也不退回默认空间                                                                                                                                      |
 
 `new CoSecConfigurer(config)` 立即初始化存储。`applyTo(fetcher): void` 始终安装 CoSecRequestInterceptor 和 ResourceAttributionRequestInterceptor；仅有 tokenManager 时安装鉴权；仅配置回调时安装错误处理。没有 tokenRefresher 时，仅将 token 放入 tokenStorage **不会**启用 Authorization 注入。`isTrusted` 同时传给 CoSecRequestInterceptor 与 AuthorizationRequestInterceptor：不受信任的请求不带 CoSec 请求头、不带 Authorization，也不触发刷新。`tokenManager`、`spaceIdProvider` 以 readonly 暴露（声明为可选）；config 引用 readonly，不代表深度不可变。
 
@@ -28,11 +32,11 @@ description: 'CoSec 配置 — Fetcher 6.0.0'
 不设 `isTrusted` 时，发往任意源绝对 URL 的请求（分页链接、下载地址、回调）都会收到访问 token 与设备 ID。除非客户端请求的每个绝对 URL 都属于你，否则请传 `isTrusted: sameOriginTrust`（或自己的 `RequestTrust`）。
 :::
 
-`AppIdCapable`、`DeviceIdStorageCapable`、`JwtTokenManagerCapable` 要求各自对应属性；`CoSecOptions` 合并三者，而 CoSecConfig 允许省略存储/refresher。它们是依赖形状，不是额外配置函数。
+`DeviceIdStorageCapable` 与 `JwtTokenManagerCapable` 要求各自对应属性；`AppIdCapable` 已弃用，其 `appId` 可选；`CoSecOptions` 合并三者，而 CoSecConfig 允许省略存储/refresher。它们是依赖形状，不是额外配置函数。
 
 ## 完整服务配置
 
-服务需要实现 POST `/auth/refresh`，接收 `{accessToken, refreshToken}` 并返回同样形状。示例使用同一已配置 Fetcher；CoSecTokenRefresher 会标记自己的请求，防止递归刷新。没有嵌入真实凭据。
+服务需要实现 POST `/auth/refresh`，接收 `{accessToken, refreshToken}` 并返回同样形状；拒绝这对 token 时回答 `401`，无法判断时回答 `503`；它必须允许匿名调用方访问，因为它收到的访问令牌已经过期（见[应用必须允许什么](../../guides/integrations/cosec#application-must-allow)）。示例使用同一已配置 Fetcher；CoSecTokenRefresher 会标记自己的请求，防止递归刷新。没有嵌入真实凭据。
 
 ```ts
 import { Fetcher } from '@ahoo-wang/fetcher';
@@ -46,7 +50,6 @@ import {
 export function createSecureClient(baseURL: string) {
   const fetcher = new Fetcher({ baseURL });
   const cosec = new CoSecConfigurer({
-    appId: 'example-app',
     isTrusted: sameOriginTrust,
     tokenRefresher: new CoSecTokenRefresher({
       fetcher,
@@ -75,11 +78,11 @@ export function createSecureClient(baseURL: string) {
 
 <span id="cosecconfig"></span>
 
-**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L87)
+**`CoSecConfig`** — [packages/cosec/src/cosecConfigurer.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L88)
 
 <span id="cosecconfigurer"></span>
 
-**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:374](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L374)
+**`CoSecConfigurer`** — [packages/cosec/src/cosecConfigurer.ts:396](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecConfigurer.ts#L396)
 
 <span id="appidcapable"></span>
 
@@ -87,12 +90,12 @@ export function createSecureClient(baseURL: string) {
 
 <span id="deviceidstoragecapable"></span>
 
-**`DeviceIdStorageCapable`** — [packages/cosec/src/types.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L40)
+**`DeviceIdStorageCapable`** — [packages/cosec/src/types.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L44)
 
 <span id="jwttokenmanagercapable"></span>
 
-**`JwtTokenManagerCapable`** — [packages/cosec/src/types.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L44)
+**`JwtTokenManagerCapable`** — [packages/cosec/src/types.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L48)
 
 <span id="cosecoptions"></span>
 
-**`CoSecOptions`** — [packages/cosec/src/types.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L51)
+**`CoSecOptions`** — [packages/cosec/src/types.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L55)

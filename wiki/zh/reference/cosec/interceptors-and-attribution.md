@@ -9,11 +9,11 @@ description: '拦截器与资源归属 — Fetcher 6.0.0'
 
 ## 实际执行流程
 
-1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置应用/设备/请求头，以及解析得到的真值空间 ID。空间每个 exchange 只解析一次：401 重试发往请求最初所属的空间，即使刷新期间当前空间已改变；之后的新请求使用当前空间。
-2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
+1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置设备与请求头（没有 `CoSec-App-Id`：CoSec 8.0 不读取它，应用是令牌的 `aud`），以及解析得到的真值空间 ID。刷新调用（带有 `Ignore-Refresh-Token` 的 exchange）从不带空间：它携带已过期的访问令牌，CoSec 会把它当作匿名，而声明了空间的匿名请求会被拒绝为 `401`（`SCP-3`）。空间每个 exchange 只解析一次：401 重试发往请求最初所属的空间，即使刷新期间当前空间已改变；之后的新请求使用当前空间。
+2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。没有 token 可发送的请求，同样出于上述原因，不发送 CoSec 请求拦截器设置的 `CoSec-Space-Id`。
 3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，占位符在请求实际解析所用的模板中查找：Fetcher `baseURL` 与请求 URL 拼接后的模板；请求 URL 为绝对地址时仅查找请求 URL。随后核心传输发送请求。
-4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。被 `isTrusted` 拒绝的请求（未携带本应用凭据）的 401 原样返回：不刷新、不重放、不调用 onUnauthorized。对受管理的 401，先释放未读取的 401 正文（避免其占用刷新与重试需要的连接），再刷新，仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。重试自身的结果取代 401：重试的 fetch 失败（离线、超时、取消）时，请求以该错误失败，`exchange.response` 为 undefined，不调用 onUnauthorized。请求体为 `ReadableStream`（或其他异步可迭代对象）时无法再次发送：会话仍会刷新，请求以 `NonReplayableRequestError` 失败（不通知），由调用方用新的请求体重新发送。
-5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError（`RefreshUnavailableError` 表示刷新未能到达服务端，会话保留，不通知）；Forbidden 处理 403。回调都不会自动恢复失败请求。
+4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。被 `isTrusted` 拒绝的请求（未携带本应用凭据）的 401 原样返回：不刷新、不重放、不调用 onUnauthorized。对受管理的 401，先读取 [problem](#cosec-problems)：`unauthorized`（服务端没有看到凭据）不刷新；`token-revoked` 与 `token-invalid` 同样不刷新，因为会话已结束或凭据不被接受：若存储中仍是发出请求时的那对 token 就将其移除，由移除它的那个 exchange 负责通知。`token-expired` 以及没有 CoSec problem 的 401 继续往下：先释放未读取的 401 正文（避免其占用刷新与重试需要的连接），再刷新，仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。重试自身的结果取代 401：重试的 fetch 失败（离线、超时、取消）时，请求以该错误失败，`exchange.response` 为 undefined，不调用 onUnauthorized。请求体为 `ReadableStream`（或其他异步可迭代对象）时无法再次发送：会话仍会刷新，请求以 `NonReplayableRequestError` 失败（不通知），由调用方用新的请求体重新发送。
+5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError（`RefreshUnavailableError` 表示刷新没有给出裁决，会话保留，不通知），并传入 problem；Forbidden 处理 403，并把 `scope-rejected` 交给它自己的回调。`429`、`503`、`500` 与 `400` 两者都不触发：请求以状态错误拒绝，其 problem 可用 `getCoSecProblem` 读取。回调都不会自动恢复失败请求。
 
 request/response manager 按 order 排序，注册顺序本身不是执行契约。重跑管线可能生成新的 CoSec 请求 ID。调用者提供的 Authorization 不会替换或自动刷新。access 已过期而 refresh 不可用时仍可能附加 token，由服务端决定响应状态。
 
@@ -43,14 +43,14 @@ sequenceDiagram
 
 ## 拦截器参数与结果
 
-| 导出                                                                   | 构造选项                                                                              | intercept(exchange)                                                                                                                                                                                        |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播                                                                                      |
-| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                                                                                              |
-| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅受信任请求的 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1；一次性请求体以 NonReplayableRequestError 失败                                                            |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅当 baseURL + 请求 URL 模板（请求 URL 为绝对地址时仅请求 URL）包含该占位符且当前路径值为假值时填充                                                         |
-| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError、RefreshUnavailableError、NonReplayableRequestError、被 `isTrusted` 拒绝的请求及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
-| `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误成为 exchange 错误（`ExchangeError` 的 cause）                                                                                             |
+| 导出                                                                   | 构造选项                                                                                                | intercept(exchange)                                                                                                                                                                                                |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted；`appId` 已弃用并被忽略  | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖设备/请求头；仅为真值 ID 写空间头，刷新调用不写；存储/provider 失败传播                                                                                     |
+| `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                                             | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                                                                                                      |
+| `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                                      | Promise&lt;void&gt;；仅受信任请求的 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1；`unauthorized`、`token-revoked`、`token-invalid` 不刷新；一次性请求体以 NonReplayableRequestError 失败           |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**                              | void；从解码的 access payload 取 tenantId/sub；仅当 baseURL + 请求 URL 模板（请求 URL 为绝对地址时仅请求 URL）包含该占位符且当前路径值为假值时填充                                                                 |
+| `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized(exchange, problem?)，返回 void 或 Promise&lt;void&gt;                               | void 或 Promise&lt;void&gt;；跳过 RefreshSessionChangedError、RefreshUnavailableError、NonReplayableRequestError、被 `isTrusted` 拒绝的请求及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
+| `ForbiddenErrorInterceptor` / options                                  | onForbidden(exchange, problem?) 与 onScopeRejected(exchange, problem)，均可选，返回 Promise&lt;void&gt; | Promise&lt;void&gt;；仅 response.status=403 时执行回调，已设置 onScopeRejected 时 `scope-rejected` 交给它；回调错误成为 exchange 错误（`ExchangeError` 的 cause）                                                  |
 
 `IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY` 为 `Ignore-Refresh-Token`。只要属性**存在**（即使值为 false），就禁用主动/401 自动刷新。它不阻止 Authorization 注入，也不禁用普通 HTTP 状态错误。
 
@@ -72,19 +72,36 @@ sequenceDiagram
 
 ## 常量与鉴权数据
 
-| 导出族                                                      | 值                                                                                                                                |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `COSEC_REQUEST_INTERCEPTOR_NAME/ORDER`                      | CoSecRequestInterceptor / Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP                                                |
-| `AUTHORIZATION_REQUEST_INTERCEPTOR_NAME/ORDER`              | AuthorizationRequestInterceptor / COSEC_REQUEST_INTERCEPTOR_ORDER + DEFAULT_INTERCEPTOR_ORDER_STEP                                |
-| `AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME/ORDER`             | AuthorizationResponseInterceptor / Number.MIN_SAFE_INTEGER + 1000                                                                 |
-| `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME/ORDER`       | ResourceAttributionRequestInterceptor / URL_RESOLVE_INTERCEPTOR_ORDER - DEFAULT_INTERCEPTOR_ORDER_STEP                            |
-| `UNAUTHORIZED_ERROR_INTERCEPTOR_NAME/ORDER`                 | UnauthorizedErrorInterceptor / 0                                                                                                  |
-| `FORBIDDEN_ERROR_INTERCEPTOR_NAME/ORDER`                    | ForbiddenErrorInterceptor / 0                                                                                                     |
-| `DEFAULT_COSEC_DEVICE_ID_KEY`、`DEFAULT_COSEC_SPACE_ID_KEY` | cosec-device-id、cosec-space-id                                                                                                   |
-| `CoSecHeaders` 静态字段                                     | DEVICE_ID=CoSec-Device-Id、APP_ID=CoSec-App-Id、SPACE_ID=CoSec-Space-Id、AUTHORIZATION=Authorization、REQUEST_ID=CoSec-Request-Id |
-| `ResponseCodes`                                             | UNAUTHORIZED=401、FORBIDDEN=403                                                                                                   |
+| 导出族                                                      | 值                                                                                                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `COSEC_REQUEST_INTERCEPTOR_NAME/ORDER`                      | CoSecRequestInterceptor / Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP                           |
+| `AUTHORIZATION_REQUEST_INTERCEPTOR_NAME/ORDER`              | AuthorizationRequestInterceptor / COSEC_REQUEST_INTERCEPTOR_ORDER + DEFAULT_INTERCEPTOR_ORDER_STEP           |
+| `AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME/ORDER`             | AuthorizationResponseInterceptor / Number.MIN_SAFE_INTEGER + 1000                                            |
+| `RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME/ORDER`       | ResourceAttributionRequestInterceptor / URL_RESOLVE_INTERCEPTOR_ORDER - DEFAULT_INTERCEPTOR_ORDER_STEP       |
+| `UNAUTHORIZED_ERROR_INTERCEPTOR_NAME/ORDER`                 | UnauthorizedErrorInterceptor / 0                                                                             |
+| `FORBIDDEN_ERROR_INTERCEPTOR_NAME/ORDER`                    | ForbiddenErrorInterceptor / 0                                                                                |
+| `DEFAULT_COSEC_DEVICE_ID_KEY`、`DEFAULT_COSEC_SPACE_ID_KEY` | cosec-device-id、cosec-space-id                                                                              |
+| `CoSecHeaders` 静态字段                                     | DEVICE_ID=CoSec-Device-Id、SPACE_ID=CoSec-Space-Id、AUTHORIZATION=Authorization、REQUEST_ID=CoSec-Request-Id |
+| `ResponseCodes`                                             | UNAUTHORIZED=401、FORBIDDEN=403、TOO_MANY_REQUESTS=429                                                       |
 
-`AuthorizeResult` 为 `{ authorized:boolean, reason:string }`。`AuthorizeResults` 含 ALLOW（true、'Allow'）、EXPLICIT_DENY（'Explicit Deny'）、IMPLICIT_DENY（'Implicit Deny'）、TOKEN_EXPIRED（'Token Expired'）、TOO_MANY_REQUESTS（'Too Many Requests'）；除 ALLOW 外 authorized 均为 false。它们是结果对象，不是本地策略引擎或服务端状态码映射器。
+## CoSec problem {#cosec-problems}
+
+CoSec 8.0 把每次拒绝都回答为 `application/problem+json`：`type`（`https://cosec.ahoo.me/problems/<slug>`）、`title`、`status`、`code`（大写下划线形式的 slug）、`requestId`（等于响应头 `CoSec-Request-Id`），以及追踪捕获到时的 `traceId`，没有别的成员。包从响应正文的副本中读取它（`readCoSecProblem(response)`），或从状态校验抛出的错误中读取（`getCoSecProblem(error)`）；`CoSecProblem.slug` 是 `type` 的最后一段。依据 slug 判断，不要依据 `title`；这个集合会随 CoSec 的次版本增长，所以 `slug` 可能是 `CoSecProblemType` 未列出的类型。不是 `application/problem+json`、或 `type` 不属于 CoSec 的响应，没有 CoSec problem。
+
+| `CoSecProblemType`  | Slug                | 状态 | 客户端的做法                                                                 |
+| ------------------- | ------------------- | ---- | ---------------------------------------------------------------------------- |
+| `INVALID_REQUEST`   | `invalid-request`   | 400  | 什么都不做；这是请求本身的缺陷。会话保留。                                   |
+| `UNAUTHORIZED`      | `unauthorized`      | 401  | 不刷新（服务端没有看到凭据）；`onUnauthorized`                               |
+| `TOKEN_EXPIRED`     | `token-expired`     | 401  | 刷新一次并重试一次                                                           |
+| `TOKEN_REVOKED`     | `token-revoked`     | 401  | 不刷新；移除这对 token；`onUnauthorized`                                     |
+| `TOKEN_INVALID`     | `token-invalid`     | 401  | 不刷新；移除这对 token；`onUnauthorized`                                     |
+| `FORBIDDEN`         | `forbidden`         | 403  | `onForbidden`                                                                |
+| `SCOPE_REJECTED`    | `scope-rejected`    | 403  | `onScopeRejected`，否则 `onForbidden`。客户端不会丢弃空间或退回默认空间。    |
+| `TOO_MANY_REQUESTS` | `too-many-requests` | 429  | 什么都不做；绝不退出登录。`retryAfterSeconds(response)` 读取 `Retry-After`。 |
+| `UNAVAILABLE`       | `unavailable`       | 503  | 什么都不做；会话保留                                                         |
+| `INTERNAL_ERROR`    | `internal-error`    | 500  | 什么都不做                                                                   |
+
+`COSEC_PROBLEM_TYPE_PREFIX` 是 `type` 的前缀。`retryAfterSeconds(response, now?)` 把 `Retry-After` 读为整数秒或 HTTP 日期。`CoSecProblem` 含 `slug`、`type`、`title?`、`status?`、`code?`、`requestId?`、`traceId?`。
 
 ## 完整空间配置
 
@@ -113,7 +130,6 @@ const provider = new DefaultSpaceIdProvider({
 });
 const fetcher = new Fetcher({ baseURL: 'https://api.example.com' });
 const cosec = new CoSecConfigurer({
-  appId: 'example-app',
   spaceIdProvider: provider,
   tokenStorage: new TokenStorage({
     storage: new InMemoryStorage(),
@@ -133,47 +149,47 @@ cosec.deviceIdStorage.destroy();
 
 <span id="authorizationinterceptoroptions"></span>
 
-**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L31)
+**`AuthorizationInterceptorOptions`** — [packages/cosec/src/authorizationRequestInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L37)
 
 <span id="authorization_request_interceptor_name"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L34)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationRequestInterceptor.ts:40](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L40)
 
 <span id="authorization_request_interceptor_order"></span>
 
-**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L36)
+**`AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationRequestInterceptor.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L42)
 
 <span id="authorizationrequestinterceptor"></span>
 
-**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:49](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L49)
+**`AuthorizationRequestInterceptor`** — [packages/cosec/src/authorizationRequestInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationRequestInterceptor.ts#L55)
 
 <span id="authorization_response_interceptor_name"></span>
 
-**`AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationResponseInterceptor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L41)
+**`AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME`** — [packages/cosec/src/authorizationResponseInterceptor.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L43)
 
 <span id="authorization_response_interceptor_order"></span>
 
-**`AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationResponseInterceptor.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L48)
+**`AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER`** — [packages/cosec/src/authorizationResponseInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L50)
 
 <span id="authorization_response_max_retry"></span>
 
-**`AUTHORIZATION_RESPONSE_MAX_RETRY`** — [packages/cosec/src/authorizationResponseInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L57)
+**`AUTHORIZATION_RESPONSE_MAX_RETRY`** — [packages/cosec/src/authorizationResponseInterceptor.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L59)
 
 <span id="authorizationresponseinterceptor"></span>
 
-**`AuthorizationResponseInterceptor`** — [packages/cosec/src/authorizationResponseInterceptor.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L76)
+**`AuthorizationResponseInterceptor`** — [packages/cosec/src/authorizationResponseInterceptor.ts:78](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L78)
 
 <span id="nonreplayablerequesterror"></span>
 
-**`NonReplayableRequestError`** — [packages/cosec/src/errors.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/errors.ts#L66)
+**`NonReplayableRequestError`** — [packages/cosec/src/errors.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/errors.ts#L79)
 
 <span id="cosecrequestoptions"></span>
 
-**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L62)
+**`CoSecRequestOptions`** — [packages/cosec/src/cosecRequestInterceptor.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L63)
 
 <span id="cosec_request_interceptor_name"></span>
 
-**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L88)
+**`COSEC_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/cosecRequestInterceptor.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L89)
 
 <span id="cosec_request_interceptor_order"></span>
 
@@ -185,7 +201,7 @@ cosec.deviceIdStorage.destroy();
 
 <span id="cosecrequestinterceptor"></span>
 
-**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:180](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L180)
+**`CoSecRequestInterceptor`** — [packages/cosec/src/cosecRequestInterceptor.ts:178](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/cosecRequestInterceptor.ts#L178)
 
 <span id="requesttrust"></span>
 
@@ -249,31 +265,31 @@ cosec.deviceIdStorage.destroy();
 
 <span id="nonespaceidprovider"></span>
 
-**`NoneSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:123](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L123)
+**`NoneSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L122)
 
 <span id="default_cosec_space_id_key"></span>
 
-**`DEFAULT_COSEC_SPACE_ID_KEY`** — [packages/cosec/src/spaceIdProvider.ts:134](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L134)
+**`DEFAULT_COSEC_SPACE_ID_KEY`** — [packages/cosec/src/spaceIdProvider.ts:133](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L133)
 
 <span id="spaceidstorageoptions"></span>
 
-**`SpaceIdStorageOptions`** — [packages/cosec/src/spaceIdProvider.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L169)
+**`SpaceIdStorageOptions`** — [packages/cosec/src/spaceIdProvider.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L168)
 
 <span id="spaceidstorage"></span>
 
-**`SpaceIdStorage`** — [packages/cosec/src/spaceIdProvider.ts:210](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L210)
+**`SpaceIdStorage`** — [packages/cosec/src/spaceIdProvider.ts:209](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L209)
 
 <span id="spacedresourcepredicate"></span>
 
-**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:289](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L289)
+**`SpacedResourcePredicate`** — [packages/cosec/src/spaceIdProvider.ts:288](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L288)
 
 <span id="spaceidprovideroptions"></span>
 
-**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:318](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L318)
+**`SpaceIdProviderOptions`** — [packages/cosec/src/spaceIdProvider.ts:317](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L317)
 
 <span id="defaultspaceidprovider"></span>
 
-**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:375](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L375)
+**`DefaultSpaceIdProvider`** — [packages/cosec/src/spaceIdProvider.ts:373](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/spaceIdProvider.ts#L373)
 
 <span id="cosecheaders"></span>
 
@@ -281,15 +297,7 @@ cosec.deviceIdStorage.destroy();
 
 <span id="responsecodes"></span>
 
-**`ResponseCodes`** — [packages/cosec/src/types.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L28)
-
-<span id="authorizeresult"></span>
-
-**`AuthorizeResult`** — [packages/cosec/src/types.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L57)
-
-<span id="authorizeresults"></span>
-
-**`AuthorizeResults`** — [packages/cosec/src/types.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L65)
+**`ResponseCodes`** — [packages/cosec/src/types.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/types.ts#L27)
 
 <span id="unauthorized_error_interceptor_name"></span>
 
@@ -297,28 +305,56 @@ cosec.deviceIdStorage.destroy();
 
 <span id="unauthorized_error_interceptor_order"></span>
 
-**`UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L32)
+**`UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L37)
 
 <span id="unauthorizederrorinterceptoroptions"></span>
 
-**`UnauthorizedErrorInterceptorOptions`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L37)
+**`UnauthorizedErrorInterceptorOptions`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L42)
 
 <span id="unauthorizederrorinterceptor"></span>
 
-**`UnauthorizedErrorInterceptor`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L77)
+**`UnauthorizedErrorInterceptor`** — [packages/cosec/src/unauthorizedErrorInterceptor.ts:85](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/unauthorizedErrorInterceptor.ts#L85)
 
 <span id="forbidden_error_interceptor_name"></span>
 
-**`FORBIDDEN_ERROR_INTERCEPTOR_NAME`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L21)
+**`FORBIDDEN_ERROR_INTERCEPTOR_NAME`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L26)
 
 <span id="forbidden_error_interceptor_order"></span>
 
-**`FORBIDDEN_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L27)
+**`FORBIDDEN_ERROR_INTERCEPTOR_ORDER`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L32)
 
 <span id="forbiddenerrorinterceptoroptions"></span>
 
-**`ForbiddenErrorInterceptorOptions`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L32)
+**`ForbiddenErrorInterceptorOptions`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L37)
 
 <span id="forbiddenerrorinterceptor"></span>
 
-**`ForbiddenErrorInterceptor`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L113)
+**`ForbiddenErrorInterceptor`** — [packages/cosec/src/forbiddenErrorInterceptor.ts:141](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/forbiddenErrorInterceptor.ts#L141)
+
+<span id="cosec_problem_type_prefix"></span>
+
+**`COSEC_PROBLEM_TYPE_PREFIX`** — [packages/cosec/src/problem.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L25)
+
+<span id="cosecproblemtype"></span>
+
+**`CoSecProblemType`** — [packages/cosec/src/problem.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L34)
+
+<span id="cosecproblemslug"></span>
+
+**`CoSecProblemSlug`** — [packages/cosec/src/problem.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L57)
+
+<span id="cosecproblem"></span>
+
+**`CoSecProblem`** — [packages/cosec/src/problem.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L64)
+
+<span id="readcosecproblem"></span>
+
+**`readCoSecProblem`** — [packages/cosec/src/problem.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L120)
+
+<span id="getcosecproblem"></span>
+
+**`getCoSecProblem`** — [packages/cosec/src/problem.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L132)
+
+<span id="retryafterseconds"></span>
+
+**`retryAfterSeconds`** — [packages/cosec/src/problem.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/problem.ts#L184)
