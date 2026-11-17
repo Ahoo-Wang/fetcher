@@ -179,7 +179,7 @@ const stream = await fetcher.post<JsonServerSentEventStream<Chunk>>(
 
 ## ReadableStreamAsyncIterable
 
-Exported class (`new ReadableStreamAsyncIterable(stream)`) that locks the stream's reader and implements `next()` (done once released), `return()` (cancels the stream and releases, e.g. on `break`), `throw(error)` (cancels with `error` as the reason, releases, rethrows) and `releaseLock()`. Do not call `releaseLock()` before `break`: a released iterator can no longer cancel the connection. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator]` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
+Exported class (`new ReadableStreamAsyncIterable(stream, options?)`) that locks the stream's reader and implements `next()` (done once released), `return()` (cancels the stream and releases, e.g. on `break`), `throw(error)` (cancels with `error` as the reason, releases, rethrows) and `releaseLock()`. Do not call `releaseLock()` before `break`: a released iterator can no longer cancel the connection. With `options.preventCancel: true` (the standard `ReadableStreamIteratorOptions`), `return()` and `throw()` only release the lock and leave the stream readable. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator](options?)` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
 
 ## Other Exports
 

@@ -9,14 +9,15 @@ A ReadableStream has one active reader. Decide which layer owns reading and canc
 
 ## Async iteration {#iteration}
 
-`isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream)`. Native iterators are left untouched and retain their platform semantics.
+`isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream, options)`, passing on the standard `{ preventCancel }` iterator options. Native iterators are left untouched and retain their platform semantics.
 
 | `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                       |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                                 |
+| Constructor `(stream, options?)`        | Immediately calls `getReader()` and locks the stream; an existing lock throws. `options` is `ReadableStreamIteratorOptions`.   |
 | `locked`                                | Wrapper's ownership flag, initially true.                                                                                      |
 | `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow; returns done once released. |
 | `return()`                              | Cancels the stream so its source stops, releases lock, returns done; no-op once released. Used by `break` in for-await.        |
+| `preventCancel: true`                   | `return()` and `throw()` only release the lock: the source is not cancelled and another reader can read the rest.              |
 | `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.          |
 | `throw(error)`                          | Cancels the stream with `error` as the reason, releases lock and rethrows `error`, as an async generator would.                |
 | `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                                     |

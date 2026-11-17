@@ -4540,7 +4540,9 @@ These methods do not check HTTP status, clone responses, or cache conversions. C
 
 ## Fetcher integration {#extractors}
 
-`EventStreamResultExtractor` returns `exchange.requiredResponse.requiredEventStream()`. `JsonEventStreamResultExtractor` returns `requiredJsonEventStream()` with **no termination detector** and any data type. For `[DONE]` or typed application protocols, use `jsonEventStreamResultExtractor<DATA>(detector)`, which builds the same extractor around `requiredJsonEventStream<DATA>(detector)`: the terminating event is neither parsed nor yielded, and a stream that ends without it errors with `EventStreamIncompleteError`.
+`EventStreamResultExtractor` returns the SSE stream of `exchange.requiredResponse`, with the checks and errors of `requiredEventStream()`. `JsonEventStreamResultExtractor` returns its JSON event stream, as `requiredJsonEventStream()` does, with **no termination detector** and any data type. For `[DONE]` or typed application protocols, use `jsonEventStreamResultExtractor<DATA>(detector)`, which builds the same extractor as `requiredJsonEventStream<DATA>(detector)`: the terminating event is neither parsed nor yielded, and a stream that ends without it errors with `EventStreamIncompleteError`.
+
+The extractors read only the response's standard `headers` and `body`, not the Response helpers above. A custom `fetch` may therefore return a Response from another realm (an iframe's `fetch`) or another implementation (a separately installed `undici`, a polyfill), whose prototype this package never patched. Calling the helpers directly still needs a Response from the global constructor.
 
 Fetcher status validation finishes before extraction; malformed body/content errors at extraction or iteration must be caught by the caller. Request completion returning a stream does not mean the stream has finished.
 
@@ -4597,14 +4599,15 @@ A ReadableStream has one active reader. Decide which layer owns reading and canc
 
 ## Async iteration {#iteration}
 
-`isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream)`. Native iterators are left untouched and retain their platform semantics.
+`isReadableStreamAsyncIterableSupported` is a boolean captured at module evaluation. When the global exists but native async iteration does not, the package installs a prototype method that returns `new ReadableStreamAsyncIterable<T>(stream, options)`, passing on the standard `{ preventCancel }` iterator options. Native iterators are left untouched and retain their platform semantics.
 
 | `ReadableStreamAsyncIterable<T>` member | Contract                                                                                                                       |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Constructor `(stream)`                  | Immediately calls `getReader()` and locks the stream; an existing lock throws.                                                 |
+| Constructor `(stream, options?)`        | Immediately calls `getReader()` and locks the stream; an existing lock throws. `options` is `ReadableStreamIteratorOptions`.   |
 | `locked`                                | Wrapper's ownership flag, initially true.                                                                                      |
 | `next()`                                | Returns `Promise<IteratorResult<T>>`; releases lock on EOF or read failure; read failures rethrow; returns done once released. |
 | `return()`                              | Cancels the stream so its source stops, releases lock, returns done; no-op once released. Used by `break` in for-await.        |
+| `preventCancel: true`                   | `return()` and `throw()` only release the lock: the source is not cancelled and another reader can read the rest.              |
 | `releaseLock(): boolean`                | Releases once and returns success; false after release or if release throws (logged at debug level). Does not cancel.          |
 | `throw(error)`                          | Cancels the stream with `error` as the reason, releases lock and rethrows `error`, as an async generator would.                |
 | `[Symbol.asyncIterator]()`              | Returns the same wrapper; it is not a reusable independent reader factory.                                                     |
@@ -5026,14 +5029,14 @@ Use these types to author an OpenAPI document or describe input to the [generato
 | `Contact`, `License`              | Contact fields optional; License requires name, with an optional SPDX identifier (3.1) or url                                                        |
 | `Server`, `ServerVariable`        | Server requires url; variable requires default; no URL interpolation happens here                                                                    |
 | `Tag`, `ExternalDocumentation`    | Require name and url respectively; metadata only                                                                                                     |
-| `Paths`, `PathItem`, `HTTPMethod` | Paths maps strings to items; eight lowercase method keys, shared parameters/servers, optional `$ref`                                                 |
+| `Paths`, `PathItem`, `HTTPMethod` | Paths maps `/`-prefixed paths (`PathKey`) to items, beside `x-*` extensions; eight lowercase method keys, shared parameters/servers, optional `$ref` |
 | `Operation`                       | Requires responses; optional operationId, tags, parameters, body, callbacks, security and servers                                                    |
 
 ## Parameters and responses
 
 `Parameter` requires `name` and `in` (`query`, `header`, `path`, `cookie`). All serialization hints (`style`, `explode`, `allowReserved`, `allowEmptyValue`) are optional; the package supplies no runtime defaults. It does not enforce path-parameter `required: true`, or mutual exclusion of schema/content and example/examples.
 
-`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps string status keys to `Response | Reference | undefined`, with optional default. A Response requires description. `Link` describes another operation by ID/ref; `Callback` maps runtime-expression strings to PathItem. None follows links, sends callbacks, negotiates content, or validates response status.
+`RequestBody` requires a media-type-to-`MediaType` content map. `MediaType` can contain a Schema/Reference, examples, and per-property `Encoding`. `Header` has parameter-like fields without name/in. `Responses` maps status codes and ranges (`HttpStatusCodeKey`, such as `200` or `2XX`) to `Response | Reference | undefined`, with optional default. A Response requires description. `Link` describes another operation by ID/ref; `Callback` maps runtime expressions (`CallbackExpression`: `$request.body#/url`, or a string embedding `{$...}`) to PathItem. Paths, Responses and Callback also accept `x-*` extensions with any value. Their keys are template literal types rather than `string`, because a `string` index signature would require every extension value to be a PathItem or Response; index them with such a key (a plain `string` key does not compile under `noImplicitAny`), or iterate with `Object.entries`, which also yields the extensions. None follows links, sends callbacks, negotiates content, or validates response status.
 
 ## Complete document
 
@@ -5208,12 +5211,20 @@ export interface PathItem extends Extensible {
 
 ### Paths {#paths}
 
-[packages/openapi/src/paths.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L95)
+[packages/openapi/src/paths.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L100)
 
 ```ts
 export interface Paths extends Extensible {
-  [path: string]: PathItem;
+  [path: PathKey]: PathItem;
 }
+```
+
+### PathKey {#pathkey}
+
+[packages/openapi/src/paths.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L107)
+
+```ts
+export type PathKey = `/${string}`;
 ```
 
 ### Parameter {#parameter}
@@ -5307,24 +5318,40 @@ export interface Response extends Extensible {
 
 ### Responses {#responses}
 
-[packages/openapi/src/responses.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L62)
+[packages/openapi/src/responses.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L73)
 
 ```ts
 export interface Responses extends Extensible {
   default?: Response | Reference;
 
-  [httpCode: string]: Response | Reference | undefined;
+  [httpCode: HttpStatusCodeKey]: Response | Reference | undefined;
 }
+```
+
+### HttpStatusCodeKey {#httpstatuscodekey}
+
+[packages/openapi/src/responses.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L63)
+
+```ts
+export type HttpStatusCodeKey = `${1 | 2 | 3 | 4 | 5}${string}`;
 ```
 
 ### Callback {#callback}
 
-[packages/openapi/src/responses.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L71)
+[packages/openapi/src/responses.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L93)
 
 ```ts
 export interface Callback extends Extensible {
-  [expression: string]: PathItem;
+  [expression: CallbackExpression]: PathItem;
 }
+```
+
+### CallbackExpression {#callbackexpression}
+
+[packages/openapi/src/responses.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L84)
+
+```ts
+export type CallbackExpression = `$${string}` | `${string}{$${string}`;
 ```
 
 ### Tag {#tag}
@@ -5753,6 +5780,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | Symbol                  | Reference                                                                  |
 | ----------------------- | -------------------------------------------------------------------------- |
 | `Callback`              | [Documents and operations](documents-and-operations#callback)              |
+| `CallbackExpression`    | [Documents and operations](documents-and-operations#callbackexpression)    |
 | `CommonExtensions`      | [Security and extensions](security-and-extensions#commonextensions)        |
 | `ComponentTypeMap`      | [Schemas and references](schemas-and-references#componenttypemap)          |
 | `Components`            | [Schemas and references](schemas-and-references#components)                |
@@ -5764,6 +5792,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `ExternalDocumentation` | [Documents and operations](documents-and-operations#externaldocumentation) |
 | `HTTPMethod`            | [Documents and operations](documents-and-operations#httpmethod)            |
 | `Header`                | [Documents and operations](documents-and-operations#header)                |
+| `HttpStatusCodeKey`     | [Documents and operations](documents-and-operations#httpstatuscodekey)     |
 | `Info`                  | [Documents and operations](documents-and-operations#info)                  |
 | `IsReference`           | [Schemas and references](schemas-and-references#isreference)               |
 | `License`               | [Documents and operations](documents-and-operations#license)               |
@@ -5776,6 +5805,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `Parameter`             | [Documents and operations](documents-and-operations#parameter)             |
 | `ParameterLocation`     | [Documents and operations](documents-and-operations#parameterlocation)     |
 | `PathItem`              | [Documents and operations](documents-and-operations#pathitem)              |
+| `PathKey`               | [Documents and operations](documents-and-operations#pathkey)               |
 | `Paths`                 | [Documents and operations](documents-and-operations#paths)                 |
 | `Reference`             | [Schemas and references](schemas-and-references#reference)                 |
 | `RequestBody`           | [Documents and operations](documents-and-operations#requestbody)           |
@@ -6374,7 +6404,7 @@ Supply a server-side credential and a compatible base URL ending at the API pref
 
 This package implements Chat Completions. It does not expose Responses, embeddings, images, files, audio, or realtime clients. The following contract describes this SDK's implementation, not a guarantee of a provider's current model availability or limits.
 
-`OpenAI` always creates its own Fetcher and Authorization header. To use an existing authenticated proxy, construct `ChatClient({ fetcher })` instead; this also preserves that Fetcher's headers, timeout and interceptors. Pass ApiMetadata to the constructor: the decorator executor caches per-method metadata and rebuilds it only when the `apiMetadata` object is replaced, so mutating it in place has no effect.
+`OpenAI` always creates its own Fetcher and Authorization header. To use an existing authenticated proxy, construct `ChatClient({ fetcher })` instead; this also preserves that Fetcher's headers, timeout and interceptors. Pass `ChatClientOptions` (ApiMetadata without `resultExtractor` and `returnType`, which would make `completions` return something other than its declared ChatResponse or stream; call a Fetcher directly for a raw Response or FetchExchange) to the constructor: the decorator executor caches per-method metadata and rebuilds it only when the `apiMetadata` object is replaced, so mutating it in place has no effect.
 
 ## Client contract
 
@@ -6382,7 +6412,8 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `OpenAI(options)`                                 | Required `baseURL: string` and `apiKey: string`; no default endpoint                                             | Owns readonly fetcher and chat; creates Fetcher with the other options and Authorization: Bearer apiKey |
 | `OpenAIOptions`                                   | Required `baseURL`, `apiKey`; plus any other `FetcherOptions` (`timeout`, `fetch`, `headers`, `interceptors`, …) | Type only; keys are not validated; `apiKey` overrides an `Authorization` header                         |
-| `ChatClient(apiMetadata?)`                        | Optional decorator ApiMetadata, e.g. `{ fetcher }`                                                               | Uses class basePath `chat`                                                                              |
+| `ChatClient(apiMetadata?)`                        | Optional `ChatClientOptions`, e.g. `{ fetcher }`                                                                 | Uses class basePath `chat`                                                                              |
+| `ChatClientOptions`                               | Decorator ApiMetadata without `resultExtractor` and `returnType`                                                 | Type only; those two would change what `completions` returns, so they are rejected                      |
 | `ChatClient.completions<T>(chatRequest, signal?)` | Required ChatRequest, optional AbortSignal; POST `/completions` under chat basePath                              | Promise of ChatResponse or JSON SSE stream based on stream flag                                         |
 | `ChatClient.beforeExecute(exchange)`              | FetchExchange; called by decorator runtime                                                                       | void; truthy request.body.stream selects CompletionStreamResultExtractor                                |
 
@@ -6392,9 +6423,9 @@ This package implements Chat Completions. It does not expose Responses, embeddin
 
 `ChatRequest` requires model:string and messages:Message[]. Optional fields: frequency_penalty, presence_penalty, temperature, top_p, max_tokens, n and seed are numbers; logit_bias is Record&lt;string, number&gt; or null; response_format is Record&lt;string, unknown&gt;; stop is string/string[]/null; stream is boolean; stream_options is `{ include_usage?: boolean }`; user is string; tools and tool_choice are described below. These are forwarded; the SDK neither assigns provider defaults nor validates ranges or model capability.
 
-`Message` has optional string content and role plus arbitrary properties. `ChatToolFunction` requires name, optionally description and parameters:Record&lt;string, unknown&gt;. `ChatTool` requires type:'function' and function. `ChatToolChoice` permits 'none', 'auto', or `{ type: 'function', function: { name } }`; this version does not declare a 'required' literal.
+`Message` has optional content (string or null: an assistant message that only makes tool calls has `content: null`, in a response and when sent back in `messages`) and optional string role, plus arbitrary properties. `ChatToolFunction` requires name, optionally description and parameters:Record&lt;string, unknown&gt;. `ChatTool` requires type:'function' and function. `ChatToolChoice` permits 'none', 'auto', or `{ type: 'function', function: { name } }`; this version does not declare a 'required' literal.
 
-`ChatResponse` requires choices:Choice[], created:number, id:string, object:string; usage?:Usage is optional. `Choice` has optional finish_reason, index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; streamed chunks carry no usage, except a final chunk when the request sets `stream_options: { include_usage: true }`, so consume only fields present.
+`ChatResponse` requires choices:Choice[], created:number, id:string, object:string; usage?:Usage | null is optional. `Choice` has optional finish_reason (string or null), index, message and delta. `Usage` declares completion_tokens, prompt_tokens and total_tokens. Response, Choice, Usage and Message allow additional properties. These are TypeScript declarations, not JSON validation; streamed chunks carry no usage; when the request sets `stream_options: { include_usage: true }` every chunk but the last has `usage: null` and the last carries the totals. finish_reason and delta content are null on streamed chunks until set. Check for both null and undefined (`usage?.total_tokens`, `content ?? ''`) before reading these fields.
 
 ## Complete request
 
@@ -6431,7 +6462,11 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L98)
+
+<span id="chatclientoptions"></span>
+
+**`ChatClientOptions`** — [packages/openai/src/chat/chatClient.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L41)
 
 <span id="chatrequest"></span>
 
@@ -6455,15 +6490,15 @@ Network, HTTP-status and JSON-decoding failures propagate through Fetcher. There
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L151)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
+**`Choice`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
+**`Usage`** — [packages/openai/src/chat/types.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L183)
 
 </doc>
 
@@ -6475,10 +6510,10 @@ Request `stream: true` to receive `JsonServerSentEventStream<ChatResponse>`. Eac
 
 ## Extraction and termination
 
-| Export                                          | Contract                                                                                  |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `DoneDetector(event: ServerSentEvent): boolean` | True only when raw event.data equals `[DONE]` exactly; no trimming/case folding           |
-| `CompletionStreamResultExtractor(exchange)`     | Requires a FetchResponse and readable body; returns requiredJsonEventStream(DoneDetector) |
+| Export                                          | Contract                                                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `DoneDetector(event: ServerSentEvent): boolean` | True only when raw event.data equals `[DONE]` exactly; no trimming/case folding                                                       |
+| `CompletionStreamResultExtractor(exchange)`     | Requires an SSE response with a readable body, from any Response implementation; returns the JSON event stream ending at DoneDetector |
 
 The terminal marker is recognized before JSON parsing and is not emitted as a ChatResponse. Other malformed JSON fails stream consumption. A stream that ends before `data: [DONE]` (a lost connection or a server that stopped early) errors during iteration with `EventStreamIncompleteError` from `@ahoo-wang/fetcher-eventstream`, so a partial answer is not mistaken for a complete one. A successful request Promise means a stream was obtained; errors can still occur later while reading. The extractor does not assemble choices, execute tool calls, estimate usage, or reconnect.
 
@@ -6558,6 +6593,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | Symbol                            | Reference                                                               |
 | --------------------------------- | ----------------------------------------------------------------------- |
 | `ChatClient`                      | [Client and chat completions](client-and-completions#chatclient)        |
+| `ChatClientOptions`               | [Client and chat completions](client-and-completions#chatclientoptions) |
 | `ChatRequest`                     | [Client and chat completions](client-and-completions#chatrequest)       |
 | `ChatResponse`                    | [Client and chat completions](client-and-completions#chatresponse)      |
 | `ChatTool`                        | [Client and chat completions](client-and-completions#chattool)          |
@@ -22313,7 +22349,9 @@ console.assert(events[1].data === 'tail' && events[1].id === '1');
 
 ## 集成 Fetcher {#extractors}
 
-`EventStreamResultExtractor` 返回 `exchange.requiredResponse.requiredEventStream()`。`JsonEventStreamResultExtractor` 返回 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它基于 `requiredJsonEventStream<DATA>(detector)` 构建同样的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+`EventStreamResultExtractor` 返回 `exchange.requiredResponse` 的 SSE 流，检查与错误同 `requiredEventStream()`。`JsonEventStreamResultExtractor` 返回其 JSON 事件流，同 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它构建与 `requiredJsonEventStream<DATA>(detector)` 相同的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+
+提取器只读取响应的标准 `headers` 与 `body`，不调用上面的 Response 扩展。因此自定义 `fetch` 可以返回其他 realm（iframe 的 `fetch`）或其他实现（单独安装的 `undici`、polyfill）的 Response，即使本包从未修改其原型。直接调用扩展方法仍需要全局构造器创建的 Response。
 
 Fetcher 状态校验在提取前完成，提取或迭代时正文/媒体类型错误必须由调用者捕获。请求返回流不代表流已结束。
 
@@ -22370,14 +22408,15 @@ ReadableStream 同时只能有一个活动 reader。将流交给 UI 或其他转
 
 ## 异步迭代 {#iteration}
 
-`isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream)`。原生迭代器不会被修改，保留平台语义。
+`isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream, options)`，并传入标准迭代选项 `{ preventCancel }`。原生迭代器不会被修改，保留平台语义。
 
 | `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                                           |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                                      |
+| 构造器 `(stream, options?)`           | 立即 `getReader()` 并锁流，已有锁时抛错。`options` 为 `ReadableStreamIteratorOptions`。        |
 | `locked`                              | 包装器所有权标记，初始 true。                                                                  |
 | `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出；释放后返回 done。 |
 | `return()`                            | 取消流使源停止产出，释放锁并返回 done；已释放时不做任何事。for-await 中 break 调用它。         |
+| `preventCancel: true`                 | `return()` 与 `throw()` 只释放锁，不取消源；其他 reader 可以继续读取剩余数据。                 |
 | `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。                   |
 | `throw(error)`                        | 以 `error` 为原因取消流，释放锁并重新抛出 `error`，与异步生成器一致。                          |
 | `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                                 |
@@ -22799,14 +22838,14 @@ console.log(document.openapi);
 | `Contact`、`License`              | Contact 字段均可选；License 必填 name，可选 SPDX identifier（3.1）或 url                                                                           |
 | `Server`、`ServerVariable`        | Server 必填 url；变量必填 default；这里不执行 URL 插值                                                                                             |
 | `Tag`、`ExternalDocumentation`    | 分别必填 name、url；仅描述元数据                                                                                                                   |
-| `Paths`、`PathItem`、`HTTPMethod` | Paths 将字符串映射到路径项；支持八种小写方法键、共享参数/servers、可选 `$ref`                                                                      |
+| `Paths`、`PathItem`、`HTTPMethod` | Paths 将以 `/` 开头的路径（`PathKey`）映射到路径项，并可带 `x-*` 扩展；支持八种小写方法键、共享参数/servers、可选 `$ref`                           |
 | `Operation`                       | 必填 responses；可选 operationId、tags、parameters、body、callbacks、security、servers                                                             |
 
 ## 参数与响应
 
 `Parameter` 必填 `name` 和 `in`（`query`、`header`、`path`、`cookie`）。序列化提示（`style`、`explode`、`allowReserved`、`allowEmptyValue`）均可选，本包不提供运行时默认值。不强制路径参数设置 `required: true`，也不强制 schema/content 或 example/examples 互斥。
 
-`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态字符串映射到 `Response | Reference | undefined`，可配置 default。Response 必填 description。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式字符串映射到 PathItem。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
+`RequestBody` 必填媒体类型到 `MediaType` 的 content 映射。`MediaType` 可含 Schema/Reference、示例和按属性配置的 `Encoding`。`Header` 类似 Parameter，但没有 name/in。`Responses` 将状态码与范围（`HttpStatusCodeKey`，如 `200`、`2XX`）映射到 `Response | Reference | undefined`，可配置 default。Response 必填 description。`Link` 以 ID/ref 描述另一操作；`Callback` 将运行时表达式（`CallbackExpression`：`$request.body#/url`，或内嵌 `{$...}` 的字符串）映射到 PathItem。Paths、Responses 与 Callback 也接受任意值的 `x-*` 扩展。它们的键是模板字面量类型而不是 `string`，因为 `string` 索引签名会要求每个扩展值都是 PathItem 或 Response；按这样的键索引（`noImplicitAny` 下普通 `string` 键无法编译），或用 `Object.entries` 遍历（也会得到扩展项）。它们不跟随链接、发送回调、协商媒体类型或校验响应状态。
 
 ## 完整文档
 
@@ -22981,12 +23020,20 @@ export interface PathItem extends Extensible {
 
 ### Paths {#paths}
 
-[packages/openapi/src/paths.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L95)
+[packages/openapi/src/paths.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L100)
 
 ```ts
 export interface Paths extends Extensible {
-  [path: string]: PathItem;
+  [path: PathKey]: PathItem;
 }
+```
+
+### PathKey {#pathkey}
+
+[packages/openapi/src/paths.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/paths.ts#L107)
+
+```ts
+export type PathKey = `/${string}`;
 ```
 
 ### Parameter {#parameter}
@@ -23080,24 +23127,40 @@ export interface Response extends Extensible {
 
 ### Responses {#responses}
 
-[packages/openapi/src/responses.ts:62](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L62)
+[packages/openapi/src/responses.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L73)
 
 ```ts
 export interface Responses extends Extensible {
   default?: Response | Reference;
 
-  [httpCode: string]: Response | Reference | undefined;
+  [httpCode: HttpStatusCodeKey]: Response | Reference | undefined;
 }
+```
+
+### HttpStatusCodeKey {#httpstatuscodekey}
+
+[packages/openapi/src/responses.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L63)
+
+```ts
+export type HttpStatusCodeKey = `${1 | 2 | 3 | 4 | 5}${string}`;
 ```
 
 ### Callback {#callback}
 
-[packages/openapi/src/responses.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L71)
+[packages/openapi/src/responses.ts:93](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L93)
 
 ```ts
 export interface Callback extends Extensible {
-  [expression: string]: PathItem;
+  [expression: CallbackExpression]: PathItem;
 }
+```
+
+### CallbackExpression {#callbackexpression}
+
+[packages/openapi/src/responses.ts:84](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/responses.ts#L84)
+
+```ts
+export type CallbackExpression = `$${string}` | `${string}{$${string}`;
 ```
 
 ### Tag {#tag}
@@ -23526,6 +23589,7 @@ export interface CommonExtensions {
 | 符号                    | 参考                                                         |
 | ----------------------- | ------------------------------------------------------------ |
 | `Callback`              | [文档与操作](documents-and-operations#callback)              |
+| `CallbackExpression`    | [文档与操作](documents-and-operations#callbackexpression)    |
 | `CommonExtensions`      | [安全与扩展](security-and-extensions#commonextensions)       |
 | `ComponentTypeMap`      | [Schema 与引用](schemas-and-references#componenttypemap)     |
 | `Components`            | [Schema 与引用](schemas-and-references#components)           |
@@ -23537,6 +23601,7 @@ export interface CommonExtensions {
 | `ExternalDocumentation` | [文档与操作](documents-and-operations#externaldocumentation) |
 | `HTTPMethod`            | [文档与操作](documents-and-operations#httpmethod)            |
 | `Header`                | [文档与操作](documents-and-operations#header)                |
+| `HttpStatusCodeKey`     | [文档与操作](documents-and-operations#httpstatuscodekey)     |
 | `Info`                  | [文档与操作](documents-and-operations#info)                  |
 | `IsReference`           | [Schema 与引用](schemas-and-references#isreference)          |
 | `License`               | [文档与操作](documents-and-operations#license)               |
@@ -23549,6 +23614,7 @@ export interface CommonExtensions {
 | `Parameter`             | [文档与操作](documents-and-operations#parameter)             |
 | `ParameterLocation`     | [文档与操作](documents-and-operations#parameterlocation)     |
 | `PathItem`              | [文档与操作](documents-and-operations#pathitem)              |
+| `PathKey`               | [文档与操作](documents-and-operations#pathkey)               |
 | `Paths`                 | [文档与操作](documents-and-operations#paths)                 |
 | `Reference`             | [Schema 与引用](schemas-and-references#reference)            |
 | `RequestBody`           | [文档与操作](documents-and-operations#requestbody)           |
@@ -24147,7 +24213,7 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 本包实现 Chat Completions，没有 Responses、embeddings、images、files、audio 或 realtime 客户端。以下契约描述 SDK 当前实现，不保证供应商当前模型可用性或限制。
 
-`OpenAI` 始终创建自己的 Fetcher 和 Authorization 头。复用已有认证代理时，应构造 `ChatClient({ fetcher })`，这样也会保留该 Fetcher 的请求头、超时和拦截器。ApiMetadata 应通过构造器传入：装饰器执行器按方法缓存元数据，只在 `apiMetadata` 对象被替换时重建，原地修改不会生效。
+`OpenAI` 始终创建自己的 Fetcher 和 Authorization 头。复用已有认证代理时，应构造 `ChatClient({ fetcher })`，这样也会保留该 Fetcher 的请求头、超时和拦截器。`ChatClientOptions`（去掉 `resultExtractor` 与 `returnType` 的 ApiMetadata；这两项会让 `completions` 返回声明的 ChatResponse 或流以外的值，需要原始 Response 或 FetchExchange 时直接调用 Fetcher）应通过构造器传入：装饰器执行器按方法缓存元数据，只在 `apiMetadata` 对象被替换时重建，原地修改不会生效。
 
 ## 客户端契约
 
@@ -24155,7 +24221,8 @@ export async function answer(options: OpenAIOptions, model: string) {
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                                                    | 持有 readonly fetcher 和 chat；用其余选项和 Authorization: Bearer apiKey 创建 Fetcher |
 | `OpenAIOptions`                                   | 必填 `baseURL`、`apiKey`；可加其他 `FetcherOptions`（`timeout`、`fetch`、`headers`、`interceptors` 等） | 仅为类型，不校验 key；`apiKey` 覆盖 `headers` 里的 `Authorization`                    |
-| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                                                | 类 basePath 为 `chat`                                                                 |
+| `ChatClient(apiMetadata?)`                        | 可选 `ChatClientOptions`，如 `{ fetcher }`                                                              | 类 basePath 为 `chat`                                                                 |
+| `ChatClientOptions`                               | 去掉 `resultExtractor` 与 `returnType` 的装饰器 ApiMetadata                                             | 仅类型；这两项会改变 `completions` 的返回值，因此被拒绝                               |
 | `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST                             | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                            |
 | `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                                                       | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor                |
 
@@ -24165,9 +24232,9 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 `ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；stream_options 为 `{ include_usage?: boolean }`；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
 
-`Message` 有可选 string content、role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
+`Message` 有可选 content（string 或 null：只发起工具调用的 assistant 消息 `content: null`，响应中以及回传到 `messages` 时皆然）、可选 string role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
 
-`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage 可选。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage，只有请求设置 `stream_options: { include_usage: true }` 时最后一个 chunk 才带，应只消费实际存在的字段。
+`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage | null 可选。`Choice` 含可选 finish_reason（string 或 null）、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage；请求设置 `stream_options: { include_usage: true }` 时，除最后一个 chunk 外 usage 均为 null，最后一个 chunk 带总计。流式 chunk 的 finish_reason 与 delta content 在确定前为 null。读取这些字段前应同时排除 null 和 undefined（`usage?.total_tokens`、`content ?? ''`）。
 
 ## 完整请求
 
@@ -24204,7 +24271,11 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L98)
+
+<span id="chatclientoptions"></span>
+
+**`ChatClientOptions`** — [packages/openai/src/chat/chatClient.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L41)
 
 <span id="chatrequest"></span>
 
@@ -24228,15 +24299,15 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L151)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
+**`Choice`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
+**`Usage`** — [packages/openai/src/chat/types.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L183)
 
 </doc>
 
@@ -24248,10 +24319,10 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 ## 提取与终止
 
-| 导出                                            | 契约                                                                       |
-| ----------------------------------------------- | -------------------------------------------------------------------------- |
-| `DoneDetector(event: ServerSentEvent): boolean` | 原始 event.data 精确等于 `[DONE]` 才为 true，不 trim、不忽略大小写         |
-| `CompletionStreamResultExtractor(exchange)`     | 要求 FetchResponse 和可读 body，返回 requiredJsonEventStream(DoneDetector) |
+| 导出                                            | 契约                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `DoneDetector(event: ServerSentEvent): boolean` | 原始 event.data 精确等于 `[DONE]` 才为 true，不 trim、不忽略大小写                          |
+| `CompletionStreamResultExtractor(exchange)`     | 要求带可读 body 的 SSE 响应，接受任意 Response 实现；返回以 DoneDetector 结束的 JSON 事件流 |
 
 终止标记在 JSON 解析前识别，不作为 ChatResponse 发出。其他无效 JSON 会使流消费失败。在 `data: [DONE]` 之前结束的流（连接中断或服务端提前停止）会在迭代时以 `@ahoo-wang/fetcher-eventstream` 的 `EventStreamIncompleteError` 失败，不会把不完整的回答当成完整回答。请求 Promise 成功只表示拿到了流，读取时仍可能失败。提取器不拼接 choices、不执行工具调用、不估计 usage，也不重连。
 
@@ -24328,21 +24399,22 @@ export async function readAnswer(
 
 ## 公开符号索引
 
-| 符号                              | 参考                                                        |
-| --------------------------------- | ----------------------------------------------------------- |
-| `ChatClient`                      | [客户端与聊天补全](client-and-completions#chatclient)       |
-| `ChatRequest`                     | [客户端与聊天补全](client-and-completions#chatrequest)      |
-| `ChatResponse`                    | [客户端与聊天补全](client-and-completions#chatresponse)     |
-| `ChatTool`                        | [客户端与聊天补全](client-and-completions#chattool)         |
-| `ChatToolChoice`                  | [客户端与聊天补全](client-and-completions#chattoolchoice)   |
-| `ChatToolFunction`                | [客户端与聊天补全](client-and-completions#chattoolfunction) |
-| `Choice`                          | [客户端与聊天补全](client-and-completions#choice)           |
-| `CompletionStreamResultExtractor` | [流式聊天补全](streaming#completionstreamresultextractor)   |
-| `DoneDetector`                    | [流式聊天补全](streaming#donedetector)                      |
-| `Message`                         | [客户端与聊天补全](client-and-completions#message)          |
-| `OpenAI`                          | [客户端与聊天补全](client-and-completions#openai)           |
-| `OpenAIOptions`                   | [客户端与聊天补全](client-and-completions#openaioptions)    |
-| `Usage`                           | [客户端与聊天补全](client-and-completions#usage)            |
+| 符号                              | 参考                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| `ChatClient`                      | [客户端与聊天补全](client-and-completions#chatclient)        |
+| `ChatClientOptions`               | [客户端与聊天补全](client-and-completions#chatclientoptions) |
+| `ChatRequest`                     | [客户端与聊天补全](client-and-completions#chatrequest)       |
+| `ChatResponse`                    | [客户端与聊天补全](client-and-completions#chatresponse)      |
+| `ChatTool`                        | [客户端与聊天补全](client-and-completions#chattool)          |
+| `ChatToolChoice`                  | [客户端与聊天补全](client-and-completions#chattoolchoice)    |
+| `ChatToolFunction`                | [客户端与聊天补全](client-and-completions#chattoolfunction)  |
+| `Choice`                          | [客户端与聊天补全](client-and-completions#choice)            |
+| `CompletionStreamResultExtractor` | [流式聊天补全](streaming#completionstreamresultextractor)    |
+| `DoneDetector`                    | [流式聊天补全](streaming#donedetector)                       |
+| `Message`                         | [客户端与聊天补全](client-and-completions#message)           |
+| `OpenAI`                          | [客户端与聊天补全](client-and-completions#openai)            |
+| `OpenAIOptions`                   | [客户端与聊天补全](client-and-completions#openaioptions)     |
+| `Usage`                           | [客户端与聊天补全](client-and-completions#usage)             |
 
 [packages/openai/src/index.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/index.ts#L14)
 

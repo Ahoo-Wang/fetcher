@@ -28,7 +28,9 @@ These methods do not check HTTP status, clone responses, or cache conversions. C
 
 ## Fetcher integration {#extractors}
 
-`EventStreamResultExtractor` returns `exchange.requiredResponse.requiredEventStream()`. `JsonEventStreamResultExtractor` returns `requiredJsonEventStream()` with **no termination detector** and any data type. For `[DONE]` or typed application protocols, use `jsonEventStreamResultExtractor<DATA>(detector)`, which builds the same extractor around `requiredJsonEventStream<DATA>(detector)`: the terminating event is neither parsed nor yielded, and a stream that ends without it errors with `EventStreamIncompleteError`.
+`EventStreamResultExtractor` returns the SSE stream of `exchange.requiredResponse`, with the checks and errors of `requiredEventStream()`. `JsonEventStreamResultExtractor` returns its JSON event stream, as `requiredJsonEventStream()` does, with **no termination detector** and any data type. For `[DONE]` or typed application protocols, use `jsonEventStreamResultExtractor<DATA>(detector)`, which builds the same extractor as `requiredJsonEventStream<DATA>(detector)`: the terminating event is neither parsed nor yielded, and a stream that ends without it errors with `EventStreamIncompleteError`.
+
+The extractors read only the response's standard `headers` and `body`, not the Response helpers above. A custom `fetch` may therefore return a Response from another realm (an iframe's `fetch`) or another implementation (a separately installed `undici`, a polyfill), whose prototype this package never patched. Calling the helpers directly still needs a Response from the global constructor.
 
 Fetcher status validation finishes before extraction; malformed body/content errors at extraction or iteration must be caught by the caller. Request completion returning a stream does not mean the stream has finished.
 

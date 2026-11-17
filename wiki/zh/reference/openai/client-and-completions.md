@@ -7,7 +7,7 @@ description: '客户端与聊天补全 — Fetcher 6.0.0'
 
 本包实现 Chat Completions，没有 Responses、embeddings、images、files、audio 或 realtime 客户端。以下契约描述 SDK 当前实现，不保证供应商当前模型可用性或限制。
 
-`OpenAI` 始终创建自己的 Fetcher 和 Authorization 头。复用已有认证代理时，应构造 `ChatClient({ fetcher })`，这样也会保留该 Fetcher 的请求头、超时和拦截器。ApiMetadata 应通过构造器传入：装饰器执行器按方法缓存元数据，只在 `apiMetadata` 对象被替换时重建，原地修改不会生效。
+`OpenAI` 始终创建自己的 Fetcher 和 Authorization 头。复用已有认证代理时，应构造 `ChatClient({ fetcher })`，这样也会保留该 Fetcher 的请求头、超时和拦截器。`ChatClientOptions`（去掉 `resultExtractor` 与 `returnType` 的 ApiMetadata；这两项会让 `completions` 返回声明的 ChatResponse 或流以外的值，需要原始 Response 或 FetchExchange 时直接调用 Fetcher）应通过构造器传入：装饰器执行器按方法缓存元数据，只在 `apiMetadata` 对象被替换时重建，原地修改不会生效。
 
 ## 客户端契约
 
@@ -15,7 +15,8 @@ description: '客户端与聊天补全 — Fetcher 6.0.0'
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `OpenAI(options)`                                 | 必填 `baseURL: string`、`apiKey: string`，无默认端点                                                    | 持有 readonly fetcher 和 chat；用其余选项和 Authorization: Bearer apiKey 创建 Fetcher |
 | `OpenAIOptions`                                   | 必填 `baseURL`、`apiKey`；可加其他 `FetcherOptions`（`timeout`、`fetch`、`headers`、`interceptors` 等） | 仅为类型，不校验 key；`apiKey` 覆盖 `headers` 里的 `Authorization`                    |
-| `ChatClient(apiMetadata?)`                        | 可选装饰器 ApiMetadata，如 `{ fetcher }`                                                                | 类 basePath 为 `chat`                                                                 |
+| `ChatClient(apiMetadata?)`                        | 可选 `ChatClientOptions`，如 `{ fetcher }`                                                              | 类 basePath 为 `chat`                                                                 |
+| `ChatClientOptions`                               | 去掉 `resultExtractor` 与 `returnType` 的装饰器 ApiMetadata                                             | 仅类型；这两项会改变 `completions` 的返回值，因此被拒绝                               |
 | `ChatClient.completions<T>(chatRequest, signal?)` | 必填 ChatRequest，可选 AbortSignal；向 chat basePath 下 `/completions` POST                             | 根据 stream 标记返回 ChatResponse 或 JSON SSE 流的 Promise                            |
 | `ChatClient.beforeExecute(exchange)`              | FetchExchange，由装饰器运行时调用                                                                       | void；request.body.stream 为真值时选择 CompletionStreamResultExtractor                |
 
@@ -25,9 +26,9 @@ description: '客户端与聊天补全 — Fetcher 6.0.0'
 
 `ChatRequest` 必填 model:string、messages:Message[]。可选字段 frequency_penalty、presence_penalty、temperature、top_p、max_tokens、n、seed 为数字；logit_bias 为 Record&lt;string, number&gt; 或 null；response_format 为 Record&lt;string, unknown&gt;；stop 为 string/string[]/null；stream 为 boolean；stream_options 为 `{ include_usage?: boolean }`；user 为 string；tools 和 tool_choice 见下文。这些字段直接转发，SDK 不设置供应商默认值，不校验范围或模型能力。
 
-`Message` 有可选 string content、role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
+`Message` 有可选 content（string 或 null：只发起工具调用的 assistant 消息 `content: null`，响应中以及回传到 `messages` 时皆然）、可选 string role，并允许任意属性。`ChatToolFunction` 必填 name，可选 description、parameters:Record&lt;string, unknown&gt;。`ChatTool` 必填 type:'function' 和 function。`ChatToolChoice` 允许 'none'、'auto' 或 `{ type: 'function', function: { name } }`，此版本没有声明 'required' 字面量。
 
-`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage 可选。`Choice` 含可选 finish_reason、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage，只有请求设置 `stream_options: { include_usage: true }` 时最后一个 chunk 才带，应只消费实际存在的字段。
+`ChatResponse` 必填 choices:Choice[]、created:number、id:string、object:string；usage?:Usage | null 可选。`Choice` 含可选 finish_reason（string 或 null）、index、message、delta。`Usage` 声明 completion_tokens、prompt_tokens、total_tokens。Response、Choice、Usage、Message 均允许附加属性。这些是 TypeScript 声明，不是 JSON 校验；流式 chunk 不带 usage；请求设置 `stream_options: { include_usage: true }` 时，除最后一个 chunk 外 usage 均为 null，最后一个 chunk 带总计。流式 chunk 的 finish_reason 与 delta content 在确定前为 null。读取这些字段前应同时排除 null 和 undefined（`usage?.total_tokens`、`content ?? ''`）。
 
 ## 完整请求
 
@@ -64,7 +65,11 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatclient"></span>
 
-**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L79)
+**`ChatClient`** — [packages/openai/src/chat/chatClient.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L98)
+
+<span id="chatclientoptions"></span>
+
+**`ChatClientOptions`** — [packages/openai/src/chat/chatClient.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/chatClient.ts#L41)
 
 <span id="chatrequest"></span>
 
@@ -88,12 +93,12 @@ export async function answer(options: OpenAIOptions, model: string) {
 
 <span id="chatresponse"></span>
 
-**`ChatResponse`** — [packages/openai/src/chat/types.ts:146](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L146)
+**`ChatResponse`** — [packages/openai/src/chat/types.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L151)
 
 <span id="choice"></span>
 
-**`Choice`** — [packages/openai/src/chat/types.ts:160](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L160)
+**`Choice`** — [packages/openai/src/chat/types.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L166)
 
 <span id="usage"></span>
 
-**`Usage`** — [packages/openai/src/chat/types.ts:173](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L173)
+**`Usage`** — [packages/openai/src/chat/types.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/src/chat/types.ts#L183)

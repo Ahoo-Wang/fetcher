@@ -28,7 +28,9 @@ description: 'JSON 事件、Response 辅助方法与提取器 — @ahoo-wang/fet
 
 ## 集成 Fetcher {#extractors}
 
-`EventStreamResultExtractor` 返回 `exchange.requiredResponse.requiredEventStream()`。`JsonEventStreamResultExtractor` 返回 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它基于 `requiredJsonEventStream<DATA>(detector)` 构建同样的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+`EventStreamResultExtractor` 返回 `exchange.requiredResponse` 的 SSE 流，检查与错误同 `requiredEventStream()`。`JsonEventStreamResultExtractor` 返回其 JSON 事件流，同 `requiredJsonEventStream()`，**不带结束检测器**，data 类型为 any。对于 `[DONE]` 或类型化协议，使用 `jsonEventStreamResultExtractor<DATA>(detector)`：它构建与 `requiredJsonEventStream<DATA>(detector)` 相同的提取器，结束事件既不解析也不产出；流在结束事件之前结束时以 `EventStreamIncompleteError` 出错。
+
+提取器只读取响应的标准 `headers` 与 `body`，不调用上面的 Response 扩展。因此自定义 `fetch` 可以返回其他 realm（iframe 的 `fetch`）或其他实现（单独安装的 `undici`、polyfill）的 Response，即使本包从未修改其原型。直接调用扩展方法仍需要全局构造器创建的 Response。
 
 Fetcher 状态校验在提取前完成，提取或迭代时正文/媒体类型错误必须由调用者捕获。请求返回流不代表流已结束。
 

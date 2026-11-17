@@ -93,6 +93,102 @@ describe('readableStreams', () => {
     expect((iterator as any)[customSymbol]).toBe(true);
   });
 
+  describe('polyfill preventCancel', () => {
+    function twoValueStream() {
+      const source = { cancelled: 0 };
+      const stream = new ReadableStream<string>({
+        start(controller) {
+          controller.enqueue('first');
+          controller.enqueue('second');
+        },
+        cancel() {
+          source.cancelled++;
+        },
+      });
+      return { source, stream };
+    }
+
+    async function withPolyfill(run: () => Promise<void>) {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        ReadableStream.prototype,
+        Symbol.asyncIterator,
+      );
+      Reflect.deleteProperty(ReadableStream.prototype, Symbol.asyncIterator);
+      try {
+        vi.resetModules();
+        const module = await import('../src/readableStreams');
+        expect(module.isReadableStreamAsyncIterableSupported).toBe(false);
+        await run();
+      } finally {
+        if (descriptor) {
+          Object.defineProperty(
+            ReadableStream.prototype,
+            Symbol.asyncIterator,
+            descriptor,
+          );
+        } else {
+          Reflect.deleteProperty(
+            ReadableStream.prototype,
+            Symbol.asyncIterator,
+          );
+        }
+      }
+    }
+
+    it('keeps the stream readable when return() ends it early', async () => {
+      await withPolyfill(async () => {
+        const { source, stream } = twoValueStream();
+        const iterator = stream[Symbol.asyncIterator]({ preventCancel: true });
+        expect(await iterator.next()).toEqual({ done: false, value: 'first' });
+        await iterator.return?.();
+        expect(source.cancelled).toBe(0);
+        expect(stream.locked).toBe(false);
+        const reader = stream.getReader();
+        expect(await reader.read()).toEqual({ done: false, value: 'second' });
+        reader.releaseLock();
+      });
+    });
+
+    it('keeps the stream readable when a for-await loop breaks', async () => {
+      await withPolyfill(async () => {
+        const { source, stream } = twoValueStream();
+        const values: string[] = [];
+        for await (const value of {
+          [Symbol.asyncIterator]: () =>
+            stream[Symbol.asyncIterator]({ preventCancel: true }),
+        }) {
+          values.push(value);
+          break;
+        }
+        expect(values).toEqual(['first']);
+        expect(source.cancelled).toBe(0);
+        const reader = stream.getReader();
+        expect(await reader.read()).toEqual({ done: false, value: 'second' });
+        reader.releaseLock();
+      });
+    });
+
+    it.each([[undefined], [{}], [{ preventCancel: false }]])(
+      'cancels the stream when return() ends it early with options %j',
+      async options => {
+        await withPolyfill(async () => {
+          const { source, stream } = twoValueStream();
+          const iterator = stream[Symbol.asyncIterator](options);
+          await iterator.next();
+          await iterator.return?.();
+          expect(source.cancelled).toBe(1);
+          expect(stream.locked).toBe(false);
+          const reader = stream.getReader();
+          expect(await reader.read()).toEqual({
+            done: true,
+            value: undefined,
+          });
+          reader.releaseLock();
+        });
+      },
+    );
+  });
+
   // BUG: when the runtime has no ReadableStream global at all (legacy SSR /
   // non-stream environments), `isReadableStreamAsyncIterableSupported` is
   // false, so the polyfill branch is entered and references the non-existent

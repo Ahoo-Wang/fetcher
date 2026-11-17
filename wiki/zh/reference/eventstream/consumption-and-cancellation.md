@@ -9,14 +9,15 @@ ReadableStream 同时只能有一个活动 reader。将流交给 UI 或其他转
 
 ## 异步迭代 {#iteration}
 
-`isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream)`。原生迭代器不会被修改，保留平台语义。
+`isReadableStreamAsyncIterableSupported` 是模块求值时捕获的布尔值。全局 ReadableStream 存在但不支持原生异步迭代时，包安装原型方法，返回 `new ReadableStreamAsyncIterable<T>(stream, options)`，并传入标准迭代选项 `{ preventCancel }`。原生迭代器不会被修改，保留平台语义。
 
 | `ReadableStreamAsyncIterable<T>` 成员 | 契约                                                                                           |
 | ------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| 构造器 `(stream)`                     | 立即 `getReader()` 并锁流，已有锁时抛错。                                                      |
+| 构造器 `(stream, options?)`           | 立即 `getReader()` 并锁流，已有锁时抛错。`options` 为 `ReadableStreamIteratorOptions`。        |
 | `locked`                              | 包装器所有权标记，初始 true。                                                                  |
 | `next()`                              | 返回 `Promise<IteratorResult<T>>`，EOF 或读取失败时释放锁，读取失败继续抛出；释放后返回 done。 |
 | `return()`                            | 取消流使源停止产出，释放锁并返回 done；已释放时不做任何事。for-await 中 break 调用它。         |
+| `preventCancel: true`                 | `return()` 与 `throw()` 只释放锁，不取消源；其他 reader 可以继续读取剩余数据。                 |
 | `releaseLock(): boolean`              | 只释放一次，成功 true；已释放或释放抛错返回 false，后者 debug 记录；不取消。                   |
 | `throw(error)`                        | 以 `error` 为原因取消流，释放锁并重新抛出 `error`，与异步生成器一致。                          |
 | `[Symbol.asyncIterator]()`            | 返回同一包装器，不是可复用的独立 reader 工厂。                                                 |

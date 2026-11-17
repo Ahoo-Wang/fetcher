@@ -17,6 +17,10 @@ import type {
   JsonServerSentEventStream,
   TerminateDetector,
 } from './jsonServerSentEventTransformStream.js';
+import {
+  requireResponseEventStream,
+  requireResponseJsonEventStream,
+} from './responseEventStreams.js';
 
 /**
  * ServerSentEventStream result extractor for Fetcher HTTP client.
@@ -29,10 +33,14 @@ import type {
  * This extractor should be used when you want to consume raw Server-Sent Events
  * without JSON parsing, maintaining the original string data format.
  *
+ * It reads only the response's standard `headers` and `body`, not the
+ * `Response.prototype` helpers, so it also accepts a response from another
+ * realm or `Response` implementation returned by a custom `fetch`.
+ *
  * @param exchange - The FetchExchange object containing request and response information
  * @returns A ReadableStream that yields ServerSentEvent objects as they are parsed from the response
- * @throws {ExchangeError} When the server response does not support ServerSentEventStream
- *                         (e.g., wrong content type, no response body)
+ * @throws {EventStreamConvertError} When the server response does not support ServerSentEventStream
+ *                         (e.g., wrong content type, no response body, body already used)
  *
  *
  * @see {@link ServerSentEventStream} for the stream type
@@ -41,7 +49,7 @@ import type {
 export const EventStreamResultExtractor: ResultExtractor<
   ServerSentEventStream
 > = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.requiredEventStream();
+  return requireResponseEventStream(exchange.requiredResponse);
 };
 
 /**
@@ -58,8 +66,9 @@ export const EventStreamResultExtractor: ResultExtractor<
  * @template DATA - The expected type of the JSON data in the server-sent events
  * @param exchange - The FetchExchange object containing request and response information
  * @returns A ReadableStream that yields ServerSentEvent objects with parsed JSON data as they are received
- * @throws {ExchangeError} When the server response does not support JsonServerSentEventStream
- *                         (e.g., wrong content type, no response body, invalid JSON)
+ * @throws {EventStreamConvertError} When the server response does not support JsonServerSentEventStream
+ *                         (e.g., wrong content type, no response body, body already used).
+ *                         Invalid JSON errors the stream instead.
  *
  *
  * @see {@link JsonServerSentEventStream} for the stream type with JSON data
@@ -73,7 +82,9 @@ export const JsonEventStreamResultExtractor: ResultExtractor<
  * Creates a JSON event stream result extractor that ends at the event
  * `terminateDetector` recognizes, such as OpenAI's `data: [DONE]`. The
  * terminating event is not parsed or yielded, and a stream that ends without
- * it errors with `EventStreamIncompleteError`.
+ * it errors with `EventStreamIncompleteError`. Like
+ * {@link EventStreamResultExtractor}, it accepts a response from any realm or
+ * `Response` implementation.
  *
  * @template DATA - The expected type of the JSON data in the server-sent events
  * @param terminateDetector - Recognizes the event that ends the stream; without it the stream ends with the body
@@ -89,5 +100,8 @@ export function jsonEventStreamResultExtractor<DATA = any>(
   terminateDetector?: TerminateDetector,
 ): ResultExtractor<JsonServerSentEventStream<DATA>> {
   return (exchange: FetchExchange) =>
-    exchange.requiredResponse.requiredJsonEventStream<DATA>(terminateDetector);
+    requireResponseJsonEventStream<DATA>(
+      exchange.requiredResponse,
+      terminateDetector,
+    );
 }
