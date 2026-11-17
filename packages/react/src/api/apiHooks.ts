@@ -20,8 +20,27 @@ export function methodNameToHookName(methodName: string): string {
 }
 
 /**
+ * Whether `target` is the `Object.prototype` of this or another realm (an
+ * iframe, a `vm` context): a null-prototype object whose own `constructor`
+ * is a function named `Object` with `target` as its `prototype`.
+ */
+function isObjectPrototype(target: object): boolean {
+  if (target === Object.prototype) return true;
+  if (Object.getPrototypeOf(target) !== null) return false;
+  const constructor = Object.getOwnPropertyDescriptor(
+    target,
+    'constructor',
+  )?.value;
+  return (
+    typeof constructor === 'function' &&
+    constructor.name === 'Object' &&
+    constructor.prototype === target
+  );
+}
+
+/**
  * The methods of `obj`: its own function properties and those of its
- * prototype chain (up to `Object.prototype`), bound to `obj`. The nearest
+ * prototype chain (up to `Object.prototype`, of any realm), bound to `obj`. The nearest
  * definition wins; constructors and accessors are skipped, so collecting
  * never runs a getter.
  */
@@ -32,7 +51,7 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
   const seen = new Set<string>();
   for (
     let target: object | null = obj;
-    target && target !== Object.prototype;
+    target && !isObjectPrototype(target);
     target = Object.getPrototypeOf(target)
   ) {
     for (const key of Object.getOwnPropertyNames(target)) {

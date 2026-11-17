@@ -14,11 +14,11 @@ description: 'Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0'
 | `useFetcher<R,E>(options?)`       | `RequestOptions`, executor callbacks, and `fetcher` instance/name; defaults to `fetcherRegistrar.default`                  | `loading`, `status`, `result`, `error`, `exchange`, `execute(request)`, `abort`, `reset` |
 | `execute(request)`                | Complete `FetchRequest`; the hook sends a copy with its own `abortController` and leaves your object unchanged             | `Promise<PromiseState<R,E>>` after extraction; never rejects                             |
 | `exchange`                        | Derived from state: the exchange behind `result`, or behind `error` when it is an `ExchangeError`                          | `FetchExchange \| undefined`; undefined while idle or after a non-exchange failure       |
-| `useFetcherQuery<Q,R,E>(options)` | Required `url`, controlled `query`, `autoExecute` (default true); extractor defaults to `JsonResultExtractor`, caller wins | Executor state plus `exchange`; `execute()` sends the current query as POST body         |
+| `useFetcherQuery<Q,R,E>(options)` | Required `url`, controlled `query`, `autoExecute` (default true); extractor defaults to `JsonResultExtractor`, caller wins | Executor state plus `exchange`; `execute()` sends the current query as POST JSON body    |
 
 Fetcher registration is resolved when a request is sent, so a missing named registration becomes error state. `useFetcher` does not default to JSON independently of the selected Fetcher/options: select the extractor explicitly when you need typed JSON. HTTP status, timeout and extraction failures follow the selected Fetcher's interceptor pipeline.
 
-`exchange` is not stored separately: it follows `result` and `error`. After an HTTP 404, `error` is an `ExchangeError` and `exchange.response?.status` is `404`; after `abort()` or `reset()` both are cleared. `useFetcherQuery` follows the [controlled-query contract](./promise-and-query-state#controlled-queries): keep the query in your state, `undefined` means not ready, and a deep-equal query does not resend. Changing `url` or other options updates what the next execution reads; it does not by itself send a new request. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state).
+`exchange` is not stored separately: it follows `result` and `error`. After an HTTP 404, `error` is an `ExchangeError` and `exchange.response?.status` is `404`; after `abort()` or `reset()` both are cleared. `useFetcherQuery` follows the [controlled-query contract](./promise-and-query-state#controlled-queries): keep the query in your state, `undefined` means not ready, and a deep-equal query does not resend. Every other query is sent as JSON with `Content-Type: application/json`: a string, number, boolean or `null` query is encoded too (`'Ada'` is sent as `"Ada"`, `null` as `null`), and `useDebouncedFetcherQuery` sends the same body. Changing `url` or other options updates what the next execution reads; it does not by itself send a new request. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state).
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
@@ -112,7 +112,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
 ): UseFetcherQueryReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L45)
+[packages/react/src/fetcher/useFetcherQuery.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L64)
 
 ### UseFetcherQueryOptions {#api-UseFetcherQueryOptions}
 
@@ -140,7 +140,7 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L32)
+[packages/react/src/fetcher/useFetcherQuery.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L35)
 
 ## Related topics
 
