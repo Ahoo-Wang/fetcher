@@ -111,9 +111,23 @@ export interface TokenRefresher {
  * @property {Fetcher} fetcher - The HTTP client instance used to make requests to the refresh endpoint.
  * @property {string} endpoint - The URL endpoint where token refresh requests are sent.
  */
+/**
+ * The longest, in milliseconds, a refresh request may take unless the options
+ * say otherwise. CoSec answers a refresh presented again only within its
+ * `rotation-leeway` (30 seconds by default) of the first one, so a refresh
+ * that hangs for longer than that cannot be retried safely; it is cut short.
+ */
+export const DEFAULT_REFRESH_TIMEOUT = 10_000;
+
 export interface CoSecTokenRefresherOptions {
   fetcher: Fetcher;
   endpoint: string;
+  /**
+   * Timeout of the refresh request in milliseconds ({@link DEFAULT_REFRESH_TIMEOUT}
+   * by default; `0` for none). Keep it well below the server's
+   * `cosec.jwt.session.rotation-leeway`.
+   */
+  timeout?: number;
 }
 
 /**
@@ -214,6 +228,7 @@ export class CoSecTokenRefresher implements TokenRefresher {
       this.options.endpoint,
       {
         body: token,
+        timeout: this.options.timeout ?? DEFAULT_REFRESH_TIMEOUT,
       },
       {
         resultExtractor: ResultExtractors.Json,

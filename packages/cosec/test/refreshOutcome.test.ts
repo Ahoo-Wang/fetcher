@@ -92,7 +92,7 @@ describe('which refresh failures end the session (M1)', () => {
   it('keeps the session on a network error', async () => {
     const host = new FakeCoSecHost();
     const { client, tokens, pair, onUnauthorized } = expired(host);
-    host.dropNextRefreshRequests = 1;
+    host.dropNextRefreshRequests = 3;
     const error = refreshError(await client.get('/me').catch(error => error));
     expect(error).toBeInstanceOf(RefreshUnavailableError);
     expect(tokens.get()?.token).toEqual(pair);

@@ -39,6 +39,16 @@ import {
 } from './errors.js';
 import { withRefreshLock } from './refreshLock.js';
 import { isCompositeToken } from './compositeToken.js';
+import {
+  beginAttempt,
+  clearAttempt,
+  pairFingerprint,
+} from './refreshAttempt.js';
+import {
+  CoSecProblemType,
+  getCoSecProblem,
+  retryAfterSeconds,
+} from './problem.js';
 
 export {
   RefreshSessionChangedError,
@@ -76,12 +86,66 @@ export interface JwtTokenManagerOptions {
    * Defaults to {@link isRefreshRejection}: only a `401`.
    */
   isRefreshRejected?: (error: unknown) => boolean;
+
+  /**
+   * The time, in milliseconds, within which CoSec answers a refresh presented
+   * again (`cosec.jwt.session.rotation-leeway`, 30 seconds by default).
+   * **Set it to at most the server's**: the client cannot read it. After it,
+   * a pair whose refresh may have been recorded is a pair "presented again",
+   * and presenting it revokes the session (IDN-16).
+   */
+  rotationLeeway?: number;
+
+  /**
+   * The pauses before the retries of a refresh whose outcome is unknown
+   * (a timeout, a network error, a 5xx), within the window of the leeway;
+   * its length is the number of retries. None by default for a manager built
+   * directly (a later request retries the pair, inside the same window);
+   * {@link CoSecConfigurer} passes {@link DEFAULT_REFRESH_RETRY_DELAYS}.
+   */
+  refreshRetryDelays?: readonly number[];
 }
+
+/** CoSec's default `cosec.jwt.session.rotation-leeway`. */
+export const DEFAULT_ROTATION_LEEWAY = 30_000;
+
+/**
+ * The part of the leeway kept back for the retry itself to arrive and for the
+ * server's clock: a retry is sent only until `leeway - margin` after the
+ * first attempt.
+ */
+export const ROTATION_LEEWAY_MARGIN = 5_000;
+
+/** What {@link CoSecConfigurer} gives a manager: two retries, after 500 ms and 2 s. */
+export const DEFAULT_REFRESH_RETRY_DELAYS: readonly number[] = [500, 2_000];
+
+/** The longest a `Retry-After` keeps the client from calling the refresh route. */
+const MAX_RETRY_AFTER = 60_000;
+
+/**
+ * CoSec refusals that come from the pipeline, before the refresh handler ran:
+ * nothing was moved, so the attempt is resolved (and not "unknown").
+ */
+const NOT_PROCESSED: ReadonlySet<string> = new Set([
+  CoSecProblemType.TOO_MANY_REQUESTS,
+  CoSecProblemType.INVALID_REQUEST,
+  CoSecProblemType.UNAUTHORIZED,
+  CoSecProblemType.FORBIDDEN,
+  CoSecProblemType.SCOPE_REJECTED,
+]);
 
 /**
  * Manages JWT token refreshing operations and provides status information
  */
 export class JwtTokenManager implements RefreshTokenStatusCapable {
+  /**
+   * After a 429 of the refresh route: the pair it answered, until when the
+   * route is not called again (`Retry-After`), and the error to report.
+   *
+   * @internal
+   */
+  refreshBlocked?: { fingerprint: string; until: number; error: unknown };
+
   /** @internal */
   refreshInProgress?: {
     token: JwtCompositeToken;
@@ -156,7 +220,7 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
         false);
     let promise = inProgress?.promise;
     if (!promise) {
-      const refreshAndStore = (): Promise<JwtCompositeToken> =>
+      const send = (): Promise<CompositeToken> =>
         // A refresher that throws instead of rejecting gets the same error
         // handling (classification, cleanup, notification) as a rejection.
         new Promise<CompositeToken>(resolve =>
@@ -173,7 +237,9 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
                 })
               : tokenRefresher.refresh(jwtToken.token),
           ),
-        )
+        );
+      const refreshAndStore = (): Promise<JwtCompositeToken> =>
+        this.sendRefresh(jwtToken, send)
           .then(newToken => {
             // Another tab may have signed out, signed in or refreshed while
             // this refresh was in flight, before its change event reached
@@ -275,6 +341,87 @@ export class JwtTokenManager implements RefreshTokenStatusCapable {
       }
       throw error;
     }
+  }
+
+  /**
+   * Sends the refresh of a pair, keeping to what CoSec 8.0 allows of a pair
+   * whose refresh may have been recorded (IDN-16).
+   *
+   * - The time of the first attempt whose outcome is unknown is kept with the
+   *   pair, and never slides.
+   * - Inside the window (`rotationLeeway` less a margin, from that time) the
+   *   same pair is retried, for a few pauses, and by any later request: the
+   *   server answers a pair presented again within the leeway, so this cures
+   *   a response that was lost.
+   * - After it, the outcome is still unknown and **nothing can make a retry
+   *   safe**: it succeeds if the first attempt never arrived, and revokes the
+   *   session if it was recorded (the new pair is lost either way). One
+   *   attempt is made per call, and calls are single flight.
+   * - A refusal from the pipeline (429, 400, ...) moved nothing: it resolves
+   *   the attempt it started, and a 429 keeps the route from being called
+   *   until its `Retry-After`.
+   *
+   * @internal
+   */
+  async sendRefresh(
+    jwtToken: JwtCompositeToken,
+    send: () => Promise<CompositeToken>,
+  ): Promise<CompositeToken> {
+    const storage = this.tokenStorage;
+    const rejected = this.options.isRefreshRejected ?? isRefreshRejection;
+    const leeway = this.options.rotationLeeway ?? DEFAULT_ROTATION_LEEWAY;
+    const delays = this.options.refreshRetryDelays ?? [];
+    const fingerprint = pairFingerprint(jwtToken.token);
+    const blocked = this.refreshBlocked;
+    if (blocked && blocked.fingerprint === fingerprint) {
+      if (Date.now() < blocked.until) throw blocked.error;
+      this.refreshBlocked = undefined;
+    }
+    for (let retries = 0; ; retries++) {
+      const { at, fresh } = beginAttempt(storage, jwtToken.token, Date.now());
+      try {
+        const token = await send();
+        clearAttempt(storage);
+        return token;
+      } catch (error) {
+        // The session is over: the mark goes with the stored token.
+        if (rejected(error)) throw error;
+        const slug = getCoSecProblem(error)?.slug;
+        if (slug !== undefined && NOT_PROCESSED.has(slug)) {
+          if (fresh) clearAttempt(storage);
+          this.blockAfterRateLimit(fingerprint, error);
+          throw error;
+        }
+        // Outcome unknown. Retry only inside the window of the first attempt.
+        const delay = delays[retries];
+        const when = Date.now() + (delay ?? 0);
+        if (
+          delay === undefined ||
+          when < at ||
+          when - at >= leeway - ROTATION_LEEWAY_MARGIN
+        ) {
+          throw error;
+        }
+        await new Promise(resolve => setTimeout(resolve, delay));
+        // Another tab may have signed out, or refreshed in the meantime.
+        if (!isSameToken(jwtToken, storage.reload())) throw error;
+      }
+    }
+  }
+
+  /** @internal */
+  blockAfterRateLimit(fingerprint: string, error: unknown): void {
+    const response = (
+      error as { exchange?: { response?: Response } } | undefined
+    )?.exchange?.response;
+    if (response?.status !== 429) return;
+    const seconds = retryAfterSeconds(response);
+    if (!seconds) return;
+    this.refreshBlocked = {
+      fingerprint,
+      until: Date.now() + Math.min(seconds * 1000, MAX_RETRY_AFTER),
+      error,
+    };
   }
 
   /**

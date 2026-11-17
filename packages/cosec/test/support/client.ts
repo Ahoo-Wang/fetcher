@@ -82,6 +82,7 @@ export function createClient(
       spacedResourcePredicate: { test: ex => spaced(ex.request.url) },
       spaceIdStorage: spaces,
     }),
+    refreshRetryDelays: [0, 0],
     tokenRefresher: new CoSecTokenRefresher({
       fetcher: client,
       endpoint: '/auth/refresh',

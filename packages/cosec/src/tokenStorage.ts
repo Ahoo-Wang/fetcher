@@ -18,6 +18,7 @@ import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { isSharedAcrossTabs, storageEventBus } from './storageEventBus.js';
 import { setRefreshLockName } from './refreshLock.js';
+import { clearAttempt } from './refreshAttempt.js';
 
 /**
  * Default key used for storing CoSec tokens in storage.
@@ -124,6 +125,12 @@ export class TokenStorage
    */
   signOut(): void {
     this.remove();
+  }
+
+  /** Removes the token and the record of a refresh attempt that went with it. */
+  override remove(): void {
+    super.remove();
+    clearAttempt(this);
   }
 
   /**

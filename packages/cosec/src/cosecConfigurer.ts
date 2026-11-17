@@ -25,7 +25,10 @@ import {
   type ForbiddenErrorInterceptorOptions,
 } from './forbiddenErrorInterceptor.js';
 import type { CoSecProblem } from './problem.js';
-import { JwtTokenManager } from './jwtTokenManager.js';
+import {
+  DEFAULT_REFRESH_RETRY_DELAYS,
+  JwtTokenManager,
+} from './jwtTokenManager.js';
 import { ResourceAttributionRequestInterceptor } from './resourceAttributionRequestInterceptor.js';
 import type { TokenRefresher } from './tokenRefresher.js';
 import { TokenStorage } from './tokenStorage.js';
@@ -290,6 +293,25 @@ export interface CoSecConfig
   readonly isRefreshRejected?: (error: unknown) => boolean;
 
   /**
+   * The time, in milliseconds, within which the server answers a refresh
+   * presented again: **at most** its `cosec.jwt.session.rotation-leeway`
+   * (30 seconds by default), which the client cannot read. A refresh whose
+   * outcome is unknown (a timeout, a lost response, a 5xx) is retried with
+   * the same pair only until this time, less 5 seconds, has passed since it
+   * was first sent: later, the server may already have recorded it, and
+   * presenting the pair again revokes the session.
+   */
+  readonly rotationLeeway?: number;
+
+  /**
+   * The pauses, in milliseconds, before the retries of a refresh whose
+   * outcome is unknown, inside the window of {@link rotationLeeway}; its
+   * length is the number of retries. Default `[500, 2000]`; `[]` for none (a
+   * later request still retries the same pair inside the window).
+   */
+  readonly refreshRetryDelays?: readonly number[];
+
+  /**
    * Callback invoked for a `403 scope-rejected` (see
    * {@link ForbiddenErrorInterceptorOptions.onScopeRejected}). Without it,
    * `onForbidden` receives it too, with the problem as its second argument.
@@ -448,7 +470,12 @@ export class CoSecConfigurer implements FetcherConfigurer {
       this.tokenManager = new JwtTokenManager(
         this.tokenStorage,
         config.tokenRefresher,
-        { isRefreshRejected: config.isRefreshRejected },
+        {
+          isRefreshRejected: config.isRefreshRejected,
+          rotationLeeway: config.rotationLeeway,
+          refreshRetryDelays:
+            config.refreshRetryDelays ?? DEFAULT_REFRESH_RETRY_DELAYS,
+        },
       );
     }
   }
