@@ -19,6 +19,7 @@ import {
   CoSecConfigurer,
   CoSecTokenRefresher,
   DeviceIdStorage,
+  JwtCompositeToken,
   JwtTokenManager,
   RefreshSessionChangedError,
   RefreshTokenError,
@@ -105,9 +106,11 @@ describe.each([
         else if (operation === 'signIn') tabB.signIn(token('new-login'));
         else
           tabB.set(
-            new (
-              original.constructor as typeof import('../src').JwtCompositeToken
-            )(token('refreshed-by-b'), 0, original.sessionId),
+            new JwtCompositeToken(
+              token('refreshed-by-b'),
+              0,
+              original.sessionId,
+            ),
           );
         const written = backend.getItem(key);
         complete(token('refreshed-by-a'));
