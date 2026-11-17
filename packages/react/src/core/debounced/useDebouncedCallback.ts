@@ -17,7 +17,10 @@ import { useLatest } from '../useLatest.js';
 export interface UseDebouncedCallbackOptions {
   /** Milliseconds to wait after the last call. */
   delay: number;
-  /** Invoke on the first call of a burst. @default false */
+  /**
+   * Invoke on the first call of a burst. A burst lasts while calls come less
+   * than `delay` apart. @default false
+   */
   leading?: boolean;
   /** Invoke with the last arguments once the burst ends. @default true */
   trailing?: boolean;
@@ -36,6 +39,12 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
  * Debounces `callback`. The latest callback and options are used; the
  * returned functions are stable, and unmounting cancels the scheduled call.
  *
+ * A burst is a run of calls less than `delay` apart: `leading` invokes its
+ * first call, `trailing` its last one once `delay` has passed without a call.
+ * `cancel()` drops the scheduled call but not the burst, so a call right
+ * after it is not a new leading call. Unmounting (and the effect cleanup of
+ * StrictMode or a hidden `Activity`) ends the burst.
+ *
  * @example
  * const { run } = useDebouncedCallback(search, { delay: 300 });
  * <input onChange={e => run(e.target.value)} />
@@ -51,7 +60,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
   }
   const latest = useLatest({ callback, options });
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const lastInvokeRef = useRef<number | undefined>(undefined);
+  // When `run` was last called: a burst lasts while calls are `delay` apart.
+  const lastCallRef = useRef<number | undefined>(undefined);
 
   const cancel = useCallback(() => {
     clearTimeout(timerRef.current);
@@ -67,19 +77,15 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         trailing = true,
       } = latest.current.options;
       const now = Date.now();
-      if (
-        leading &&
-        (lastInvokeRef.current === undefined ||
-          now - lastInvokeRef.current >= delay)
-      ) {
-        lastInvokeRef.current = now;
+      const lastCall = lastCallRef.current;
+      lastCallRef.current = now;
+      if (leading && (lastCall === undefined || now - lastCall >= delay)) {
         latest.current.callback(...args);
         return;
       }
       if (!trailing) return;
       timerRef.current = setTimeout(() => {
         timerRef.current = undefined;
-        lastInvokeRef.current = Date.now();
         latest.current.callback(...args);
       }, delay);
     },
@@ -88,7 +94,15 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 
   const isPending = useCallback(() => timerRef.current !== undefined, []);
 
-  useEffect(() => cancel, [cancel]);
+  // The cleanup ends the burst as well: a StrictMode replay or a revealed
+  // Activity starts over, so its first call is a leading call again.
+  useEffect(
+    () => () => {
+      cancel();
+      lastCallRef.current = undefined;
+    },
+    [cancel],
+  );
 
   return { run, cancel, isPending };
 }

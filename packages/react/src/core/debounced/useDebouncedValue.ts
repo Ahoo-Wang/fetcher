@@ -40,7 +40,7 @@ export function useDebouncedValue<T>(
   options: UseDebouncedCallbackOptions,
 ): UseDebouncedValueReturn<T> {
   const latestValue = useStableValue(value);
-  const [debounced, setDebounced] = useState(latestValue);
+  const [debounced, setDebounced] = useState(() => latestValue);
   const { run, cancel } = useDebouncedCallback(
     (next: T) => setDebounced(() => next),
     options,

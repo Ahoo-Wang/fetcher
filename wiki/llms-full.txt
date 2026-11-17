@@ -8150,7 +8150,7 @@ Two kinds of debounce exist, and they expose different controls. Callback deboun
 | `useDebouncedValue(value, options)`                  | Returns `{ value, pending, flush }`. The first render returns `value` itself; later changes (compared deeply) are applied after the delay.                                                                                           |
 | `useDebouncedQuery` / `useDebouncedFetcherQuery`     | A [controlled query](./promise-and-query-state#controlled-queries) whose `query` is debounced: the first query executes at once, later changes after the delay. Adds `pending` and `flush()`; `execute()` re-runs the applied query. |
 
-With leading and trailing enabled, the initial invocation runs immediately; a lone leading call does not also get a trailing invocation. Later calls inside the delay may schedule trailing execution. `cancel()` removes scheduled work but retains the last-leading timestamp. It does not abort an already running request. Conversely, request `abort()` does not clear a pending debounce timer; call both when cancelling the entire user action. Unmount clears timers and request hooks also abort active execution.
+A burst is a run of calls less than `delay` apart; it ends once `delay` passes without a call. `leading` invokes the first call of a burst at once, `trailing` the last one when the burst ends. With both enabled, a lone leading call does not also get a trailing invocation, and calls that keep coming inside the delay never start a second leading invocation. `cancel()` removes scheduled work but not the burst, so a call right after it is not a new leading call. Unmounting, and the effect cleanup of a StrictMode replay or a hidden `Activity`, ends the burst: the replayed mount effect's first call runs at once again. It does not abort an already running request. Conversely, request `abort()` does not clear a pending debounce timer; call both when cancelling the entire user action. Unmount clears timers and request hooks also abort active execution.
 
 Query variants keep the query in your state like `useQuery`. `pending` is true while the query you pass differs from the applied one; `flush()` applies it now (for an Apply button or Enter). Reverting your query to the applied value drops the waiting change. Applying a new query cancels the request in flight when the new execution starts, not on each keystroke. A debounced `undefined` makes the query not ready; it does not cancel work already running. Callback exceptions and rejected promises in callback variants need their own handling; a timer does not expose a rejection to the caller of `run`. The executor's error state covers the request hooks.
 
@@ -8783,7 +8783,7 @@ Two small hooks underlie the request hooks and are exported for your own effects
 | `useLatest(value)`      | `RefObject` updated after each render commits (insertion effect), so a discarded concurrent render never leaves its value behind. Read it in callbacks and effects; read in render it holds the last committed value. |
 | `useStableValue(value)` | Returns `value`, but keeps the previous reference while the content is deeply equal (`dequal`). An inline object can drive an effect's dependencies without re-running it on every render.                            |
 
-`useStableValue` is how query hooks decide that a query changed: `{ page: 1 }` written inline in every render stays one value until its content differs. It compares content only; it does not clone, freeze or validate. For values that should follow input after a quiet period, use [`useDebouncedValue`](./debounce#api-useDebouncedValue); to debounce calls, use [`useDebouncedCallback`](./debounce#api-useDebouncedCallback).
+`useStableValue` is how query hooks decide that a query changed: `{ page: 1 }` written inline in every render stays one value until its content differs. It compares content only; it does not clone, freeze or validate. A function is a value like any other: it is returned, never called as an initializer (the same holds for `useDebouncedValue`). For values that should follow input after a quiet period, use [`useDebouncedValue`](./debounce#api-useDebouncedValue); to debounce calls, use [`useDebouncedCallback`](./debounce#api-useDebouncedCallback).
 
 ## Removed in 6.0 {#removed-in-6-0}
 
@@ -25879,7 +25879,7 @@ export type QueryAPIHooks<API extends Record<string, any>, E = FetcherError> = {
 | `useDebouncedValue(value, options)`                  | 返回 `{ value, pending, flush }`。首次渲染直接返回 `value`；之后的变化（按深比较）在延迟后应用。                                                                                    |
 | `useDebouncedQuery` / `useDebouncedFetcherQuery`     | `query` 被防抖的[受控查询](./promise-and-query-state#controlled-queries)：首个查询立即执行，之后的变化在延迟后执行。增加 `pending` 和 `flush()`；`execute()` 重新执行已应用的查询。 |
 
-同时开启 leading/trailing 时，首次立即调用；孤立的 leading 调用不会额外执行一次 trailing。延迟内的后续调用可以安排 trailing。`cancel()` 删除计划任务，但保留上次 leading 时间戳，不取消已运行请求；反之，请求 `abort()` 不清除等待中的定时器，要取消整个用户操作应两者都调用。卸载清除定时器，请求 Hook 还会取消当前执行。
+一轮连续调用（burst）指相邻间隔都小于 `delay` 的一串调用，在 `delay` 内没有新调用时结束。`leading` 立即执行这一轮的首个调用，`trailing` 在这一轮结束时执行最后一个调用。两者都开启时，孤立的 leading 调用不会额外执行一次 trailing，持续落在延迟内的调用也不会再次触发 leading。`cancel()` 删除计划任务但不结束这一轮，紧接着的调用不算新的 leading 调用；它也不取消已运行请求；反之，请求 `abort()` 不清除等待中的定时器，要取消整个用户操作应两者都调用。卸载清除定时器，请求 Hook 还会取消当前执行。卸载以及 StrictMode 重放、`Activity` 隐藏时的 effect 清理都会结束这一轮：重放后挂载 effect 的首个调用会再次立即执行。
 
 查询变体与 `useQuery` 一样把查询保存在你的状态中。传入的查询与已应用的查询不同时 `pending` 为 true；`flush()` 立即应用它（用于“应用”按钮或回车）。把查询改回已应用的值会丢弃等待中的变化。应用新查询时，在途请求在新执行开始时被取消，而不是每次按键时。防抖后的 `undefined` 使查询未就绪，但不会取消已经运行的工作。回调变体中的回调异常和 rejected promise 需要自行处理；定时器不会把拒绝交给 `run` 调用者。请求 Hook 由执行器的错误状态覆盖。
 
@@ -26512,7 +26512,7 @@ export interface RefreshableRouteGuardProps extends Omit<
 | `useLatest(value)`      | 每次 render 提交后（insertion effect）更新的 `RefObject`，被丢弃的并发 render 不会留下它的值。在回调和 effect 中读取；render 中读取得到上次提交的值。 |
 | `useStableValue(value)` | 返回 `value`，但内容深相等（`dequal`）时保留之前的引用。内联对象可以作为 effect 依赖，而不会每次 render 都重新运行。                                  |
 
-查询 Hook 正是用 `useStableValue` 判断查询是否变化：每次 render 内联写的 `{ page: 1 }` 在内容不同之前始终是同一个值。它只比较内容，不复制、不冻结、不校验。需要在静默期后才跟随输入的值，请使用 [`useDebouncedValue`](./debounce#api-useDebouncedValue)；需要防抖调用，请使用 [`useDebouncedCallback`](./debounce#api-useDebouncedCallback)。
+查询 Hook 正是用 `useStableValue` 判断查询是否变化：每次 render 内联写的 `{ page: 1 }` 在内容不同之前始终是同一个值。它只比较内容，不复制、不冻结、不校验。函数也只是普通值：原样返回，不会被当作初始化函数调用（`useDebouncedValue` 同样如此）。需要在静默期后才跟随输入的值，请使用 [`useDebouncedValue`](./debounce#api-useDebouncedValue)；需要防抖调用，请使用 [`useDebouncedCallback`](./debounce#api-useDebouncedCallback)。
 
 ## 6.0 中移除 {#removed-in-6-0}
 
