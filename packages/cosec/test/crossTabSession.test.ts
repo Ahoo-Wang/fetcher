@@ -34,6 +34,8 @@ describe.each(['current', 'legacy'] as const)(
       async operation => {
         const key = `cosec-cross-tab-${crypto.randomUUID()}`;
         const backing = new InMemoryStorage();
+        // Tabs share the browser's localStorage, so their default buses broadcast.
+        vi.stubGlobal('window', { localStorage: backing });
         const original = token('A');
         if (format === 'legacy') backing.setItem(key, JSON.stringify(original));
         const first = new TokenStorage({ key, storage: backing });
