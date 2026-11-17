@@ -7498,7 +7498,7 @@ export function useFetcher<R, E = FetcherError>(
 ): UseFetcherReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L67)
+[packages/react/src/fetcher/useFetcher.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L63)
 
 ### UseFetcherOptions {#api-UseFetcherOptions}
 
@@ -7507,7 +7507,7 @@ export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L34)
+[packages/react/src/fetcher/useFetcher.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L30)
 
 ### UseFetcherReturn {#api-UseFetcherReturn}
 
@@ -7521,7 +7521,7 @@ export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37)
+[packages/react/src/fetcher/useFetcher.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L33)
 
 ### useFetcherQuery {#api-useFetcherQuery}
 
@@ -8434,12 +8434,12 @@ export interface UseDebouncedFetcherQueryReturn<
 
 These hooks adapt shared external resources to a component. Keep `KeyStorage` and bus instances stable, and let their creator own destruction. Component unmount unsubscribes listeners; it does not destroy shared storage or the bus.
 
-| API                                          | Input / return / default                                                                                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                   |
-| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                     |
-| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                              |
-| `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup calls off(handler.name) only if that `on` succeeded. |
+| API                                          | Input / return / default                                                                                                                                                                                                                                                                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useKeyStorage(storage)`                     | Returns `[T \| null, set(T), remove()]`; missing storage is null.                                                                                                                                                                                                                                                                                        |
+| `useKeyStorage(storage, defaultValue)`       | Returns `[T, set(T), remove()]`; fallback is read when stored value is null and is not automatically persisted.                                                                                                                                                                                                                                          |
+| `useImmerKeyStorage(storage, defaultValue?)` | Same tuple, but setter accepts an Immer draft updater; returning null removes the key.                                                                                                                                                                                                                                                                   |
+| `useEventSubscription({ bus, handler })`     | Automatically subscribes under `handler.name`; returns boolean-valued subscribe/unsubscribe functions. Cleanup, `unsubscribe()` included, removes only the hook's own subscription (also one registered by `subscribe()`, for example from a layout effect), never a newer one that reused the name after a `once` handler ran or after `unsubscribe()`. |
 
 Storage uses `useSyncExternalStore`, caches deep-equal snapshots, and resubscribes when the storage instance changes. The server snapshot is `defaultValue ?? null`, so the server render does not read storage: on the server and during hydration the hook renders the default (so `useSecurity` and `SecurityProvider` start unauthenticated), then the stored value. Client-only rendering reads storage from the first render. Serialization/storage exceptions propagate; these hooks do not convert them into a Promise error state. The Immer updater reads the current stored value when invoked, so successive updates do not rely on a render's stale snapshot. Retained callbacks continue to target the storage they captured.
 
@@ -8527,7 +8527,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)
+[packages/react/src/eventbus/useEventSubscription.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L98)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 
@@ -25227,7 +25227,7 @@ export function useFetcher<R, E = FetcherError>(
 ): UseFetcherReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L67)
+[packages/react/src/fetcher/useFetcher.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L63)
 
 ### UseFetcherOptions {#api-UseFetcherOptions}
 
@@ -25236,7 +25236,7 @@ export interface UseFetcherOptions<R, E = FetcherError>
   extends RequestOptions, FetcherCapable, UseExecutePromiseOptions<R, E> {}
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L34)
+[packages/react/src/fetcher/useFetcher.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L30)
 
 ### UseFetcherReturn {#api-UseFetcherReturn}
 
@@ -25250,7 +25250,7 @@ export interface UseFetcherReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcher.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L37)
+[packages/react/src/fetcher/useFetcher.ts:33](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcher.ts#L33)
 
 ### useFetcherQuery {#api-useFetcherQuery}
 
@@ -26163,12 +26163,12 @@ export interface UseDebouncedFetcherQueryReturn<
 
 这些 Hook 将共享外部资源接入组件。保持 `KeyStorage` 和事件总线实例稳定，由创建者负责销毁。组件卸载只退订监听，不销毁共享存储或总线。
 
-| API                                          | 输入 / 返回 / 默认值                                                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                 |
-| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                            |
-| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                          |
-| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。 |
+| API                                          | 输入 / 返回 / 默认值                                                                                                                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                                                                                                                                                          |
+| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                                                                                                                                                                     |
+| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                                                                                                                                                                   |
+| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；清理（包括 `unsubscribe()`）只移除该 Hook 自己的订阅（也包括由 `subscribe()` 注册的订阅，例如在 layout effect 中调用），不会移除 `once` 处理器执行后或 `unsubscribe()` 后复用同名的新订阅。 |
 
 存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
 
@@ -26256,7 +26256,7 @@ export function useEventSubscription<EVENT = unknown>(
 ): UseEventSubscriptionReturn;
 ```
 
-[packages/react/src/eventbus/useEventSubscription.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L94)
+[packages/react/src/eventbus/useEventSubscription.ts:98](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/eventbus/useEventSubscription.ts#L98)
 
 ### UseEventSubscriptionOptions {#api-UseEventSubscriptionOptions}
 

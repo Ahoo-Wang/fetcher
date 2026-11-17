@@ -40,7 +40,8 @@ export interface UseEventSubscriptionReturn {
    */
   subscribe: () => boolean;
   /**
-   * Function to manually unsubscribe from the event bus.
+   * Function to manually unsubscribe from the event bus. It removes only
+   * this hook's own subscription, never another one under the same name.
    * @returns true if unsubscription was successful, false otherwise.
    */
   unsubscribe: () => boolean;
@@ -60,6 +61,9 @@ export interface UseEventSubscriptionReturn {
  * @returns An object containing subscribe and unsubscribe functions.
  * If the handler's name is already subscribed on the bus, it logs a warning
  * and leaves that other subscription in place (it is not removed on unmount).
+ * Cleanup removes only the hook's own subscription: one registered by
+ * `subscribe()` too, but not a newer one that reused the name after this
+ * hook's `once` subscription ran or was unsubscribed.
  *
  * @example
  * ```typescript
@@ -114,18 +118,25 @@ export function useEventSubscription<EVENT = unknown>(
     [bus, subscription],
   );
 
-  const unsubscribe = useCallback(() => bus.off(name), [bus, name]);
+  // The name proves nothing across lifetimes: only the subscription object
+  // itself shows the registration is this hook's.
+  const unsubscribe = useCallback(
+    () => bus.handlers.includes(subscription) && bus.off(subscription.name),
+    [bus, subscription],
+  );
 
   useEffect(() => {
-    if (!bus.on(subscription)) {
-      console.warn(`Failed to subscribe to event bus with handler: ${name}`);
-      // The name belongs to another subscription: leave it on unmount.
-      return;
+    // `subscribe()` from a layout effect may have registered it already.
+    if (!bus.on(subscription) && !bus.handlers.includes(subscription)) {
+      console.warn(
+        `Failed to subscribe to event bus with handler: ${subscription.name}`,
+      );
     }
+    // Installed either way, so a later `subscribe()` is cleaned up too.
     return () => {
-      bus.off(name);
+      if (bus.handlers.includes(subscription)) bus.off(subscription.name);
     };
-  }, [bus, subscription, name]);
+  }, [bus, subscription]);
 
   return { subscribe, unsubscribe };
 }
