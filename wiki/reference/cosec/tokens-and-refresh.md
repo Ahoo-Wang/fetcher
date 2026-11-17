@@ -21,11 +21,11 @@ Token parsing is local decoding and expiration bookkeeping. It does not verify s
 
 `JwtPayload` declares required jti/sub/exp/iat and optional iss/aud/nbf. `CoSecJwtPayload` adds tenantId, policies, roles, attributes. `IJwtToken<Payload>` combines token/payload/isExpired with `EarlyPeriodCapable`. `RefreshTokenStatusCapable` supplies readonly isRefreshNeeded/isRefreshable. `AccessToken` and `RefreshToken` are one-string-field shapes; `CompositeToken` combines them.
 
-JSON parse failures from deserialize propagate. New sign-ins receive a random sessionId; deserialization preserves a nonempty stored sessionId and derives a stable legacy identifier otherwise. The legacy identifier is session bookkeeping, not a cryptographic integrity check.
+JSON parse failures from deserialize propagate, and a parsed value that is not a composite token (a non-array object with string accessToken and refreshToken) throws TypeError; TokenStorage then removes the stored record and reads it as absent, so no `Bearer undefined` is sent. New sign-ins receive a random sessionId; deserialization preserves a nonempty stored sessionId and derives a stable legacy identifier otherwise. The legacy identifier is session bookkeeping, not a cryptographic integrity check.
 
 ## TokenStorage
 
-`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a broadcast bus with serial delegate named for the actual key (closed by `destroy()`; a bus passed in `eventBus` stays open), and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
+`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a serial bus named for the actual key, wrapped in a cross-tab broadcast bus only when the storage is the browser's `localStorage` (closed by `destroy()`; a bus passed in `eventBus` stays open), and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
 
 | Member                              | Result                                                       |
 | ----------------------------------- | ------------------------------------------------------------ |
@@ -104,27 +104,27 @@ try {
 
 <span id="ijwttoken"></span>
 
-**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L46)
+**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L47)
 
 <span id="jwttoken"></span>
 
-**`JwtToken`** — [packages/cosec/src/jwtToken.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L81)
+**`JwtToken`** — [packages/cosec/src/jwtToken.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L82)
 
 <span id="refreshtokenstatuscapable"></span>
 
-**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L129)
+**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L130)
 
 <span id="jwtcompositetoken"></span>
 
-**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L168)
+**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L169)
 
 <span id="jwtcompositetokenserializer"></span>
 
-**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L257)
+**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L258)
 
 <span id="jwtcompositetokenserializer-instance"></span>
 
-**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L329)
+**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:332](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L332)
 
 <span id="refreshtokenerror"></span>
 
@@ -140,7 +140,7 @@ try {
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L66)
 
 <span id="default_cosec_token_key"></span>
 
