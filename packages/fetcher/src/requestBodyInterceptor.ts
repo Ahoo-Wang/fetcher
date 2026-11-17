@@ -75,8 +75,10 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    *
    * @param body - The request body to check
    * @returns True if the body is an ArrayBuffer, TypedArray, DataView or ReadableStream, false otherwise
+   *
+   * @internal
    */
-  private isSupportedComplexBodyType(body: any): boolean {
+  isSupportedComplexBodyType(body: any): boolean {
     return (
       isArrayBuffer(body) || ArrayBuffer.isView(body) || isReadableStream(body)
     );
@@ -87,8 +89,10 @@ export class RequestBodyInterceptor implements RequestInterceptor {
    *
    * @param body - The request body to check
    * @returns True if the body is a Blob, File, FormData or URLSearchParams, false otherwise
+   *
+   * @internal
    */
-  private isAutoAppendContentType(body: any): boolean {
+  isAutoAppendContentType(body: any): boolean {
     return isBlob(body) || isFormData(body) || isURLSearchParams(body);
   }
 

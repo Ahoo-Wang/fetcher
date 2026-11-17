@@ -14,6 +14,8 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ExchangeError,
   Fetcher,
+  FetchTimeoutError,
+  timeoutFetch,
   mergeQuery,
   mergeRequest,
   ResultExtractors,
@@ -248,5 +250,125 @@ describe('an empty Content-Type the caller set (#2050)', () => {
     const { fetcher, sent } = recordingFetcher();
     await fetcher.post('/body', { body: { a: 1 } });
     expect(sent[0].contentType).toBe('application/json');
+  });
+});
+
+describe('caller cancellation after the headers without AbortSignal.any (#1989)', () => {
+  /** A fetch that resolves at once and whose body errors when signal aborts. */
+  function streamingFetch() {
+    return vi.fn(async (_url: string, init?: RequestInit) => {
+      const signal = init!.signal!;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('first'));
+          signal.addEventListener('abort', () =>
+            controller.error(signal.reason),
+          );
+        },
+      });
+      return new Response(body);
+    });
+  }
+
+  it.each([
+    ['signal and timeout', { timeout: 1000, withController: false }],
+    [
+      'signal and abortController',
+      { timeout: undefined, withController: true },
+    ],
+  ])('still cancels the body with %s', async (_label, setup) => {
+    vi.stubGlobal(
+      'AbortSignal',
+      Object.assign(function () {} as unknown as typeof AbortSignal, {
+        ...AbortSignal,
+        any: undefined,
+        prototype: AbortSignal.prototype,
+      }),
+    );
+    const caller = new AbortController();
+    const fetch = streamingFetch();
+    const response = await timeoutFetch(
+      {
+        url: 'https://example.test/stream',
+        timeout: setup.timeout,
+        signal: caller.signal,
+        abortController: setup.withController
+          ? new AbortController()
+          : undefined,
+      },
+      fetch,
+    );
+    vi.unstubAllGlobals();
+    const reason = new Error('cancel reading');
+    caller.abort(reason);
+    await expect(response.text()).rejects.toBe(reason);
+  });
+
+  it('lets go of the caller signal once it aborts', async () => {
+    vi.stubGlobal(
+      'AbortSignal',
+      Object.assign(function () {} as unknown as typeof AbortSignal, {
+        ...AbortSignal,
+        any: undefined,
+        prototype: AbortSignal.prototype,
+      }),
+    );
+    const caller = new AbortController();
+    const removed = vi.spyOn(caller.signal, 'removeEventListener');
+    await timeoutFetch(
+      { url: 'https://example.test', timeout: 1000, signal: caller.signal },
+      async () => new Response('ok'),
+    );
+    vi.unstubAllGlobals();
+    expect(removed).not.toHaveBeenCalled();
+    caller.abort();
+    expect(removed).toHaveBeenCalledWith('abort', expect.any(Function));
+  });
+});
+
+describe('a timeout with a fetch that rejects on abort at once (#2013)', () => {
+  function rejectOnAbort(_url: string, init?: RequestInit) {
+    return new Promise<Response>((_resolve, reject) => {
+      const abort = () =>
+        reject(new DOMException('Adapter request aborted', 'AbortError'));
+      if (init!.signal!.aborted) abort();
+      else init!.signal!.addEventListener('abort', abort, { once: true });
+    });
+  }
+
+  it.each([
+    ['a Promise adapter', rejectOnAbort],
+    [
+      'the same adapter in an async wrapper',
+      async (url: string, init?: RequestInit) => rejectOnAbort(url, init),
+    ],
+  ])('rejects with FetchTimeoutError from %s', async (_label, adapter) => {
+    await expect(
+      timeoutFetch({ url: 'https://example.test/slow', timeout: 5 }, adapter),
+    ).rejects.toBeInstanceOf(FetchTimeoutError);
+    const fetcher = new Fetcher({
+      baseURL: 'https://example.test',
+      timeout: 5,
+      fetch: adapter,
+    });
+    const error = await fetcher.get('/slow').catch(e => e);
+    expect(error).toBeInstanceOf(ExchangeError);
+    expect(error.cause).toBeInstanceOf(FetchTimeoutError);
+  });
+
+  it('keeps the reason of a caller abort', async () => {
+    const caller = new AbortController();
+    const reason = new Error('caller');
+    const pending = timeoutFetch(
+      { url: 'https://example.test', timeout: 1000, signal: caller.signal },
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) =>
+          init!.signal!.addEventListener('abort', () =>
+            reject(init!.signal!.reason),
+          ),
+        ),
+    );
+    caller.abort(reason);
+    await expect(pending).rejects.toBe(reason);
   });
 });

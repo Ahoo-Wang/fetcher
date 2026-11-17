@@ -17,6 +17,7 @@ import {
   consumerEntries,
   consumerManifest,
   consumerSources,
+  CROSS_EXEMPT,
   consumerWorkspace,
   describe,
   describeDiagnostic,
@@ -167,6 +168,44 @@ test('the dual consumer imports every entry, ES-module-only ones from .mts only'
   assert.match(sources['consumer.cts'], /^import type \* as entry0 from/);
 });
 
+test('the cross consumer holds class instances of both entries to each other', () => {
+  const sources = consumerSources([
+    { specifier: 'dual', import: true, require: true },
+    { specifier: 'dual/esm', import: true, require: false },
+  ]);
+  const cross = sources['consumer.cross.mts'];
+  assert.match(cross, /import type \* as esm0 from 'dual';/);
+  assert.match(
+    cross,
+    /import type \* as cjs0 from 'dual' with \{ 'resolution-mode': 'require' \};/,
+  );
+  assert.match(cross, /fromCjs0: Instances<typeof esm0> = cjsInstances0/);
+  assert.match(cross, /fromEsm0: Instances<typeof cjs0> = esmInstances0/);
+  // Only entries that resolve both ways have two declarations to compare.
+  assert.ok(!cross.includes("'dual/esm'"));
+  assert.equal(
+    consumerSources([{ specifier: 'esm', import: true, require: false }])[
+      'consumer.cross.mts'
+    ],
+    'export {};\n',
+  );
+  assert.equal(
+    consumerSources([{ specifier: 'dual', import: true, require: true }], {
+      cross: false,
+    })['consumer.cross.mts'],
+    'export {};\n',
+  );
+});
+
+test('every package left out of the cross check gives its reason', () => {
+  for (const [name, reason] of Object.entries(CROSS_EXEMPT)) {
+    assert.match(name, /^@ahoo-wang\//);
+    assert.ok(reason.length > 0, name);
+  }
+  // The core package, whose instances other packages pass around, is checked.
+  assert.ok(!('@ahoo-wang/fetcher' in CROSS_EXEMPT));
+});
+
 test('an entry without conditions, or a package without exports, resolves from both', () => {
   assert.deepEqual(
     consumerEntries({ name: 'plain', exports: { '.': './index.js' } }),
@@ -199,7 +238,11 @@ test('the dual consumer is one strict program with both files, lib checked', () 
     assert.equal(compilerOptions.moduleResolution, module);
     assert.equal(compilerOptions.strict, true);
     assert.equal(compilerOptions.skipLibCheck, false);
-    assert.deepEqual(files, ['consumer.mts', 'consumer.cts']);
+    assert.deepEqual(files, [
+      'consumer.mts',
+      'consumer.cts',
+      'consumer.cross.mts',
+    ]);
   }
 });
 

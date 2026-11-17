@@ -297,8 +297,10 @@ export class Fetcher
    *                             throughout the request lifecycle. These attributes allow passing
    *                             custom data between different interceptors.
    * @returns Promise that resolves to the HTTP response
+   *
+   * @internal
    */
-  private async methodFetch<R = Response>(
+  async methodFetch<R = Response>(
     method: HttpMethod,
     url: string,
     request: FetchRequestInit = {},
