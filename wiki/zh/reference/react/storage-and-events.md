@@ -7,14 +7,14 @@ description: '存储与事件订阅 — @ahoo-wang/fetcher-react 6.0.0'
 
 这些 Hook 将共享外部资源接入组件。保持 `KeyStorage` 和事件总线实例稳定，由创建者负责销毁。组件卸载只退订监听，不销毁共享存储或总线。
 
-| API                                          | 输入 / 返回 / 默认值                                                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                 |
-| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。                                            |
-| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。                                                          |
-| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。 |
+| API                                          | 输入 / 返回 / 默认值                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `useKeyStorage(storage)`                     | 返回 `[T \| null, set(T), remove()]`；无存储值时为 null。                                                                                                          |
+| `useKeyStorage(storage, defaultValue)`       | 返回 `[T, set(T), remove()]`；存储为 null 时读取回退值，不会自动持久化默认值。默认值可能为 `null` 或 `undefined` 时返回 `T \| null`，与运行时一致。                |
+| `useImmerKeyStorage(storage, defaultValue?)` | 相同元组，但 setter 接受 Immer draft updater；返回 null 删除键。updater 接收 `Draft<T>`（没有非空默认值时为 `Draft<T> \| null`），因此 readonly 状态在其中可修改。 |
+| `useEventSubscription({ bus, handler })`     | 以 `handler.name` 自动订阅；返回值为 boolean 的 subscribe/unsubscribe；仅当该次 `on` 成功时清理才调用 off(handler.name)。                                          |
 
-存储使用 `useSyncExternalStore`，缓存内容深相等的快照，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
+存储使用 `useSyncExternalStore`，实例变化时重订阅。服务端快照为 `defaultValue ?? null`，因此服务端渲染不读取存储：在服务端和 hydration 期间 Hook 先渲染默认值（因此 `useSecurity` 与 `SecurityProvider` 以未认证开始），随后渲染存储值。纯客户端渲染从首次渲染起读取存储。存储值按 `KeyStorage.get()` 返回的引用作为快照，不做内容比较，因此自定义 serializer 恢复的值（含私有字段的类实例、循环结构）都会更新 Hook；只有默认回退值按深比较，内联默认对象在多次渲染间保持同一引用。序列化/存储异常直接传播，不会转换成 Promise 错误状态。Immer updater 调用时读取当前存储，连续更新不依赖某次渲染的旧快照。保留的回调继续操作其捕获的存储。
 
 事件处理器带名称，应为每个订阅者使用唯一名称。重复名称可能导致注册失败并记录警告；此时清理不动该名称，另一订阅者的处理器保持注册。Hook 按 `bus` 及 handler 的 `name`/`order`/`once` 只订阅一次，每个事件调用最新的 `handle`，因此内联 handler 对象不会每次渲染都重新订阅；改变 bus、name、order 或 once 才会。处理器失败传播与投递顺序由总线决定，本 Hook 不改变这些策略，也不代发布者等待投递。
 
@@ -63,11 +63,20 @@ export function useKeyStorage<T>(
 ```ts
 export function useKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
+  defaultValue: NonNullable<T>,
 ): [T, (value: T) => void, () => void];
 ```
 
 [packages/react/src/storage/useKeyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useKeyStorage.ts#L23)
+
+```ts
+export function useKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [T | null, (value: T) => void, () => void];
+```
+
+[packages/react/src/storage/useKeyStorage.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useKeyStorage.ts#L29)
 
 ### useImmerKeyStorage {#api-useImmerKeyStorage}
 
@@ -76,21 +85,34 @@ export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
 ): [
   T | null,
-  (updater: (draft: T | null) => T | null | void) => void,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
   () => void,
 ];
 ```
 
-[packages/react/src/storage/useImmerKeyStorage.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L23)
+[packages/react/src/storage/useImmerKeyStorage.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L24)
 
 ```ts
 export function useImmerKeyStorage<T>(
   keyStorage: KeyStorage<T>,
-  defaultValue: T,
-): [T, (updater: (draft: T) => T | null | void) => void, () => void];
+  defaultValue: NonNullable<T>,
+): [T, (updater: (draft: Draft<T>) => T | null | void) => void, () => void];
 ```
 
-[packages/react/src/storage/useImmerKeyStorage.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L31)
+[packages/react/src/storage/useImmerKeyStorage.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L32)
+
+```ts
+export function useImmerKeyStorage<T>(
+  keyStorage: KeyStorage<T>,
+  defaultValue: T | null | undefined,
+): [
+  T | null,
+  (updater: (draft: Draft<T> | null) => T | null | void) => void,
+  () => void,
+];
+```
+
+[packages/react/src/storage/useImmerKeyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/storage/useImmerKeyStorage.ts#L38)
 
 ### useEventSubscription {#api-useEventSubscription}
 
