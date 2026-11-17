@@ -11,20 +11,22 @@ description: 'Promise 与查询状态 — @ahoo-wang/fetcher-react 6.0.0'
 
 ## 状态与执行
 
-| API / 选项                               | 契约                                                                                                                         |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `usePromiseState<R,E>(options?)`         | 初始状态为 `initialStatus ?? 'idle'`，结果和错误均为 undefined；返回状态和稳定的同步设置函数，不调用任何回调。               |
-| `setLoading()`                           | 清除错误，保留上次结果。                                                                                                     |
-| `setSuccess(result)` / `setError(error)` | 成功时清除错误；失败时清除结果。                                                                                             |
-| `setIdle()`                              | 清除结果和错误。                                                                                                             |
-| `execute(supplier)`                      | 取消在途执行，调用 `supplier(abortController)`，解析为 `PromiseState`：`success`、`error`，执行被取消时为 `idle`。从不拒绝。 |
-| `onSuccess` / `onError`                  | 只对当前执行调用，`execute` 解析前会等待它们。回调抛出的错误通过 `console.error` 报告，状态不变。                            |
-| `onAbort`                                | 在途执行被取消（更新的执行、`abort()`、`reset()`、卸载）时同步调用，不被等待。                                               |
-| `abort()`                                | 取消在途执行并回到 idle。没有在途执行时不做任何改变：已完成的结果保留。                                                      |
-| `reset()`                                | 取消在途执行（如有）并回到 idle，同时清除结果和错误。                                                                        |
-| supplier 抛出的 `AbortError`             | 名为 `AbortError` 的错误（例如来自调用方自己的 signal）使执行回到 idle 而非 error，且不调用 `onError`。                      |
+| API / 选项                               | 契约                                                                                                                                                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `usePromiseState<R,E>(options?)`         | 初始状态为 `initialStatus ?? 'idle'`，结果和错误均为 undefined；返回状态和稳定的同步设置函数，不调用任何回调。                                                                                                              |
+| `setLoading()`                           | 清除错误，保留上次结果。                                                                                                                                                                                                    |
+| `setSuccess(result)` / `setError(error)` | 成功时清除错误；失败时清除结果。                                                                                                                                                                                            |
+| `setIdle()`                              | 清除结果和错误。                                                                                                                                                                                                            |
+| `execute(supplier)`                      | 取消在途执行，调用 `supplier(abortController)`，解析为 `PromiseState`：`success`、`error`，执行被取消时为 `idle`。从不拒绝。                                                                                                |
+| `onSuccess` / `onError`                  | 只对当前执行调用，`execute` 解析前会等待它们。回调抛出的错误通过 `console.error` 报告，状态不变。                                                                                                                           |
+| `onAbort`                                | 在途执行被取消（更新的执行、`abort()`、`reset()`、卸载）时同步调用，不被等待。                                                                                                                                              |
+| `abort()`                                | 取消在途执行并回到 idle。没有在途执行时不做任何改变：已完成的结果保留。                                                                                                                                                     |
+| `reset()`                                | 取消在途执行（如有）并回到 idle，同时清除结果和错误。                                                                                                                                                                       |
+| supplier 抛出的 `AbortError`             | 名为 `AbortError` 的错误（例如来自调用方自己的 signal），或通过 `cause` 包装它的错误（Fetcher 为已中止请求抛出的 `ExchangeError`），使执行回到 idle 而非 error，且不调用 `onError`。超时（`FetchTimeoutError`）仍是 error。 |
 
 supplier 必须把 signal 传给 I/O 才能停止实际工作；即使 supplier 忽略取消，Hook 也会忽略已取消执行的结果。卸载会取消当前执行；卸载后 `execute` 直接解析为 idle，不运行 supplier。
+
+执行从调用 `execute` 时起就是当前执行，早于被它替代的执行被取消。因此在 `onAbort` 或 abort 监听器中调用的 `execute` 会再替代它，并仍可被 `abort()`、`reset()` 和卸载取消。在 passive effect 之前重新连接的 layout effect（StrictMode 重放、`Activity` 再次显示）会等它们完成后才运行 supplier；在此期间更晚的 `execute` 或 `abort()` 会取消它，最后一次调用仍然胜出。
 
 根据解析出的状态分支，而不是捕获异常：
 

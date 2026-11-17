@@ -7577,20 +7577,22 @@ Each execution is identified by its `AbortController`. Only the current executio
 
 ## State and execution
 
-| API / option                             | Contract                                                                                                                                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `usePromiseState<R,E>(options?)`         | Starts at `initialStatus ?? 'idle'`, with undefined result and error. Returns state plus stable, synchronous setters; it runs no callbacks.                                          |
-| `setLoading()`                           | Clears error and keeps the previous result.                                                                                                                                          |
-| `setSuccess(result)` / `setError(error)` | Success clears error; error clears result.                                                                                                                                           |
-| `setIdle()`                              | Clears result and error.                                                                                                                                                             |
-| `execute(supplier)`                      | Cancels the execution in flight, calls `supplier(abortController)` and resolves to `PromiseState`: `success`, `error`, or `idle` when the execution was cancelled. It never rejects. |
-| `onSuccess` / `onError`                  | Run only for the current execution and are awaited before `execute` resolves. A throwing callback is reported with `console.error`; state is unchanged.                              |
-| `onAbort`                                | Called synchronously when an in-flight execution is cancelled (newer execution, `abort()`, `reset()`, unmount). Not awaited.                                                         |
-| `abort()`                                | Cancels the execution in flight and returns to idle. With nothing in flight it changes nothing: a settled result stays.                                                              |
-| `reset()`                                | Cancels the execution in flight, if any, and returns to idle, clearing result and error.                                                                                             |
-| `AbortError` from the supplier           | An error named `AbortError` (for example from a signal of the caller's own) returns the execution to idle instead of error, without `onError`.                                       |
+| API / option                             | Contract                                                                                                                                                                                                                                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `usePromiseState<R,E>(options?)`         | Starts at `initialStatus ?? 'idle'`, with undefined result and error. Returns state plus stable, synchronous setters; it runs no callbacks.                                                                                                                                            |
+| `setLoading()`                           | Clears error and keeps the previous result.                                                                                                                                                                                                                                            |
+| `setSuccess(result)` / `setError(error)` | Success clears error; error clears result.                                                                                                                                                                                                                                             |
+| `setIdle()`                              | Clears result and error.                                                                                                                                                                                                                                                               |
+| `execute(supplier)`                      | Cancels the execution in flight, calls `supplier(abortController)` and resolves to `PromiseState`: `success`, `error`, or `idle` when the execution was cancelled. It never rejects.                                                                                                   |
+| `onSuccess` / `onError`                  | Run only for the current execution and are awaited before `execute` resolves. A throwing callback is reported with `console.error`; state is unchanged.                                                                                                                                |
+| `onAbort`                                | Called synchronously when an in-flight execution is cancelled (newer execution, `abort()`, `reset()`, unmount). Not awaited.                                                                                                                                                           |
+| `abort()`                                | Cancels the execution in flight and returns to idle. With nothing in flight it changes nothing: a settled result stays.                                                                                                                                                                |
+| `reset()`                                | Cancels the execution in flight, if any, and returns to idle, clearing result and error.                                                                                                                                                                                               |
+| `AbortError` from the supplier           | An error named `AbortError` (for example from a signal of the caller's own), or one wrapping it through `cause` (Fetcher's `ExchangeError` for an aborted request), returns the execution to idle instead of error, without `onError`. A timeout (`FetchTimeoutError`) stays an error. |
 
 The supplier must pass the signal to its I/O to stop the actual work. The hook ignores a cancelled execution's outcome even when the supplier ignores cancellation. Unmounting cancels the current execution; after unmount `execute` resolves to idle without running the supplier.
+
+An execution is current from the moment `execute` is called, before the one it replaces is aborted. An `execute` called from `onAbort` or from an abort listener therefore replaces it in turn and stays cancelable by `abort()`, `reset()` and unmounting. A layout effect that reconnects before the passive ones (a StrictMode replay, an `Activity` revealed again) waits for them before running its supplier; a later `execute` or `abort()` in the meantime cancels it, so the latest call still wins.
 
 Branch on the resolved state instead of catching:
 
@@ -25306,20 +25308,22 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 
 ## 状态与执行
 
-| API / 选项                               | 契约                                                                                                                         |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `usePromiseState<R,E>(options?)`         | 初始状态为 `initialStatus ?? 'idle'`，结果和错误均为 undefined；返回状态和稳定的同步设置函数，不调用任何回调。               |
-| `setLoading()`                           | 清除错误，保留上次结果。                                                                                                     |
-| `setSuccess(result)` / `setError(error)` | 成功时清除错误；失败时清除结果。                                                                                             |
-| `setIdle()`                              | 清除结果和错误。                                                                                                             |
-| `execute(supplier)`                      | 取消在途执行，调用 `supplier(abortController)`，解析为 `PromiseState`：`success`、`error`，执行被取消时为 `idle`。从不拒绝。 |
-| `onSuccess` / `onError`                  | 只对当前执行调用，`execute` 解析前会等待它们。回调抛出的错误通过 `console.error` 报告，状态不变。                            |
-| `onAbort`                                | 在途执行被取消（更新的执行、`abort()`、`reset()`、卸载）时同步调用，不被等待。                                               |
-| `abort()`                                | 取消在途执行并回到 idle。没有在途执行时不做任何改变：已完成的结果保留。                                                      |
-| `reset()`                                | 取消在途执行（如有）并回到 idle，同时清除结果和错误。                                                                        |
-| supplier 抛出的 `AbortError`             | 名为 `AbortError` 的错误（例如来自调用方自己的 signal）使执行回到 idle 而非 error，且不调用 `onError`。                      |
+| API / 选项                               | 契约                                                                                                                                                                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `usePromiseState<R,E>(options?)`         | 初始状态为 `initialStatus ?? 'idle'`，结果和错误均为 undefined；返回状态和稳定的同步设置函数，不调用任何回调。                                                                                                              |
+| `setLoading()`                           | 清除错误，保留上次结果。                                                                                                                                                                                                    |
+| `setSuccess(result)` / `setError(error)` | 成功时清除错误；失败时清除结果。                                                                                                                                                                                            |
+| `setIdle()`                              | 清除结果和错误。                                                                                                                                                                                                            |
+| `execute(supplier)`                      | 取消在途执行，调用 `supplier(abortController)`，解析为 `PromiseState`：`success`、`error`，执行被取消时为 `idle`。从不拒绝。                                                                                                |
+| `onSuccess` / `onError`                  | 只对当前执行调用，`execute` 解析前会等待它们。回调抛出的错误通过 `console.error` 报告，状态不变。                                                                                                                           |
+| `onAbort`                                | 在途执行被取消（更新的执行、`abort()`、`reset()`、卸载）时同步调用，不被等待。                                                                                                                                              |
+| `abort()`                                | 取消在途执行并回到 idle。没有在途执行时不做任何改变：已完成的结果保留。                                                                                                                                                     |
+| `reset()`                                | 取消在途执行（如有）并回到 idle，同时清除结果和错误。                                                                                                                                                                       |
+| supplier 抛出的 `AbortError`             | 名为 `AbortError` 的错误（例如来自调用方自己的 signal），或通过 `cause` 包装它的错误（Fetcher 为已中止请求抛出的 `ExchangeError`），使执行回到 idle 而非 error，且不调用 `onError`。超时（`FetchTimeoutError`）仍是 error。 |
 
 supplier 必须把 signal 传给 I/O 才能停止实际工作；即使 supplier 忽略取消，Hook 也会忽略已取消执行的结果。卸载会取消当前执行；卸载后 `execute` 直接解析为 idle，不运行 supplier。
+
+执行从调用 `execute` 时起就是当前执行，早于被它替代的执行被取消。因此在 `onAbort` 或 abort 监听器中调用的 `execute` 会再替代它，并仍可被 `abort()`、`reset()` 和卸载取消。在 passive effect 之前重新连接的 layout effect（StrictMode 重放、`Activity` 再次显示）会等它们完成后才运行 supplier；在此期间更晚的 `execute` 或 `abort()` 会取消它，最后一次调用仍然胜出。
 
 根据解析出的状态分支，而不是捕获异常：
 
