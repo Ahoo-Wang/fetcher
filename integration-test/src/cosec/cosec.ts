@@ -33,7 +33,6 @@ export class MockTokenRefresher implements TokenRefresher {
 }
 
 const cosecOptions: CoSecOptions = {
-  appId: 'appId',
   deviceIdStorage: new DeviceIdStorage(),
   tokenManager: new JwtTokenManager(
     new TokenStorage(),

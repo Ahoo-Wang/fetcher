@@ -19,7 +19,6 @@ import type { JwtTokenManager } from './jwtTokenManager.js';
  */
 export class CoSecHeaders {
   static readonly DEVICE_ID = 'CoSec-Device-Id';
-  static readonly APP_ID = 'CoSec-App-Id';
   static readonly SPACE_ID = 'CoSec-Space-Id';
   static readonly AUTHORIZATION = 'Authorization';
   static readonly REQUEST_ID = 'CoSec-Request-Id';
@@ -28,13 +27,18 @@ export class CoSecHeaders {
 export class ResponseCodes {
   static readonly UNAUTHORIZED = 401;
   static readonly FORBIDDEN = 403;
+  static readonly TOO_MANY_REQUESTS = 429;
 }
 
 export interface AppIdCapable {
   /**
-   * Application ID to be sent in the CoSec-App-Id header.
+   * Does nothing: CoSec 8.0 does not read a request's app. The app of a
+   * request is the `aud` of its token, set by whoever issued it.
+   *
+   * @deprecated Remove it. Kept so existing configuration still compiles;
+   * it is removed in the next major version.
    */
-  appId: string;
+  appId?: string;
 }
 
 export interface DeviceIdStorageCapable {
@@ -50,22 +54,3 @@ export interface JwtTokenManagerCapable {
  */
 export interface CoSecOptions
   extends AppIdCapable, DeviceIdStorageCapable, JwtTokenManagerCapable {}
-
-/**
- * Authorization result interface.
- */
-export interface AuthorizeResult {
-  authorized: boolean;
-  reason: string;
-}
-
-/**
- * Authorization result constants.
- */
-export const AuthorizeResults = {
-  ALLOW: { authorized: true, reason: 'Allow' },
-  EXPLICIT_DENY: { authorized: false, reason: 'Explicit Deny' },
-  IMPLICIT_DENY: { authorized: false, reason: 'Implicit Deny' },
-  TOKEN_EXPIRED: { authorized: false, reason: 'Token Expired' },
-  TOO_MANY_REQUESTS: { authorized: false, reason: 'Too Many Requests' },
-};

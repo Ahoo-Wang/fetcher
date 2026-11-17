@@ -12,14 +12,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { AuthorizeResult } from '../src';
-import { AuthorizeResults, CoSecHeaders, ResponseCodes } from '../src';
+import { CoSecHeaders, ResponseCodes } from '../src';
 
 describe('types.ts', () => {
   describe('CoSecHeaders', () => {
     it('should define CoSecHeaders enum values', () => {
       expect(CoSecHeaders.DEVICE_ID).toBe('CoSec-Device-Id');
-      expect(CoSecHeaders.APP_ID).toBe('CoSec-App-Id');
+      expect('APP_ID' in CoSecHeaders).toBe(false);
       expect(CoSecHeaders.AUTHORIZATION).toBe('Authorization');
       expect(CoSecHeaders.REQUEST_ID).toBe('CoSec-Request-Id');
     });
@@ -28,43 +27,8 @@ describe('types.ts', () => {
   describe('ResponseCodes', () => {
     it('should define ResponseCodes enum values', () => {
       expect(ResponseCodes.UNAUTHORIZED).toBe(401);
-    });
-  });
-
-  describe('AuthorizeResults', () => {
-    it('should define AuthorizeResults constants', () => {
-      expect(AuthorizeResults.ALLOW).toEqual({
-        authorized: true,
-        reason: 'Allow',
-      });
-      expect(AuthorizeResults.EXPLICIT_DENY).toEqual({
-        authorized: false,
-        reason: 'Explicit Deny',
-      });
-      expect(AuthorizeResults.IMPLICIT_DENY).toEqual({
-        authorized: false,
-        reason: 'Implicit Deny',
-      });
-      expect(AuthorizeResults.TOKEN_EXPIRED).toEqual({
-        authorized: false,
-        reason: 'Token Expired',
-      });
-      expect(AuthorizeResults.TOO_MANY_REQUESTS).toEqual({
-        authorized: false,
-        reason: 'Too Many Requests',
-      });
-    });
-  });
-
-  describe('AuthorizeResult', () => {
-    it('should define AuthorizeResult interface', () => {
-      // This is a type-only interface, so we just verify it compiles
-      const result: AuthorizeResult = {
-        authorized: true,
-        reason: 'Test reason',
-      };
-      expect(result.authorized).toBe(true);
-      expect(result.reason).toBe('Test reason');
+      expect(ResponseCodes.FORBIDDEN).toBe(403);
+      expect(ResponseCodes.TOO_MANY_REQUESTS).toBe(429);
     });
   });
 });

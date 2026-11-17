@@ -77,6 +77,10 @@ export interface CoSecJwtPayload extends JwtPayload {
    * Attributes - custom key-value pairs providing additional information about the JWT.
    */
   attributes?: Record<string, any>;
+  /** The session the pair belongs to (CoSec 8.0). Display only: nothing here depends on it. */
+  sid?: string;
+  /** When the user signed in, in seconds (CoSec 8.0). */
+  auth_time?: number;
 }
 
 /**

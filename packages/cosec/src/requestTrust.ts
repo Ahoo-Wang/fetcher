@@ -92,7 +92,7 @@ function isTrustedRelative(
  *
  * @example
  * ```typescript
- * new CoSecConfigurer({ appId, tokenRefresher, isTrusted: sameOriginTrust });
+ * new CoSecConfigurer({ tokenRefresher, isTrusted: sameOriginTrust });
  * ```
  */
 export const sameOriginTrust: RequestTrust = (url, exchange) => {

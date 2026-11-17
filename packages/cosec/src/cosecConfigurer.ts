@@ -39,9 +39,6 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
  * authentication setups and minimal header injection configurations.
  *
  * @remarks
- * **Required Properties:**
- * - appId: Your application's unique identifier in the CoSec system
- *
  * **Optional Properties:**
  * - tokenStorage: Custom token persistence (defaults to TokenStorage)
  * - deviceIdStorage: Custom device ID management (defaults to DeviceIdStorage)
@@ -51,20 +48,18 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
  * - onForbidden: Custom 403 error handler
  *
  * **Configuration Levels:**
- * - Minimal: Only appId (headers only, no authentication)
- * - Standard: appId + tokenRefresher (full JWT auth)
+ * - Minimal: Nothing (headers only, no authentication)
+ * - Standard: tokenRefresher (full JWT auth)
  * - Enterprise: All options (multi-tenant with custom handlers)
  *
  * @example
  * ```typescript
  * // Minimal: Headers only, no authentication
  * const minimalConfig: CoSecConfig = {
- *   appId: 'my-web-app'
  * };
  *
  * // Standard: Full JWT authentication
  * const standardConfig: CoSecConfig = {
- *   appId: 'my-web-app',
  *   tokenRefresher: {
  *     refresh: async (token) => refreshMyToken(token)
  *   },
@@ -74,7 +69,6 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
  *
  * // Enterprise: Multi-tenant with custom storage
  * const enterpriseConfig: CoSecConfig = {
- *   appId: 'my-saas-app',
  *   tokenStorage: myCustomTokenStorage,
  *   deviceIdStorage: myCustomDeviceStorage,
  *   tokenRefresher: myTokenRefresher,
@@ -87,26 +81,15 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
 export interface CoSecConfig
   extends AppIdCapable, Partial<DeviceIdStorageCapable>, RequestTrustCapable {
   /**
-   * Your application's unique identifier in the CoSec authentication system.
+   * Does nothing: CoSec 8.0 does not read a request's app. The app of a
+   * request is the `aud` of its token, set by whoever issued it; a host that
+   * serves one app (`cosec.authorization.scope.app-id`) answers
+   * `403 scope-rejected` to a token of another app, or of none.
    *
-   * This ID is sent with every request in the `CoSec-App-Id` header and is
-   * used to identify which application is making the request. Obtain this
-   * value from your CoSec administration console.
-   *
-   * @remarks
-   * **Requirements:**
-   * - Must be a non-empty string
-   * - Must be registered in the CoSec system
-   * - Should be unique per application/deployment
-   *
-   * **Usage:**
-   * ```typescript
-   * const config: CoSecConfig = {
-   *   appId: 'my-production-app-001'  // Registered app ID
-   * };
-   * ```
+   * @deprecated Remove it. Kept so existing configuration still compiles; it
+   * is removed in the next major version.
    */
-  readonly appId: string;
+  readonly appId?: string;
 
   /**
    * Custom implementation for storing and retrieving JWT tokens.
@@ -122,14 +105,12 @@ export interface CoSecConfig
    * // Custom encrypted storage
    * const encryptedStorage = new EncryptedTokenStorage();
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenStorage: encryptedStorage
    * };
    *
    * // Memory storage for testing
    * const memoryStorage = new InMemoryTokenStorage();
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenStorage: memoryStorage
    * };
    * ```
@@ -153,7 +134,6 @@ export interface CoSecConfig
    *   storage: sessionStorage
    * });
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   deviceIdStorage: customDeviceStorage
    * };
    * ```
@@ -188,7 +168,6 @@ export interface CoSecConfig
    * };
    *
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher
    * };
    * ```
@@ -214,7 +193,6 @@ export interface CoSecConfig
    * };
    *
    * const config: CoSecConfig = {
-   *   appId: 'my-saas-app',
    *   tokenRefresher: myRefresher,
    *   spaceIdProvider: spaceProvider
    * };
@@ -238,7 +216,6 @@ export interface CoSecConfig
    * ```typescript
    * // Redirect to login
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher,
    *   onUnauthorized: async (exchange) => {
    *     await authService.logout();
@@ -248,7 +225,6 @@ export interface CoSecConfig
    *
    * // Silent token refresh
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher,
    *   onUnauthorized: async (exchange) => {
    *     // Force logout without redirect
@@ -276,7 +252,6 @@ export interface CoSecConfig
    * ```typescript
    * // Show permission error
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher,
    *   onForbidden: async (exchange) => {
    *     notification.error({
@@ -288,7 +263,6 @@ export interface CoSecConfig
    *
    * // Redirect to access denied page
    * const config: CoSecConfig = {
-   *   appId: 'my-app',
    *   onForbidden: async (exchange) => {
    *     router.push('/access-denied');
    *   }
@@ -335,7 +309,6 @@ export interface CoSecConfig
  *
  * // Create and configure
  * const configurer = new CoSecConfigurer({
- *   appId: 'my-saas-app',
  *   tokenRefresher: {
  *     refresh: async (token) => {
  *       const res = await fetch('/api/refresh', {
@@ -362,7 +335,6 @@ export interface CoSecConfig
  * // Minimal setup - headers only, no authentication
  * const fetcher = new Fetcher();
  * new CoSecConfigurer({
- *   appId: 'my-tracking-app'
  * }).applyTo(fetcher);
  *
  * // Requests will include:
@@ -419,7 +391,6 @@ export class CoSecConfigurer implements FetcherConfigurer {
    * ```typescript
    * // Full configuration
    * const configurer = new CoSecConfigurer({
-   *   appId: 'my-app',
    *   tokenStorage: customTokenStorage,
    *   deviceIdStorage: customDeviceStorage,
    *   tokenRefresher: myRefresher,
@@ -429,13 +400,10 @@ export class CoSecConfigurer implements FetcherConfigurer {
    * });
    *
    * // Minimal configuration
-   * const configurer = new CoSecConfigurer({
-   *   appId: 'my-app'
-   * });
+   * const configurer = new CoSecConfigurer({});
    *
    * // Custom storage with default refresh
    * const configurer = new CoSecConfigurer({
-   *   appId: 'my-app',
    *   tokenStorage: encryptedStorage,
    *   deviceIdStorage: customDeviceStorage
    * });
@@ -483,7 +451,6 @@ export class CoSecConfigurer implements FetcherConfigurer {
    * const fetcher = new Fetcher({ baseUrl: 'https://api.example.com' });
    *
    * const configurer = new CoSecConfigurer({
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher,
    *   onUnauthorized: () => redirectToLogin(),
    *   onForbidden: () => showError()
@@ -502,7 +469,6 @@ export class CoSecConfigurer implements FetcherConfigurer {
    * const adminFetcher = new Fetcher({ baseUrl: 'https://admin.example.com' });
    *
    * const configurer = new CoSecConfigurer({
-   *   appId: 'my-app',
    *   tokenRefresher: myRefresher,
    *   onForbidden: showAccessDenied
    * });
@@ -516,7 +482,6 @@ export class CoSecConfigurer implements FetcherConfigurer {
     // Register CoSec request interceptor for security headers
     fetcher.interceptors.request.use(
       new CoSecRequestInterceptor({
-        appId: this.config.appId,
         deviceIdStorage: this.deviceIdStorage,
         spaceIdProvider: this.spaceIdProvider,
         isTrusted: this.config.isTrusted,
