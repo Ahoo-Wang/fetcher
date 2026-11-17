@@ -101,12 +101,16 @@ describe('request regressions', () => {
     ['/users#details', 'https://review.test/users?page=2#details'],
   ])('adds query parameters before fragments: %s', async (url, expected) => {
     const fetcher = new Fetcher({ baseURL: 'https://review.test' });
-    const response = await fetcher.get<any>(
+    const exchange = await fetcher.get(
       url,
       { urlParams: { query: { page: 2 } } },
-      options,
+      { resultExtractor: ResultExtractors.Exchange },
     );
-    expect(response.url).toBe(expected);
+    // The URL fetch is given keeps the fragment, after the query...
+    expect(exchange.request.url).toBe(expected);
+    // ...and the server gets the query, never the fragment.
+    const echoed = await exchange.requiredResponse.json();
+    expect(echoed.url).toBe(expected.split('#')[0]);
   });
 
   it('honors a caller-aborted controller even when timeout is enabled', async () => {
