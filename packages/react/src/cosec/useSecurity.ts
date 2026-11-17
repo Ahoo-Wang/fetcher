@@ -83,6 +83,17 @@ export interface UseSecurityReturn {
 /** The longest delay setTimeout accepts (2^31 - 1 ms). */
 const MAX_TIMEOUT = 2_147_483_647;
 
+// Session actions started through useSecurity, per storage: shared by every
+// hook on that storage, so a later signIn or signOut from any of them
+// supersedes a signIn whose provider is still pending.
+const sessionGenerations = new WeakMap<TokenStorage, number>();
+
+function nextSessionGeneration(tokenStorage: TokenStorage): number {
+  const generation = (sessionGenerations.get(tokenStorage) ?? 0) + 1;
+  sessionGenerations.set(tokenStorage, generation);
+  return generation;
+}
+
 /**
  * Hook for managing authentication state and operations using CoSec tokens.
  *
@@ -185,19 +196,23 @@ export function useSecurity(
   const optionsRef = useLatest(options);
   const signIn = useCallback(
     async (compositeTokenProvider: CompositeTokenProvider) => {
+      const generation = nextSessionGeneration(tokenStorage);
       const compositeToken =
         typeof compositeTokenProvider === 'function'
           ? await compositeTokenProvider()
           : compositeTokenProvider;
+      // A signIn or signOut started meanwhile replaced this one.
+      if (sessionGenerations.get(tokenStorage) !== generation) return;
       tokenStorage.signIn(compositeToken);
       optionsRef.current.onSignIn?.();
     },
     [tokenStorage, optionsRef],
   );
   const signOut = useCallback(() => {
+    nextSessionGeneration(tokenStorage);
     remove();
     optionsRef.current.onSignOut?.();
-  }, [remove, optionsRef]);
+  }, [tokenStorage, remove, optionsRef]);
 
   return {
     currentUser: token?.access?.payload ?? ANONYMOUS_USER,
