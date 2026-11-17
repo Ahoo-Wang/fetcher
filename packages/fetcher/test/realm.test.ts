@@ -37,6 +37,20 @@ function fromOtherRealm<T extends object>(value: T): T {
   return Object.setPrototypeOf(value, {});
 }
 
+/**
+ * Whether this runtime's FormData checks the internal slot, as browsers do.
+ * The undici in Node 22/24 checks with `instanceof`, so no stand-in can pass
+ * there (and Node has no iframe to bring a real foreign FormData from).
+ */
+const formDataHasSlotBrandCheck = (() => {
+  try {
+    FormData.prototype.has.call(fromOtherRealm(new FormData()), '');
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
 function recordingFetcher() {
   const sent: { url: string; contentType: string | null; body: string }[] = [];
   const fetcher = new Fetcher({
@@ -61,7 +75,9 @@ describe('realm-independent type checks', () => {
     expect(isArrayBuffer(runInNewContext('new ArrayBuffer(1)'))).toBe(true);
     expect(isBlob(fromOtherRealm(new Blob(['x'])))).toBe(true);
     expect(isBlob(fromOtherRealm(new File(['x'], 'x.txt')))).toBe(true);
-    expect(isFormData(fromOtherRealm(new FormData()))).toBe(true);
+    expect(isFormData(fromOtherRealm(new FormData()))).toBe(
+      formDataHasSlotBrandCheck,
+    );
     expect(isURLSearchParams(fromOtherRealm(new URLSearchParams()))).toBe(true);
     expect(isReadableStream(fromOtherRealm(new ReadableStream()))).toBe(true);
   });
@@ -159,7 +175,9 @@ describe('request bodies from another realm (#2003)', () => {
         }) as object,
     ],
     ['Blob', () => new Blob(['blob']) as object],
-    ['FormData', () => new FormData() as object],
+    ...(formDataHasSlotBrandCheck
+      ? [['FormData', () => new FormData() as object] as const]
+      : []),
     ['URLSearchParams', () => new URLSearchParams('a=1') as object],
   ])(
     'passes a %s through untouched and leaves its Content-Type to fetch',
