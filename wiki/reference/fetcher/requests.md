@@ -11,13 +11,13 @@ For ordinary calls, pass a request object to the client method; call `mergeReque
 
 ## Request fields {#fields}
 
-| Field/type                                 | Contract                                                                                                                      |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                          |
-| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                          |
-| `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                 |
-| `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                           |
-| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |
+| Field/type                                 | Contract                                                                                                                                                                                  |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RequestHeaders` / `RequestHeadersCapable` | Plain string-keyed record of `string \| undefined`; not a native `Headers` instance.                                                                                                      |
+| `RequestBodyType`                          | `BodyInit \| Record<string, any> \| string \| null`; a missing body remains missing.                                                                                                      |
+| `BaseURLCapable`                           | Required `baseURL: string`; `UrlParamsCapable` supplies optional `urlParams`.                                                                                                             |
+| `HttpMethod`                               | String enum GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS, TRACE; platform restrictions still apply.                                                                                       |
+| `CONTENT_TYPE_HEADER`                      | `'Content-Type'`; `ContentTypeValues.APPLICATION_JSON` is `'application/json'`, `APPLICATION_PROBLEM_JSON` is `'application/problem+json'`, `TEXT_EVENT_STREAM` is `'text/event-stream'`. |
 
 ## Merge rules {#merge}
 
@@ -75,11 +75,11 @@ console.assert(exchange.request.timeout === 0);
 | <a id="urlparamscapable"></a>`UrlParamsCapable`           | [fetchRequest.ts:48](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L48)     |
 | <a id="content_type_header"></a>`CONTENT_TYPE_HEADER`     | [fetchRequest.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L55)     |
 | <a id="contenttypevalues"></a>`ContentTypeValues`         | [fetchRequest.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L57)     |
-| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:68](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L68)     |
-| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L81)     |
-| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L88)     |
-| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:112](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L112)   |
-| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:183](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L183)   |
+| <a id="requestheaders"></a>`RequestHeaders`               | [fetchRequest.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L70)     |
+| <a id="requestheaderscapable"></a>`RequestHeadersCapable` | [fetchRequest.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L83)     |
+| <a id="requestbodytype"></a>`RequestBodyType`             | [fetchRequest.ts:90](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L90)     |
+| <a id="fetchrequestinit"></a>`FetchRequestInit`           | [fetchRequest.ts:117](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L117)   |
+| <a id="fetchrequest"></a>`FetchRequest`                   | [fetchRequest.ts:188](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchRequest.ts#L188)   |
 | <a id="mergerequest"></a>`mergeRequest`                   | [mergeRequest.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/mergeRequest.ts#L67)     |
 | <a id="mergerequestoptions"></a>`mergeRequestOptions`     | [requestOptions.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestOptions.ts#L41) |
 | <a id="getheader"></a>`getHeader`                         | [requestHeaders.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestHeaders.ts#L17) |
@@ -91,7 +91,7 @@ console.assert(exchange.request.timeout === 0);
 | <a id="ismap"></a>`isMap`                                 | [realm.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L83)                   |
 | <a id="isabortsignal"></a>`isAbortSignal`                 | [realm.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L122)                 |
 | <a id="isabortcontroller"></a>`isAbortController`         | [realm.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/realm.ts#L129)                 |
-| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L42)                   |
-| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L71)                   |
+| <a id="mergerecords"></a>`mergeRecords`                   | [utils.ts:44](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L44)                   |
+| <a id="mergerecordtomap"></a>`mergeRecordToMap`           | [utils.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/utils.ts#L73)                   |
 
 [Package index](./index.md)

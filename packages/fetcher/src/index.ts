@@ -24,6 +24,7 @@ export * from './interceptorManager.js';
 export * from './mergeRequest.js';
 export * from './namedFetcher.js';
 export * from './orderedCapable.js';
+export * from './problemDetails.js';
 export * from './requestBodyInterceptor.js';
 export * from './requestOptions.js';
 export * from './responseJson.js';
