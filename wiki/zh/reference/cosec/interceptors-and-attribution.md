@@ -11,7 +11,7 @@ description: '拦截器与资源归属 — Fetcher 6.0.0'
 
 1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置应用/设备/请求头，以及解析得到的真值空间 ID。空间每个 exchange 只解析一次：401 重试发往请求最初所属的空间，即使刷新期间当前空间已改变；之后的新请求使用当前空间。
 2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
-3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，随后核心传输发送请求。
+3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，占位符在请求实际解析所用的模板中查找：Fetcher `baseURL` 与请求 URL 拼接后的模板；请求 URL 为绝对地址时仅查找请求 URL。随后核心传输发送请求。
 4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。被 `isTrusted` 拒绝的请求（未携带本应用凭据）的 401 原样返回：不刷新、不重放、不调用 onUnauthorized。对受管理的 401，先释放未读取的 401 正文（避免其占用刷新与重试需要的连接），再刷新，仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。重试自身的结果取代 401：重试的 fetch 失败（离线、超时、取消）时，请求以该错误失败，`exchange.response` 为 undefined，不调用 onUnauthorized。请求体为 `ReadableStream`（或其他异步可迭代对象）时无法再次发送：会话仍会刷新，请求以 `NonReplayableRequestError` 失败（不通知），由调用方用新的请求体重新发送。
 5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError（`RefreshUnavailableError` 表示刷新未能到达服务端，会话保留，不通知）；Forbidden 处理 403。回调都不会自动恢复失败请求。
 
@@ -48,7 +48,7 @@ sequenceDiagram
 | `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播                                                                                      |
 | `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                                                                                              |
 | `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅受信任请求的 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1；一次性请求体以 NonReplayableRequestError 失败                                                            |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                                                                                                          |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅当 baseURL + 请求 URL 模板（请求 URL 为绝对地址时仅请求 URL）包含该占位符且当前路径值为假值时填充                                                         |
 | `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError、RefreshUnavailableError、NonReplayableRequestError、被 `isTrusted` 拒绝的请求及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
 | `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误成为 exchange 错误（`ExchangeError` 的 cause）                                                                                             |
 
@@ -64,7 +64,7 @@ sequenceDiagram
 
 ## 设备与空间选择
 
-`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
+`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认总线是以实际 key 命名的 serial 总线，仅当存储为浏览器 `localStorage` 时跨标签页广播，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
 
 `DeviceIdStorage.generateDeviceId(): string` 调用导出的 `idGenerator`，但不存储结果。`getOrCreate(): string` 返回已有真值 ID，否则生成并存储。`IdGenerator.generateId(): string` 由 `NanoIdGenerator` 使用 nanoid 实现，`idGenerator` 是共享实例。
 
@@ -229,19 +229,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="resourceattributionoptions"></span>
 
-**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L27)
+**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L29)
 
 <span id="resource_attribution_request_interceptor_name"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L45)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L47)
 
 <span id="resource_attribution_request_interceptor_order"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L53)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L55)
 
 <span id="resourceattributionrequestinterceptor"></span>
 
-**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L61)
+**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L63)
 
 <span id="spaceidprovider"></span>
 

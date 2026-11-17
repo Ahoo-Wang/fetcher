@@ -240,7 +240,7 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
   }: SpaceIdStorageOptions = {}) {
     super({
       key,
-      eventBus: storageEventBus(key, eventBus),
+      eventBus: storageEventBus(key, eventBus, reset.storage),
       ...reset,
       serializer: typedIdentitySerializer(),
     });

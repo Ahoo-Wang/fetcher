@@ -39,6 +39,8 @@ describe('concurrent cross-tab refresh completion', () => {
       vi.stubGlobal('navigator', {});
       const key = `cosec-concurrent-${crypto.randomUUID()}`;
       const backing = new InMemoryStorage();
+      // Tabs share the browser's localStorage, so their default buses broadcast.
+      vi.stubGlobal('window', { localStorage: backing });
       const first = new TokenStorage({ key, storage: backing });
       first.signIn(token('A'));
       await new Promise(resolve => setTimeout(resolve, 0));

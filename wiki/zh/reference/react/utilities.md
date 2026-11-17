@@ -12,7 +12,7 @@ description: '最新值与稳定值 — @ahoo-wang/fetcher-react 6.0.0'
 | `useLatest(value)`      | 每次 render 提交后（insertion effect）更新的 `RefObject`，被丢弃的并发 render 不会留下它的值。在回调和 effect 中读取；render 中读取得到上次提交的值。 |
 | `useStableValue(value)` | 返回 `value`，但内容深相等（`dequal`）时保留之前的引用。内联对象可以作为 effect 依赖，而不会每次 render 都重新运行。                                  |
 
-查询 Hook 正是用 `useStableValue` 判断查询是否变化：每次 render 内联写的 `{ page: 1 }` 在内容不同之前始终是同一个值。它只比较内容，不复制、不冻结、不校验。需要在静默期后才跟随输入的值，请使用 [`useDebouncedValue`](./debounce#api-useDebouncedValue)；需要防抖调用，请使用 [`useDebouncedCallback`](./debounce#api-useDebouncedCallback)。
+查询 Hook 正是用 `useStableValue` 判断查询是否变化：每次 render 内联写的 `{ page: 1 }` 在内容不同之前始终是同一个值。它只比较内容，不复制、不冻结、不校验。函数也只是普通值：原样返回，不会被当作初始化函数调用（`useDebouncedValue` 同样如此）。需要在静默期后才跟随输入的值，请使用 [`useDebouncedValue`](./debounce#api-useDebouncedValue)；需要防抖调用，请使用 [`useDebouncedCallback`](./debounce#api-useDebouncedCallback)。
 
 ## 6.0 中移除 {#removed-in-6-0}
 

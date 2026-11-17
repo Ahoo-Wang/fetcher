@@ -11,7 +11,7 @@ These interceptors enrich or retry a FetchExchange. Register each with the match
 
 1. CoSecRequestInterceptor skips a request that [`isTrusted`](#request-trust) rejects; otherwise it sets application/device/request headers and a truthy resolved space ID. The space is resolved once per exchange: a 401 retry is sent to the space the request was first sent to, even if the current space changed during the refresh; later requests use the current space.
 2. AuthorizationRequestInterceptor skips an untrusted request (no Authorization, no refresh) and preserves an existing Authorization header; otherwise it checks session ownership, refreshes when access is expired and refresh is valid, then injects the managed Bearer token.
-3. ResourceAttributionRequestInterceptor fills tenant/owner URL path parameters before URL resolution. The core transport sends the request.
+3. ResourceAttributionRequestInterceptor fills tenant/owner URL path parameters before URL resolution, looking for the placeholders in the template the request is resolved from: the Fetcher `baseURL` joined with the request URL, or the request URL alone when it is absolute. The core transport sends the request.
 4. AuthorizationResponseInterceptor handles a managed-credential 401 before normal status validation. The 401 of a request `isTrusted` rejected (sent without this application's credentials) is returned as is: no refresh, no replay, no onUnauthorized. For a managed 401 it releases the unread 401 body (so it holds no connection the refresh and retry need), refreshes, deletes only its injected stale credential, and re-executes the full exchange pipeline at most once. The retry's own outcome replaces the 401: if its fetch fails (offline, timeout, abort), the request fails with that error, `exchange.response` is undefined and onUnauthorized is not called. A request whose body is a `ReadableStream` (or another async iterable) cannot be sent again: the session is still refreshed, and the request fails with `NonReplayableRequestError` (not notified) so the caller can re-send it with a new body.
 5. Remaining failures reach error interceptors. Unauthorized handles 401/RefreshTokenError with notification ownership guards (a `RefreshUnavailableError` — the refresh could not reach the server — keeps the session and is not notified); Forbidden handles 403. Neither callback automatically recovers the failed request.
 
@@ -48,7 +48,7 @@ sequenceDiagram
 | `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | appId, deviceIdStorage required; spaceIdProvider defaults NoneSpaceIdProvider; optional isTrusted | Promise&lt;void&gt;; nothing for an untrusted request; otherwise overwrites app/device/request headers; writes space only for a truthy ID; storage/provider failures propagate                                                                      |
 | `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | tokenManager required (JwtTokenManagerCapable); optional isTrusted                                | Promise&lt;void&gt;; nothing for an untrusted request; preserves explicit Authorization, refreshes managed token when needed                                                                                                                        |
 | `AuthorizationResponseInterceptor`                                     | Same AuthorizationInterceptorOptions                                                              | Promise&lt;void&gt;; only 401 of a trusted request, only matching managed credential, at most AUTHORIZATION_RESPONSE_MAX_RETRY=1; a one-shot body fails with NonReplayableRequestError                                                              |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | tokenStorage required; tenantId='tenantId', ownerId='ownerId' are **placeholder names**           | void; takes tenantId/sub from decoded access payload; fills matching template fields only when current path value is falsy                                                                                                                          |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | tokenStorage required; tenantId='tenantId', ownerId='ownerId' are **placeholder names**           | void; takes tenantId/sub from decoded access payload; fills matching template fields of the baseURL + request URL template (the request URL alone when absolute) only when current path value is falsy                                              |
 | `UnauthorizedErrorInterceptor` / options                               | onUnauthorized required, returns void or Promise&lt;void&gt;                                      | Promise&lt;void&gt;; skips RefreshSessionChangedError, RefreshUnavailableError, NonReplayableRequestError, requests `isTrusted` rejected, and duplicate/obsolete notifications; a callback error becomes the exchange error (`ExchangeError` cause) |
 | `ForbiddenErrorInterceptor` / options                                  | onForbidden required, returns Promise&lt;void&gt;                                                 | Promise&lt;void&gt;; callback runs only for response.status=403; a callback error becomes the exchange error (`ExchangeError` cause)                                                                                                                |
 
@@ -64,7 +64,7 @@ By default an absolute request URL on any origin receives the access token and t
 
 ## Device and space selection
 
-`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses broadcast with a serial delegate named for the actual key, and `destroy()` closes such a default bus; a bus passed in `eventBus` stays open. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
+`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses are serial buses named for the actual key, broadcast across tabs only when the storage is the browser's `localStorage`, and `destroy()` closes such a default bus; a bus passed in `eventBus` stays open. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
 
 `DeviceIdStorage.generateDeviceId(): string` calls the exported `idGenerator`, but does not store the result. `getOrCreate(): string` returns a truthy stored ID or generates/stores a new one. `IdGenerator.generateId(): string` is implemented by `NanoIdGenerator` with nanoid; `idGenerator` is its shared instance.
 
@@ -229,19 +229,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="resourceattributionoptions"></span>
 
-**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L27)
+**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L29)
 
 <span id="resource_attribution_request_interceptor_name"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L45)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L47)
 
 <span id="resource_attribution_request_interceptor_order"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L53)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L55)
 
 <span id="resourceattributionrequestinterceptor"></span>
 
-**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L61)
+**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L63)
 
 <span id="spaceidprovider"></span>
 
