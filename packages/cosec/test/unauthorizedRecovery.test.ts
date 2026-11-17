@@ -11,7 +11,11 @@
  * limitations under the License.
  */
 
-import { createServer, type IncomingMessage } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 import type { AddressInfo } from 'node:net';
 import {
   ExchangeError,
@@ -219,10 +223,7 @@ describe('a retry that fails after a successful refresh', () => {
 });
 
 async function withServer(
-  handler: (
-    req: IncomingMessage,
-    res: import('node:http').ServerResponse,
-  ) => void,
+  handler: (req: IncomingMessage, res: ServerResponse) => void,
   run: (baseURL: string) => Promise<void>,
 ) {
   const server = createServer(handler);
