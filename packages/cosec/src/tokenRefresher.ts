@@ -17,6 +17,7 @@ import {
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
   UNAUTHORIZED_ERROR_INTERCEPTOR_NAME,
 } from './constants.js';
+import { NOTIFICATION_GUARD_REFRESHER } from './refreshProtocol.js';
 
 /**
  * Interface representing an access token used for authentication.
@@ -221,3 +222,13 @@ export class CoSecTokenRefresher implements TokenRefresher {
     );
   }
 }
+
+// Kept off the public type: JwtTokenManager checks the registered symbol, not
+// the class identity, so it recognizes any copy of this package's refresher.
+Object.defineProperty(
+  CoSecTokenRefresher.prototype,
+  NOTIFICATION_GUARD_REFRESHER,
+  {
+    value: true,
+  },
+);
