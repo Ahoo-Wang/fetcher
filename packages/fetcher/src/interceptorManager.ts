@@ -8,6 +8,7 @@ import { InterceptorRegistry } from './interceptor.js';
 import {
   ValidateStatusInterceptor,
   type ValidateStatus,
+  type ValidateStatusOptions,
 } from './validateStatusInterceptor.js';
 
 /**
@@ -94,10 +95,13 @@ export class InterceptorManager {
    * @param validateStatus - Decides which statuses are successful; 2xx by default.
    * @param fetchImplementation - The `fetch` the FetchInterceptor sends with;
    *   the global `fetch` by default.
+   * @param validateStatusOptions - Options of the ValidateStatusInterceptor,
+   *   such as whether to read problem details.
    */
   constructor(
     validateStatus?: ValidateStatus,
     fetchImplementation?: FetchImplementation,
+    validateStatusOptions?: ValidateStatusOptions,
   ) {
     this.request = new InterceptorRegistry([
       new RequestBodyInterceptor(),
@@ -105,7 +109,7 @@ export class InterceptorManager {
       new FetchInterceptor(fetchImplementation),
     ]);
     this.response = new InterceptorRegistry([
-      new ValidateStatusInterceptor(validateStatus),
+      new ValidateStatusInterceptor(validateStatus, validateStatusOptions),
     ]);
   }
 

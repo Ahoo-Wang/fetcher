@@ -11,16 +11,36 @@ Choose `validateStatus` for a reusable HTTP acceptance policy, a request attribu
 
 ## Error types and status policy {#errors}
 
-| API                                   | Contract                                                                                                                                                                                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `FetcherError(message?, cause?)`      | Message falls back to an Error cause's message, then a generic message; stores cause. Keeps its own stack (where the failure surfaced); the original failure and its stack stay on `cause`. Subclasses pass `instanceof` without `Object.setPrototypeOf`. |
-| `ExchangeError(exchange, message?)`   | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.                                                                                                                      |
-| `HttpStatusValidationError(exchange)` | Created by status validation; includes status and URL. The exchange rejects with it as is (not wrapped), and `.exchange.error` is the same error.                                                                                                         |
-| `FetchTimeoutError(request)`          | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                                                                                                                                             |
-| `ValidateStatus`                      | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate)`.                                                                                                                                                          |
-| `IGNORE_VALIDATE_STATUS`              | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                                                                                                                                      |
+| API                                             | Contract                                                                                                                                                                                                                                                    |
+| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FetcherError(message?, cause?)`                | Message falls back to an Error cause's message, then a generic message; stores cause. Keeps its own stack (where the failure surfaced); the original failure and its stack stay on `cause`. Subclasses pass `instanceof` without `Object.setPrototypeOf`.   |
+| `ExchangeError(exchange, message?)`             | Stores the exchange, with cause taken from `exchange.error`; message falls back to its error, response statusText, then request URL.                                                                                                                        |
+| `HttpStatusValidationError(exchange, problem?)` | Created by status validation; includes status and URL. The exchange rejects with it as is (not wrapped), and `.exchange.error` is the same error. `problem` holds the response's [problem details](#problem-details) when it is `application/problem+json`. |
+| `FetchTimeoutError(request)`                    | Stores the timed-out request and a message including timeout, method (GET fallback), and URL.                                                                                                                                                               |
+| `ValidateStatus`                                | `(status: number) => boolean`; constructor option or `new ValidateStatusInterceptor(predicate, options?)`.                                                                                                                                                  |
+| `ValidateStatusOptions`                         | `{ problemDetails?: boolean }`, `true` by default: whether a rejected problem response has its details read onto the error.                                                                                                                                 |     |
+| `IGNORE_VALIDATE_STATUS`                        | Attribute key `'__ignoreValidateStatus__'`; only literal `true` bypasses validation.                                                                                                                                                                        |
 
 Validation skips exchanges with no response. An outer pipeline failure is normally `ExchangeError`: a status failure is the `HttpStatusValidationError` itself, any other error (timeout, network, abort reason, a request/response/error interceptor's throw) is wrapped with the original as `cause`. Only a later extractor failure can escape without that wrapper. Do not assume every failure has a response or every rejection is an Error object.
+
+## Problem details {#problem-details}
+
+A rejected response labelled `application/problem+json` (RFC 9457, in any case, with any parameters) has its problem details read onto `HttpStatusValidationError.problem` as a `ProblemDetails`. They are read from a copy of the body, so `error.exchange.response` stays unread, and the error's message stays as above. No other response is read, and such a rejection still throws synchronously from `ValidateStatusInterceptor.intercept`. A problem body that is not a JSON object leaves `problem` undefined rather than replacing the status failure. Turn it off with `problemDetails: false` on the client (it configures the default manager, like `validateStatus`) or on a `ValidateStatusInterceptor`.
+
+`ProblemDetails` has `type` (defaulting to `ABOUT_BLANK_PROBLEM_TYPE`, `'about:blank'`), optional `title`, `status`, `detail` and `instance`, and the extension members as sent. A standard member of the wrong type is left out, as the RFC says to ignore it. `status` is advisory: the response's own status is the one that counts. The same reading is available on its own: `isProblemDetailsResponse(response)` checks the media type, `readProblemDetails(response)` reads a copy (resolving `undefined` instead of rejecting), and `toProblemDetails(body)` checks an already parsed body.
+
+```ts
+import { Fetcher, HttpStatusValidationError } from '@ahoo-wang/fetcher';
+
+const client = new Fetcher({ baseURL: 'https://api.example.com' });
+try {
+  await client.post('/orders', { body: { item: 'book', quantity: 1 } });
+} catch (error) {
+  if (error instanceof HttpStatusValidationError && error.problem) {
+    console.error(error.problem.detail ?? error.problem.title);
+  }
+}
+```
 
 ## Timeout precedence {#timeout}
 
@@ -75,11 +95,17 @@ try {
 | <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
 | <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L138)                                     |
 | <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L192)                                     |
-| <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
-| <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L61)   |
-| <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L69)   |
-| <a id="validate_status_interceptor_order"></a>`VALIDATE_STATUS_INTERCEPTOR_ORDER` | [validateStatusInterceptor.ts:76](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L76)   |
-| <a id="ignore_validate_status"></a>`IGNORE_VALIDATE_STATUS`                       | [validateStatusInterceptor.ts:96](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L96)   |
-| <a id="validatestatusinterceptor"></a>`ValidateStatusInterceptor`                 | [validateStatusInterceptor.ts:125](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L125) |
+| <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L35)   |
+| <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L87)   |
+| <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:95](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L95)   |
+| <a id="validate_status_interceptor_order"></a>`VALIDATE_STATUS_INTERCEPTOR_ORDER` | [validateStatusInterceptor.ts:102](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L102) |
+| <a id="ignore_validate_status"></a>`IGNORE_VALIDATE_STATUS`                       | [validateStatusInterceptor.ts:122](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L122) |
+| <a id="validatestatusinterceptor"></a>`ValidateStatusInterceptor`                 | [validateStatusInterceptor.ts:151](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L151) |
+| <a id="validatestatusoptions"></a>`ValidateStatusOptions`                         | [validateStatusInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L53)   |
+| <a id="problemdetails"></a>`ProblemDetails`                                       | [problemDetails.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/problemDetails.ts#L37)                         |
+| <a id="about_blank_problem_type"></a>`ABOUT_BLANK_PROBLEM_TYPE`                   | [problemDetails.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/problemDetails.ts#L59)                         |
+| <a id="isproblemdetailsresponse"></a>`isProblemDetailsResponse`                   | [problemDetails.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/problemDetails.ts#L67)                         |
+| <a id="readproblemdetails"></a>`readProblemDetails`                               | [problemDetails.ts:88](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/problemDetails.ts#L88)                         |
+| <a id="toproblemdetails"></a>`toProblemDetails`                                   | [problemDetails.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/problemDetails.ts#L106)                       |
 
 [Package index](./index.md)
