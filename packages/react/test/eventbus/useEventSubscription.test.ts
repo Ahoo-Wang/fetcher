@@ -17,6 +17,14 @@ import { useEventSubscription } from '../../src/eventbus/useEventSubscription';
 import type { TypedEventBus, EventHandler } from '@ahoo-wang/fetcher-eventbus';
 import { SerialTypedEventBus } from '@ahoo-wang/fetcher-eventbus';
 
+// The hook removes only a subscription it owns, so a mock bus lists the
+// handlers its `on` accepted.
+function acceptedHandlers(this: { on: Mocked<TypedEventBus<string>>['on'] }) {
+  return this.on.mock.calls
+    .filter((_, index) => this.on.mock.results[index]?.value === true)
+    .map(([handler]) => handler);
+}
+
 describe('useEventSubscription', () => {
   let mockBus: any;
   let mockHandler: EventHandler<string>;
@@ -24,7 +32,9 @@ describe('useEventSubscription', () => {
   beforeEach(() => {
     mockBus = {
       type: 'test',
-      handlers: [],
+      get handlers() {
+        return acceptedHandlers.call(this);
+      },
       on: vi.fn(),
       off: vi.fn(),
       emit: vi.fn(),
@@ -98,6 +108,7 @@ describe('useEventSubscription', () => {
   });
 
   it('should allow manual unsubscription', () => {
+    mockBus.on.mockReturnValue(true);
     mockBus.off.mockReturnValue(true);
 
     const { result } = renderHook(() =>
@@ -160,7 +171,9 @@ describe('useEventSubscription', () => {
 
     const newBus: TypedEventBus<string> = {
       type: 'newTest',
-      handlers: [],
+      get handlers() {
+        return acceptedHandlers.call(this as any);
+      },
       on: vi.fn().mockReturnValue(true),
       off: vi.fn().mockReturnValue(true),
       emit: vi.fn(),

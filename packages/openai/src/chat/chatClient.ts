@@ -28,6 +28,25 @@ import type { ChatRequest, ChatResponse } from './types';
 import { CompletionStreamResultExtractor } from './completionStreamResultExtractor';
 
 /**
+ * The configuration a {@link ChatClient} accepts: {@link ApiMetadata} without
+ * the options that change what an endpoint returns.
+ *
+ * `completions()` is typed to return a `ChatResponse`, or a JSON event stream
+ * when the request streams. A `resultExtractor` (such as
+ * `ResultExtractors.Response`) or a `returnType` (such as
+ * `EndpointReturnType.EXCHANGE`) would make it return something else, so they
+ * are rejected. To get the raw `Response` or the `FetchExchange`, call a
+ * `Fetcher` directly with the result extractor you need.
+ */
+export interface ChatClientOptions extends Omit<
+  ApiMetadata,
+  'resultExtractor' | 'returnType'
+> {
+  resultExtractor?: never;
+  returnType?: never;
+}
+
+/**
  * OpenAI Chat API Client
  *
  * A comprehensive client for OpenAI's Chat Completions API that provides type-safe integration
@@ -86,8 +105,10 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
    *
    * @param apiMetadata - Optional configuration object for customizing API behavior:
    *                       the `fetcher` (which carries the base URL and interceptors),
-   *                       `headers`, `timeout` and the other ApiMetadata fields.
-   *                       If not provided, the default fetcher is used.
+   *                       `headers`, `timeout` and the other ApiMetadata fields
+   *                       except `resultExtractor` and `returnType` (see
+   *                       {@link ChatClientOptions}). If not provided, the
+   *                       default fetcher is used.
    *
    * @example
    * ```typescript
@@ -102,7 +123,7 @@ export class ChatClient implements ApiMetadataCapable, ExecuteLifeCycle {
    * });
    * ```
    */
-  constructor(public readonly apiMetadata?: ApiMetadata) {}
+  constructor(public readonly apiMetadata?: ChatClientOptions) {}
 
   /**
    * Lifecycle hook executed before request processing.

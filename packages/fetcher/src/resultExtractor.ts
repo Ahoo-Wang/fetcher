@@ -24,6 +24,10 @@ export interface ResultExtractor<R> {
   (exchange: FetchExchange): R | Promise<R>;
 }
 
+// The body extractors below are typed by what they return (a Promise of the
+// body) and checked against ResultExtractor of the body type, so they are a
+// ResultExtractor<string> (and so on), not a ResultExtractor<Promise<...>>.
+
 /**
  * Interface with result extractor capability
  * Defines an optional resultExtractor property
@@ -64,11 +68,8 @@ export const ResponseResultExtractor: ResultExtractor<Response> = (
  * @param exchange - The FetchExchange containing the response with JSON data
  * @returns A Promise that resolves to the parsed JSON data
  */
-export const JsonResultExtractor: ResultExtractor<Promise<any>> = (
-  exchange: FetchExchange,
-) => {
-  return exchange.requiredResponse.json();
-};
+export const JsonResultExtractor = ((exchange: FetchExchange): Promise<any> =>
+  exchange.requiredResponse.json()) satisfies ResultExtractor<any>;
 
 /**
  * Extracts the response body as text.
@@ -76,11 +77,10 @@ export const JsonResultExtractor: ResultExtractor<Promise<any>> = (
  * @param exchange - The FetchExchange containing the response with text data
  * @returns A Promise that resolves to the response body as a string
  */
-export const TextResultExtractor: ResultExtractor<Promise<string>> = (
+export const TextResultExtractor = ((
   exchange: FetchExchange,
-) => {
-  return exchange.requiredResponse.text();
-};
+): Promise<string> =>
+  exchange.requiredResponse.text()) satisfies ResultExtractor<string>;
 
 /**
  * Extracts the response body as a Blob.
@@ -89,11 +89,8 @@ export const TextResultExtractor: ResultExtractor<Promise<string>> = (
  * @param exchange - The FetchExchange containing the response with Blob data
  * @returns A Promise that resolves to the response body as a Blob
  */
-export const BlobResultExtractor: ResultExtractor<Promise<Blob>> = (
-  exchange: FetchExchange,
-) => {
-  return exchange.requiredResponse.blob();
-};
+export const BlobResultExtractor = ((exchange: FetchExchange): Promise<Blob> =>
+  exchange.requiredResponse.blob()) satisfies ResultExtractor<Blob>;
 
 /**
  * Extracts the response body as an ArrayBuffer.
@@ -103,11 +100,10 @@ export const BlobResultExtractor: ResultExtractor<Promise<Blob>> = (
  * @param exchange - The FetchExchange containing the response with ArrayBuffer data
  * @returns A Promise that resolves to the response body as an ArrayBuffer
  */
-export const ArrayBufferResultExtractor: ResultExtractor<
-  Promise<ArrayBuffer>
-> = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.arrayBuffer();
-};
+export const ArrayBufferResultExtractor = ((
+  exchange: FetchExchange,
+): Promise<ArrayBuffer> =>
+  exchange.requiredResponse.arrayBuffer()) satisfies ResultExtractor<ArrayBuffer>;
 
 /**
  * Extracts the response body as a Uint8Array.
@@ -117,11 +113,12 @@ export const ArrayBufferResultExtractor: ResultExtractor<
  * @param exchange - The FetchExchange containing the response with byte data
  * @returns A Promise that resolves to the response body as a Uint8Array
  */
-export const BytesResultExtractor: ResultExtractor<
-  Promise<Uint8Array<ArrayBuffer>>
-> = (exchange: FetchExchange) => {
-  return exchange.requiredResponse.bytes();
-};
+export const BytesResultExtractor = ((
+  exchange: FetchExchange,
+): Promise<Uint8Array<ArrayBuffer>> =>
+  exchange.requiredResponse.bytes()) satisfies ResultExtractor<
+  Uint8Array<ArrayBuffer>
+>;
 
 /**
  * Collection of commonly used result extractors.

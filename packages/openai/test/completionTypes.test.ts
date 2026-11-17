@@ -14,10 +14,9 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { expect, it } from 'vitest';
 
-// TypeScript compilation can exceed the default 5s on shared CI runners.
-it('compiles the true, false, omitted and dynamic stream return contracts', () => {
+function compile(fixture: string) {
   const program = ts.createProgram(
-    [fileURLToPath(new URL('./fixtures/completionTypes.ts', import.meta.url))],
+    [fileURLToPath(new URL(`./fixtures/${fixture}`, import.meta.url))],
     {
       noEmit: true,
       strict: true,
@@ -28,10 +27,22 @@ it('compiles the true, false, omitted and dynamic stream return contracts', () =
       moduleResolution: ts.ModuleResolutionKind.Bundler,
     },
   );
-  const diagnostics = ts.getPreEmitDiagnostics(program);
-  expect(
-    diagnostics.map(diagnostic =>
+  return ts
+    .getPreEmitDiagnostics(program)
+    .map(diagnostic =>
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
-    ),
-  ).toEqual([]);
+    );
+}
+
+// TypeScript compilation can exceed the default 5s on shared CI runners.
+it('compiles the true, false, omitted and dynamic stream return contracts', () => {
+  expect(compile('completionTypes.ts')).toEqual([]);
+}, 30_000);
+
+it('types the null content, finish_reason and usage the API returns', () => {
+  expect(compile('chatTypes.ts')).toEqual([]);
+}, 30_000);
+
+it('rejects ChatClient options that change what completions returns', () => {
+  expect(compile('chatClientOptions.ts')).toEqual([]);
 }, 30_000);

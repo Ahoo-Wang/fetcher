@@ -72,7 +72,7 @@ Response.body (Uint8Array)
   -> JsonServerSentEventTransformStream(det?)  (ServerSentEvent -> JsonServerSentEvent<DATA>; transformer JsonServerSentEventTransform)
 ```
 
-The transformers extend the exported abstract `SafeTransformer<I, O>`, which implements the platform `TransformStream<I, O>` transformer contract without needing the DOM-only `Transformer` global. Subclasses implement `onTransform(chunk, controller)`, optionally `onFlush(controller)` / `onError(error, phase)`, and use the protected `enqueue()` / `terminate()` helpers. A thrown error errors the stream and drops later chunks.
+The transformers extend the exported abstract `SafeTransformer<I, O>`, which implements the platform `TransformStream<I, O>` transformer contract without needing the DOM-only `Transformer` global. Subclasses implement `onTransform(chunk, controller)`, optionally `onFlush(controller)` / `onError(error, phase)`, and use the `enqueue()` / `terminate()` helpers (public but `@internal`, for subclasses; the three hooks stay protected). A thrown error errors the stream and drops later chunks.
 
 ## ServerSentEvent Structure
 
@@ -179,7 +179,7 @@ const stream = await fetcher.post<JsonServerSentEventStream<Chunk>>(
 
 ## ReadableStreamAsyncIterable
 
-Exported class (`new ReadableStreamAsyncIterable(stream)`) that locks the stream's reader and implements `next()` (done once released), `return()` (cancels the stream and releases, e.g. on `break`), `throw(error)` (cancels with `error` as the reason, releases, rethrows) and `releaseLock()`. Do not call `releaseLock()` before `break`: a released iterator can no longer cancel the connection. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator]` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
+Exported class (`new ReadableStreamAsyncIterable(stream, options?)`) that locks the stream's reader and implements `next()` (done once released), `return()` (cancels the stream and releases, e.g. on `break`), `throw(error)` (cancels with `error` as the reason, releases, rethrows) and `releaseLock()`. Do not call `releaseLock()` before `break`: a released iterator can no longer cancel the connection. With `options.preventCancel: true` (the standard `ReadableStreamIteratorOptions`), `return()` and `throw()` only release the lock and leave the stream readable. On import it is installed as `ReadableStream.prototype[Symbol.asyncIterator](options?)` only when `isReadableStreamAsyncIterableSupported` is `false` and a global `ReadableStream` exists.
 
 ## Other Exports
 

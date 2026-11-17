@@ -240,7 +240,7 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
   }: SpaceIdStorageOptions = {}) {
     super({
       key,
-      eventBus: storageEventBus(key, eventBus),
+      eventBus: storageEventBus(key, eventBus, reset.storage),
       ...reset,
       serializer: typedIdentitySerializer(),
     });
@@ -390,7 +390,7 @@ export class DefaultSpaceIdProvider implements SpaceIdProvider {
    * });
    * ```
    */
-  constructor(private options: SpaceIdProviderOptions) {}
+  constructor(public options: SpaceIdProviderOptions) {}
 
   /**
    * Resolves the space identifier for a given fetch exchange.

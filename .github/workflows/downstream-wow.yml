@@ -87,7 +87,7 @@ jobs:
             (cd "$package" && pnpm pack --pack-destination "$RUNNER_TEMP/fetcher-packs")
           done
 
-      - name: Override Wow's fetcher dependencies with the packed builds
+      - name: Merge the packed builds into Wow's overrides
         run: node fetcher/.github/scripts/downstream-overrides.mjs "$RUNNER_TEMP/fetcher-packs" wow
 
       # The overrides change resolution, so Wow's lockfile cannot be frozen.

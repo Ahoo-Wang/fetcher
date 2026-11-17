@@ -27,7 +27,7 @@ Each emit snapshots its handler array and removes all `once` handlers before cal
 
 `new SerialTypedEventBus<EVENT>(type)` sorts by ascending `order` and awaits handlers sequentially **within one emit**. Concurrent calls to emit are not globally queued; handlers from distinct events can overlap. `new ParallelTypedEventBus<EVENT>(type)` starts handlers using `Promise.all`; `order` does not sort them and completion order is not guaranteed.
 
-Both extend `AbstractTypedEventBus<EVENT>`. Its protected `handleEvent` catches synchronous throws and asynchronous rejections, logs `console.warn`, and continues. Consequently built-in local `emit` resolves despite individual handler failures. Subclasses provide `type`, `on`, `off`, and `emit` and can reuse that error boundary. There is no result aggregation or implicit cancellation of other handlers.
+Both extend `AbstractTypedEventBus<EVENT>`. Its `handleEvent` (public but `@internal`, for subclasses) catches synchronous throws and asynchronous rejections, logs `console.warn`, and continues. Consequently built-in local `emit` resolves despite individual handler failures. Subclasses provide `type`, `on`, `off`, and `emit` and can reuse that error boundary. There is no result aggregation or implicit cancellation of other handlers.
 
 ## Multi-event routing {#routing}
 
@@ -68,7 +68,7 @@ bus.destroy();
 | <a id="eventbus"></a>`EventBus`                           | [eventBus.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/eventBus.ts#L35)                           |
 | <a id="namegenerator"></a>`NameGenerator`                 | [nameGenerator.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L17)                 |
 | <a id="defaultnamegenerator"></a>`DefaultNameGenerator`   | [nameGenerator.ts:24](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L24)                 |
-| <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L41)                 |
+| <a id="namegenerator-instance"></a>`nameGenerator`        | [nameGenerator.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/nameGenerator.ts#L42)                 |
 | <a id="paralleltypedeventbus"></a>`ParallelTypedEventBus` | [parallelTypedEventBus.ts:34](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/parallelTypedEventBus.ts#L34) |
 | <a id="serialtypedeventbus"></a>`SerialTypedEventBus`     | [serialTypedEventBus.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/serialTypedEventBus.ts#L38)     |
 | <a id="typedeventbus"></a>`TypedEventBus`                 | [typedEventBus.ts:21](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/src/typedEventBus.ts#L21)                 |

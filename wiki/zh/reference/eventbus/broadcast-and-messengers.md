@@ -13,14 +13,14 @@ description: '广播总线与消息传输 — @ahoo-wang/fetcher-eventbus 5.0.0'
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` 必填 `delegate`。`type`、`handlers` 来自 delegate，`on`/`off` 直接转发。默认消息器为 `createCrossTabMessenger('_broadcast_:' + delegate.type)`；没有可用实现时构造抛 `Error('Messenger setup failed')`。
 
-| 选项/成员                                 | 默认值       | 契约                                                                                                                                              |
-| ----------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `messenger?: CrossTabMessenger`           | 按运行时选择 | 注入以控制环境和通道所有权。                                                                                                                      |
-| `messageTransformer.serialize(event)`     | 无转换器     | 把出站事件转为传输数据。                                                                                                                          |
-| `messageTransformer.deserialize(message)` | 无转换器     | 将入站数据恢复为 EVENT。                                                                                                                          |
-| `serializeBeforeDispatch?`                | false        | true 在本地处理前快照，false 在本地投递后序列化。                                                                                                 |
-| `fallbackSerialize?(message, error)`      | 无           | postMessage 抛错后转换一次，并重试 postMessage 一次。                                                                                             |
-| `destroy()`                               | —            | 关闭自己创建的消息器；传入的消息器只分离、保持打开，交由其所有者关闭。不销毁 delegate，不移除其处理器。之后的 emit 仍执行本地处理器，但不再发布。 |
+| 选项/成员                                 | 默认值       | 契约                                                                                                                                                                                                            |
+| ----------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messenger?: CrossTabMessenger`           | 按运行时选择 | 注入以控制环境和通道所有权。                                                                                                                                                                                    |
+| `messageTransformer.serialize(event)`     | 无转换器     | 把出站事件转为传输数据。                                                                                                                                                                                        |
+| `messageTransformer.deserialize(message)` | 无转换器     | 将入站数据恢复为 EVENT。                                                                                                                                                                                        |
+| `serializeBeforeDispatch?`                | false        | true 在本地处理前快照，false 在本地投递后序列化。                                                                                                                                                               |
+| `fallbackSerialize?(message, error)`      | 无           | postMessage 抛错后转换一次，并重试 postMessage 一次。                                                                                                                                                           |
+| `destroy()`                               | —            | 关闭自己创建的消息器；传入的消息器只分离、保持打开，交由其所有者关闭。不销毁 delegate，不移除其处理器。之后的 emit 仍执行本地处理器，但不再发布。重复调用不做任何事，因此不会再次分离已交给新总线的传入消息器。 |
 
 `emit` 先等待本地 delegate，再发布消息（可选预序列化）。出站序列化/发布失败会拒绝 emit，此时本地可能已经投递。发布抛错（例如 BroadcastChannel 上不可克隆的事件抛 DataCloneError）会拒绝 emit，除非设置了 `fallbackSerialize` 且重试成功。`destroy()` 之后，emit 跳过序列化和发布，本地投递完成后即完成。预序列化抛错则阻止本地投递。入站消息解码后只交给 delegate，不再次广播；解码/delegate 拒绝被捕获并警告。可修改的 `messageTransformer` 影响后续操作。
 

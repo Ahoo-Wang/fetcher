@@ -57,17 +57,39 @@ export interface Response extends Extensible {
 }
 
 /**
- * A container for the expected responses of an operation
+ * An HTTP status code (`200`) or range (`2XX`) that keys a {@link Responses}
+ * map.
+ */
+export type HttpStatusCodeKey = `${1 | 2 | 3 | 4 | 5}${string}`;
+
+/**
+ * A container for the expected responses of an operation.
+ *
+ * Its keys are `default` and the status codes, which keeps them apart from
+ * the `x-*` extensions the map may also carry: a `string` index signature
+ * would require every extension value to be a {@link Response}. Index it with
+ * a {@link HttpStatusCodeKey}, or iterate it with `Object.entries`.
  */
 export interface Responses extends Extensible {
   default?: Response | Reference;
 
-  [httpCode: string]: Response | Reference | undefined;
+  [httpCode: HttpStatusCodeKey]: Response | Reference | undefined;
 }
 
 /**
- * A map of possible out-of-band callbacks related to the parent operation
+ * The runtime expression that keys a {@link Callback} map: an expression such
+ * as `$request.body#/url`, or a string embedding one in braces, such as
+ * `{$request.query.callbackUrl}` or `https://example.com?id={$request.body#/id}`.
+ */
+export type CallbackExpression = `$${string}` | `${string}{$${string}`;
+
+/**
+ * A map of possible out-of-band callbacks related to the parent operation.
+ *
+ * Its keys are runtime expressions, which keeps them apart from the `x-*`
+ * extensions the map may also carry: a `string` index signature would
+ * require every extension value to be a {@link PathItem}.
  */
 export interface Callback extends Extensible {
-  [expression: string]: PathItem;
+  [expression: CallbackExpression]: PathItem;
 }

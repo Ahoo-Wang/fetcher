@@ -33,15 +33,24 @@ const DEFAULT_TTL = 1000;
 const DEFAULT_CLEANUP_INTERVAL = 60000;
 
 export class StorageMessenger implements CrossTabMessenger {
-  private readonly channelName: string;
-  private readonly storage: Storage;
-  private messageHandler?: CrossTabMessageHandler;
-  private readonly messageKeyPrefix: string;
-  private readonly ttl: number;
-  private readonly cleanupInterval: number;
-  private cleanupTimer?: number;
-  private pendingTimeouts = new Map<string, number>();
-  private readonly storageEventHandler = (event: StorageEvent) => {
+  /** @internal */
+  readonly channelName: string;
+  /** @internal */
+  readonly storage: Storage;
+  /** @internal */
+  messageHandler?: CrossTabMessageHandler;
+  /** @internal */
+  readonly messageKeyPrefix: string;
+  /** @internal */
+  readonly ttl: number;
+  /** @internal */
+  readonly cleanupInterval: number;
+  /** @internal */
+  cleanupTimer?: number;
+  /** @internal */
+  pendingTimeouts = new Map<string, number>();
+  /** @internal */
+  readonly storageEventHandler = (event: StorageEvent) => {
     if (
       event.storageArea !== this.storage ||
       !this.matchesMessageKey(event.key) ||
@@ -75,11 +84,13 @@ export class StorageMessenger implements CrossTabMessenger {
     window.addEventListener('storage', this.storageEventHandler);
   }
 
-  private generateMessageKey(): string {
+  /** @internal */
+  generateMessageKey(): string {
     return `${this.messageKeyPrefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
   }
 
-  private matchesMessageKey(key: string | null): boolean {
+  /** @internal */
+  matchesMessageKey(key: string | null): boolean {
     return (
       key !== null &&
       key.startsWith(this.messageKeyPrefix) &&
@@ -113,8 +124,10 @@ export class StorageMessenger implements CrossTabMessenger {
 
   /**
    * Clean up expired messages from storage
+   *
+   * @internal
    */
-  private cleanup(): void {
+  cleanup(): void {
     const now = Date.now();
     const keysToRemove: string[] = [];
     for (let i = 0; i < this.storage.length; i++) {
