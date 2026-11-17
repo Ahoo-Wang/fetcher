@@ -23,7 +23,10 @@ import {
   type ResultExtractorCapable,
   type TimeoutCapable,
 } from '@ahoo-wang/fetcher';
-import { ENDPOINT_METADATA_KEY } from './endpointDecorator.js';
+import {
+  ENDPOINT_METADATA_KEY,
+  type EndpointMetadata,
+} from './endpointDecorator.js';
 import { RequestExecutor } from './requestExecutor.js';
 import { PARAMETER_METADATA_KEY } from './parameterDecorator.js';
 import 'reflect-metadata';
@@ -88,7 +91,58 @@ export interface ApiMetadataCapable {
   readonly apiMetadata?: ApiMetadata;
 }
 
-export const API_METADATA_KEY = Symbol('api:metadata');
+/**
+ * Registered (`Symbol.for`), so the ES module and CommonJS builds of this
+ * package, loaded side by side, read each other's metadata.
+ */
+export const API_METADATA_KEY = Symbol.for('@ahoo-wang/fetcher-decorator:api');
+
+/**
+ * Marks the methods `@api` installs, so a later `@api` on a subclass can tell
+ * them from a hand-written override. Registered for the same reason as the
+ * metadata keys.
+ */
+const EXECUTOR_MARK = Symbol.for('@ahoo-wang/fetcher-decorator:executor');
+
+/** What `@api` reads of the class it decorates; it never constructs it. */
+type ServiceClass = { prototype: any; name: string };
+
+/**
+ * The endpoint metadata `@api` binds `functionName` to on `prototype`, or
+ * `undefined` to leave the method alone. The nearest implementation up the
+ * prototype chain decides: one declared with an endpoint decorator is bound
+ * (rebound to this class's metadata); an executor a parent's `@api`
+ * installed is looked past; anything else is a hand-written method, kept
+ * even when an ancestor declared the endpoint.
+ */
+function resolveEndpoint(
+  prototype: object,
+  functionName: string | symbol,
+): EndpointMetadata | undefined {
+  for (
+    let owner: object | null = prototype;
+    owner && owner !== Object.prototype;
+    owner = Object.getPrototypeOf(owner)
+  ) {
+    if (!Object.prototype.hasOwnProperty.call(owner, functionName)) continue;
+    const declared: EndpointMetadata | undefined = Reflect.getOwnMetadata(
+      ENDPOINT_METADATA_KEY,
+      owner,
+      functionName,
+    );
+    if (declared) return declared;
+    const implementation = Object.getOwnPropertyDescriptor(
+      owner,
+      functionName,
+    )?.value;
+    if (!(
+      typeof implementation === 'function' && implementation[EXECUTOR_MARK]
+    )) {
+      return undefined;
+    }
+  }
+  return undefined;
+}
 
 /**
  * Binds a request executor to a method, replacing the original method with
@@ -103,8 +157,8 @@ export const API_METADATA_KEY = Symbol('api:metadata');
  * @param apiMetadata - The API metadata for the class containing configuration
  * @internal This function is used internally during class decoration
  */
-function bindExecutor<T extends new (...args: any[]) => any>(
-  constructor: T,
+function bindExecutor(
+  constructor: ServiceClass,
   functionName: string | symbol,
   apiMetadata: ApiMetadata,
 ) {
@@ -112,25 +166,8 @@ function bindExecutor<T extends new (...args: any[]) => any>(
     return;
   }
 
-  const endpointMetadata = Reflect.getMetadata(
-    ENDPOINT_METADATA_KEY,
-    constructor.prototype,
-    functionName,
-  );
+  const endpointMetadata = resolveEndpoint(constructor.prototype, functionName);
   if (!endpointMetadata) {
-    return;
-  }
-  // A subclass that overrides an inherited endpoint without decorating the
-  // override wrote its own implementation: keep it. (The metadata lookup above
-  // walks the prototype chain and finds the parent's endpoint.)
-  if (
-    Object.prototype.hasOwnProperty.call(constructor.prototype, functionName) &&
-    !Reflect.hasOwnMetadata(
-      ENDPOINT_METADATA_KEY,
-      constructor.prototype,
-      functionName,
-    )
-  ) {
     return;
   }
   // Get parameter metadata for this method
@@ -152,10 +189,7 @@ function bindExecutor<T extends new (...args: any[]) => any>(
   // Create request executor
 
   // Replace method with actual implementation
-  constructor.prototype[functionName] = async function (
-    this: unknown,
-    ...args: unknown[]
-  ) {
+  const executor = async function (this: unknown, ...args: unknown[]) {
     if (typeof this !== 'object' || this === null) {
       throw new TypeError(
         `${constructor.name}.${String(functionName)} was called without its ` +
@@ -169,6 +203,8 @@ function bindExecutor<T extends new (...args: any[]) => any>(
     );
     return await requestExecutor.execute(args);
   };
+  Object.defineProperty(executor, EXECUTOR_MARK, { value: true });
+  constructor.prototype[functionName] = executor;
 }
 
 /**
@@ -240,7 +276,9 @@ export function api(
   basePath: string = '',
   metadata: Omit<ApiMetadata, 'basePath'> = {},
 ) {
-  return function <T extends new (...args: never[]) => unknown>(
+  // Any class: abstract, or with a private or protected constructor, too.
+  // `@api` only binds prototype methods and never constructs the class.
+  return function <T extends ServiceClass>(
     constructor: T,
     context?: unknown,
   ): T {
@@ -257,10 +295,7 @@ export function api(
   };
 }
 
-function bindAllExecutors<T extends new (...args: any[]) => any>(
-  constructor: T,
-  apiMetadata: ApiMetadata,
-) {
+function bindAllExecutors(constructor: ServiceClass, apiMetadata: ApiMetadata) {
   const visitedNames = new Set<string | symbol>();
   let proto = constructor.prototype;
   while (proto && proto !== Object.prototype) {
