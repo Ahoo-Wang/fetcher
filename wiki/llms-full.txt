@@ -2059,7 +2059,7 @@ Handler names are unique; a second registration with the same name returns false
 
 See [storage lifecycle](../../reference/storage/key-storage), [serialization and environment](../../reference/storage/serialization-and-runtime), [event delivery](../../reference/eventbus/events-and-delivery), and [broadcast messengers](../../reference/eventbus/broadcast-and-messengers).
 
-[keyStorage.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L124) selects the default local bus, which `destroy()` closes.
+[keyStorage.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L153) selects the default local bus, which `destroy()` closes.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).
 
@@ -4269,14 +4269,14 @@ Keep the delegate when constructing a broadcast bus so its handlers can be clean
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` requires `delegate`. Its `type` and `handlers` come from the delegate; `on`/`off` forward to it. Default messenger is `createCrossTabMessenger('_broadcast_:' + delegate.type)`; construction throws `Error('Messenger setup failed')` if none is available.
 
-| Option/member                             | Default                    | Contract                                                                                                                                                                                       |
-| ----------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                                                                                                                                               |
-| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                                                                                                                                         |
-| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                                                                                                                                          |
-| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery.                                                                                                                   |
-| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.                                                                                                                             |
-| `destroy()`                               | —                          | Closes the messenger it created, or only detaches a supplied one (left open for its owner); does not destroy delegate or remove its handlers. Later emits run local handlers and post nothing. |
+| Option/member                             | Default                    | Contract                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messenger?: CrossTabMessenger`           | Runtime-selected transport | Inject to control environment/channel ownership.                                                                                                                                                                                                                                                         |
+| `messageTransformer.serialize(event)`     | No transformer             | Convert outbound event into wire data.                                                                                                                                                                                                                                                                   |
+| `messageTransformer.deserialize(message)` | No transformer             | Decode incoming wire data into EVENT.                                                                                                                                                                                                                                                                    |
+| `serializeBeforeDispatch?`                | false                      | True snapshots before local handlers; false serializes after local delivery.                                                                                                                                                                                                                             |
+| `fallbackSerialize?(message, error)`      | None                       | On a postMessage throw, transform once and retry postMessage once.                                                                                                                                                                                                                                       |
+| `destroy()`                               | —                          | Closes the messenger it created, or only detaches a supplied one (left open for its owner); does not destroy delegate or remove its handlers. Later emits run local handlers and post nothing. A repeated call does nothing, so it never detaches a supplied messenger again after it went to a new bus. |
 
 `emit` awaits the local delegate first, then posts the message (with optional pre-serialization). Outbound serialization/post failures reject emit; local delivery may already have happened. A post that throws (DataCloneError for a non-cloneable event on a BroadcastChannel, say) rejects unless `fallbackSerialize` is set and its retry succeeds. After `destroy()`, emit skips serialization and posting and resolves once local delivery completes. A pre-serialization throw prevents local delivery. Incoming messages deserialize and emit only on the delegate, so they are not rebroadcast; decode/delegate rejections are caught and warned. The mutable `messageTransformer` affects later operations.
 
@@ -4795,22 +4795,22 @@ Choose the backend and event bus independently: sharing a backend does not share
 
 ## Reads, writes, and lifetime {#operations}
 
-| Method                 | Return                               | Behavior                                                                                                                                                                                                                           |
-| ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent.                                                                           |
-| `reload()`             | `T \| null`                          | Read the backend again, bypassing the cache (for a value another tab may have written before its event arrived). Keeps the cached object when the stored text is unchanged; returns the default when the key is absent.            |
-| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                                                                                                      |
-| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                                                                                          |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; the returned function removes this handler only while it is still the one registered under its name.                                                                               |
-| `destroy()`            | `void`                               | Remove this instance's internal cache listener and close the bus this instance created (the default bus, or one a subclass marks with the protected `ownEventBus()`). Does not delete the key or close a bus passed in `eventBus`. |
+| Method                 | Return                               | Behavior                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | Return non-null cache; otherwise read and deserialize backend or return default. An undeserializable value is removed with a warning and read as absent.                                                                                                                                                                                                          |
+| `reload()`             | `T \| null`                          | Read the backend again, bypassing the cache (for a value another tab may have written before its event arrived). Keeps the cached object while the stored text still holds the same value (formatting, or an older format the serializer reads, does not replace it) and replaces a cached object the caller mutated; returns the default when the key is absent. |
+| `set(value: T)`        | `void`                               | Read old value, serialize/snapshot, write backend, update cache, emit `{oldValue, newValue}`. `set(undefined)` is `remove()`.                                                                                                                                                                                                                                     |
+| `remove()`             | `void`                               | Read old value, remove backend key, clear cache, emit `newValue: null`; later get may return the default.                                                                                                                                                                                                                                                         |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | Register named `EventHandler<StorageEvent<T>>`; the returned function removes only this registration: never another handler with the name, nor a later `addListener` of the same handler object.                                                                                                                                                                  |
+| `destroy()`            | `void`                               | Remove this instance's internal cache listener and close the bus this instance created (the default bus, or one a subclass marks with the protected `ownEventBus()`). Does not delete the key or close a bus passed in `eventBus`.                                                                                                                                |
 
-`StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: a duplicate name is rejected by the underlying bus and its returned remover does nothing, so it never removes the listener that holds the name. The instance's internal cache listener runs before every other listener (order `Number.MIN_SAFE_INTEGER`), so a slow listener never lets an older event overwrite a newer cached value. Unsubscribe external listeners yourself before destroying the owning bus.
+`StorageEvent<T>` has optional `newValue` and `oldValue`, each allowing null. `StorageListenable<T>` exposes `addListener`. Use unique handler names: a duplicate name is rejected by the underlying bus and its returned remover does nothing, so it never removes the listener that holds the name. Each change `set()`/`remove()` emits is stamped in order, and an instance's cache ignores a stamped change older than the one it holds, so neither a slow listener, a `ParallelTypedEventBus` (which ignores `order`) nor a reordered broadcast moves it back to an older value. Events emitted straight to the bus carry no stamp and are applied as they arrive. The internal cache listener takes a name no other handler on the bus holds, so two copies of the package (ES module and CommonJS builds) can share a bus, and `destroy()` removes only that listener. Unsubscribe external listeners yourself before destroying the owning bus.
 
 Backend read/write, JSON parsing, and serialization failures propagate synchronously; writes are not rolled back after notification failures. Emit rejections are caught and logged with `console.warn`, while ordinary serial handler failures are already isolated by the bus. A cached non-null value is not refreshed after direct backend mutations; call `reload()` to re-read it. `get()` returns object references; mutating one does not automatically persist it.
 
 ## Sharing and broadcasting {#broadcast}
 
-Pass the same local bus to coordinate instances explicitly. For cross-context notifications use [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md). `KeyStorage` installs a serializer-backed wire transformer if a broadcast bus has none. It snapshots the serialized new value before local handlers mutate objects, preserves custom types on the receiver, and can fall back from DataCloneError to the string snapshot. Invalid old snapshots become unavailable without discarding a valid new value. `deserializeLegacy` can decode old structured messages.
+Pass the same local bus to coordinate instances explicitly. For cross-context notifications use [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md). `KeyStorage` installs a serializer-backed wire transformer if a broadcast bus has none. It snapshots the serialized new value before local handlers mutate objects, preserves custom types on the receiver, and can fall back from DataCloneError to the string snapshot. Invalid old snapshots become unavailable without discarding a valid new value. The automatic transformer also carries the change's order stamp (a hybrid logical clock of the device time), so a receiver keeps the latest change even when the sender's slow listeners delay an older broadcast; a caller-configured transformer carries none. `deserializeLegacy` can decode old structured messages.
 
 A shared broadcast bus requires the same storage key for its lifetime. With automatic transformation it also requires the same serializer instance (default JSON instances are reconciled). Violations throw during construction. A preexisting custom transformer remains the caller's responsibility. Incoming events update the in-memory cache; they do not write the receiving backend. Destroying a KeyStorage leaves shared bus ownership intact.
 
@@ -4840,13 +4840,13 @@ settings.destroy();
 
 ## Public symbols and source {#symbols}
 
-| Symbol                                                    | Implementation                                                                                            |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28) |
-| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36) |
-| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38) |
-| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91) |
+| Symbol                                                    | Implementation                                                                                              |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L45)   |
+| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L53)   |
+| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L55)   |
+| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L69)   |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L113) |
 
 [Package index](./index.md)
 
@@ -4957,11 +4957,11 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `isBrowser`               | [Serialization and runtime storage](serialization-and-runtime.md#isbrowser)                   | [env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20)                         |
 | `getStorage`              | [Serialization and runtime storage](serialization-and-runtime.md#getstorage)                  | [env.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L29)                         |
 | `InMemoryStorage`         | [Serialization and runtime storage](serialization-and-runtime.md#inmemorystorage)             | [inMemoryStorage.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/inMemoryStorage.ts#L14) |
-| `StorageEvent`            | [KeyStorage and change listeners](key-storage.md#storageevent)                                | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28)           |
-| `RemoveStorageListener`   | [KeyStorage and change listeners](key-storage.md#removestoragelistener)                       | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36)           |
-| `StorageListenable`       | [KeyStorage and change listeners](key-storage.md#storagelistenable)                           | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38)           |
-| `KeyStorageOptions`       | [KeyStorage and change listeners](key-storage.md#keystorageoptions)                           | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52)           |
-| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91)           |
+| `StorageEvent`            | [KeyStorage and change listeners](key-storage.md#storageevent)                                | [keyStorage.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L45)           |
+| `RemoveStorageListener`   | [KeyStorage and change listeners](key-storage.md#removestoragelistener)                       | [keyStorage.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L53)           |
+| `StorageListenable`       | [KeyStorage and change listeners](key-storage.md#storagelistenable)                           | [keyStorage.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L55)           |
+| `KeyStorageOptions`       | [KeyStorage and change listeners](key-storage.md#keystorageoptions)                           | [keyStorage.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L69)           |
+| `KeyStorage`              | [KeyStorage and change listeners](key-storage.md#keystorage)                                  | [keyStorage.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L113)         |
 | `Serializer`              | [Serialization and runtime storage](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [Serialization and runtime storage](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [Serialization and runtime storage](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
@@ -19843,7 +19843,7 @@ export function watchTheme(onTheme: (theme: string) => void) {
 
 参见[存储生命周期](../../reference/storage/key-storage)、[序列化与环境](../../reference/storage/serialization-and-runtime)、[事件投递](../../reference/eventbus/events-and-delivery)及[广播 messenger](../../reference/eventbus/broadcast-and-messengers)。
 
-[keyStorage.ts:124](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L124) 选择默认本地总线，`destroy()` 会关闭它。
+[keyStorage.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L153) 选择默认本地总线，`destroy()` 会关闭它。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。
 
@@ -22042,14 +22042,14 @@ bus.destroy();
 
 `new BroadcastTypedEventBus(options: BroadcastTypedEventBusOptions<EVENT>)` 必填 `delegate`。`type`、`handlers` 来自 delegate，`on`/`off` 直接转发。默认消息器为 `createCrossTabMessenger('_broadcast_:' + delegate.type)`；没有可用实现时构造抛 `Error('Messenger setup failed')`。
 
-| 选项/成员                                 | 默认值       | 契约                                                                                                                                              |
-| ----------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `messenger?: CrossTabMessenger`           | 按运行时选择 | 注入以控制环境和通道所有权。                                                                                                                      |
-| `messageTransformer.serialize(event)`     | 无转换器     | 把出站事件转为传输数据。                                                                                                                          |
-| `messageTransformer.deserialize(message)` | 无转换器     | 将入站数据恢复为 EVENT。                                                                                                                          |
-| `serializeBeforeDispatch?`                | false        | true 在本地处理前快照，false 在本地投递后序列化。                                                                                                 |
-| `fallbackSerialize?(message, error)`      | 无           | postMessage 抛错后转换一次，并重试 postMessage 一次。                                                                                             |
-| `destroy()`                               | —            | 关闭自己创建的消息器；传入的消息器只分离、保持打开，交由其所有者关闭。不销毁 delegate，不移除其处理器。之后的 emit 仍执行本地处理器，但不再发布。 |
+| 选项/成员                                 | 默认值       | 契约                                                                                                                                                                                                            |
+| ----------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `messenger?: CrossTabMessenger`           | 按运行时选择 | 注入以控制环境和通道所有权。                                                                                                                                                                                    |
+| `messageTransformer.serialize(event)`     | 无转换器     | 把出站事件转为传输数据。                                                                                                                                                                                        |
+| `messageTransformer.deserialize(message)` | 无转换器     | 将入站数据恢复为 EVENT。                                                                                                                                                                                        |
+| `serializeBeforeDispatch?`                | false        | true 在本地处理前快照，false 在本地投递后序列化。                                                                                                                                                               |
+| `fallbackSerialize?(message, error)`      | 无           | postMessage 抛错后转换一次，并重试 postMessage 一次。                                                                                                                                                           |
+| `destroy()`                               | —            | 关闭自己创建的消息器；传入的消息器只分离、保持打开，交由其所有者关闭。不销毁 delegate，不移除其处理器。之后的 emit 仍执行本地处理器，但不再发布。重复调用不做任何事，因此不会再次分离已交给新总线的传入消息器。 |
 
 `emit` 先等待本地 delegate，再发布消息（可选预序列化）。出站序列化/发布失败会拒绝 emit，此时本地可能已经投递。发布抛错（例如 BroadcastChannel 上不可克隆的事件抛 DataCloneError）会拒绝 emit，除非设置了 `fallbackSerialize` 且重试成功。`destroy()` 之后，emit 跳过序列化和发布，本地投递完成后即完成。预序列化抛错则阻止本地投递。入站消息解码后只交给 delegate，不再次广播；解码/delegate 拒绝被捕获并警告。可修改的 `messageTransformer` 影响后续操作。
 
@@ -22568,22 +22568,22 @@ settings.destroy();
 
 ## 读写与生命周期 {#operations}
 
-| 方法                   | 返回值                               | 行为                                                                                                                                                        |
-| ---------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。                                                        |
-| `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本未变时保留缓存对象；键不存在时返回默认值。                                |
-| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                    |
-| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                            |
-| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数仅在该名称下注册的仍是此处理器时将其移除。                                                                |
-| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。 |
+| 方法                   | 返回值                               | 行为                                                                                                                                                                                                                   |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get()`                | `T \| null`                          | 返回非空缓存；否则读取并反序列化后端，缺失时返回默认值。无法反序列化的值会被删除并告警，按缺失处理。                                                                                                                   |
+| `reload()`             | `T \| null`                          | 绕过缓存重新读取后端（用于另一个标签页可能已写入、但其事件尚未到达的值）。存储文本仍表示同一个值时保留缓存对象（格式差异或序列化器仍能读取的旧格式不会替换它），调用方修改过的缓存对象则被替换；键不存在时返回默认值。 |
+| `set(value: T)`        | `void`                               | 读取旧值、序列化/快照、写后端、更新缓存、投递 `{oldValue, newValue}`。`set(undefined)` 等同 `remove()`。                                                                                                               |
+| `remove()`             | `void`                               | 读取旧值、删除后端键、清空缓存、投递 `newValue: null`；随后 get 可能返回默认值。                                                                                                                                       |
+| `addListener(handler)` | `RemoveStorageListener = () => void` | 注册具名 `EventHandler<StorageEvent<T>>`；返回函数只移除这一次注册：不会移除同名的其他处理器，也不会移除之后通过 `addListener` 再次注册的同一处理器对象。                                                              |
+| `destroy()`            | `void`                               | 移除此实例的内部缓存监听器，并关闭此实例创建的总线（默认总线，或子类用受保护的 `ownEventBus()` 标记的总线）。不删除键，也不关闭通过 `eventBus` 传入的总线。                                                            |
 
-`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。实例内部的缓存监听器先于所有其他监听器执行（order 为 `Number.MIN_SAFE_INTEGER`），因此慢监听器不会让较旧事件覆盖较新的缓存值。销毁拥有的总线前自行解绑外部监听器。
+`StorageEvent<T>` 包含可选 `newValue`、`oldValue`，均允许 null。`StorageListenable<T>` 提供 `addListener`。请使用唯一处理器名称：底层总线拒绝同名注册，此时返回的移除函数不做任何事，绝不会移除占用该名称的监听器。`set()`/`remove()` 投递的每个变更都按顺序带有时间戳，实例缓存会忽略比当前所持变更更旧的带戳变更，因此慢监听器、忽略 `order` 的 `ParallelTypedEventBus` 以及乱序到达的广播都不会把缓存回退到旧值。直接在总线上投递的事件没有时间戳，按到达顺序应用。内部缓存监听器使用总线上无其他处理器占用的名称，因此包的两份副本（ES 模块与 CommonJS 构建）可以共享总线，`destroy()` 也只移除该监听器。销毁拥有的总线前自行解绑外部监听器。
 
 后端读写、JSON 解析、序列化失败同步传出；通知失败后不会回滚写入。emit 拒绝会被捕获并 `console.warn`，普通串行处理器失败则已由总线隔离。非空缓存不会因直接修改后端而刷新；调用 `reload()` 重新读取。`get()` 返回对象引用，修改引用不会自动持久化。
 
 ## 共享与广播 {#broadcast}
 
-显式传入同一个本地总线以协调多个实例。跨上下文通知使用 [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md)。若广播总线尚无 wire transformer，`KeyStorage` 会安装基于序列化器的转换器，在本地处理器修改对象前快照序列化新值，接收方恢复自定义类型，并在 DataCloneError 时回退到字符串快照。无效旧快照会被视为不可用，不丢弃有效新值。`deserializeLegacy` 可解码旧结构化消息。
+显式传入同一个本地总线以协调多个实例。跨上下文通知使用 [BroadcastTypedEventBus](../eventbus/broadcast-and-messengers.md)。若广播总线尚无 wire transformer，`KeyStorage` 会安装基于序列化器的转换器，在本地处理器修改对象前快照序列化新值，接收方恢复自定义类型，并在 DataCloneError 时回退到字符串快照。无效旧快照会被视为不可用，不丢弃有效新值。自动转换器还携带变更的顺序时间戳（基于设备时间的混合逻辑时钟），即使发送方的慢监听器推迟了较旧的广播，接收方也保留最新变更；调用方配置的转换器不携带时间戳。`deserializeLegacy` 可解码旧结构化消息。
 
 共享广播总线在整个生命周期必须使用相同存储键；使用自动转换时还必须使用相同序列化器实例（默认 JSON 实例会统一）。违反约束会在构造时抛错。已有自定义转换器仍由调用者负责。接收到事件只更新内存缓存，不写入接收方后端。销毁 KeyStorage 保留共享总线所有权。
 
@@ -22613,13 +22613,13 @@ settings.destroy();
 
 ## 公开符号与源码 {#symbols}
 
-| 符号                                                      | 实现                                                                                                      |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28) |
-| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36) |
-| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38) |
-| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52) |
-| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91) |
+| 符号                                                      | 实现                                                                                                        |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| <a id="storageevent"></a>`StorageEvent`                   | [keyStorage.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L45)   |
+| <a id="removestoragelistener"></a>`RemoveStorageListener` | [keyStorage.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L53)   |
+| <a id="storagelistenable"></a>`StorageListenable`         | [keyStorage.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L55)   |
+| <a id="keystorageoptions"></a>`KeyStorageOptions`         | [keyStorage.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L69)   |
+| <a id="keystorage"></a>`KeyStorage`                       | [keyStorage.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L113) |
 
 [包索引](./index.md)
 
@@ -22730,11 +22730,11 @@ token.destroy();
 | `isBrowser`               | [序列化与运行时存储](serialization-and-runtime.md#isbrowser)                   | [env.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L20)                         |
 | `getStorage`              | [序列化与运行时存储](serialization-and-runtime.md#getstorage)                  | [env.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/env.ts#L29)                         |
 | `InMemoryStorage`         | [序列化与运行时存储](serialization-and-runtime.md#inmemorystorage)             | [inMemoryStorage.ts:14](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/inMemoryStorage.ts#L14) |
-| `StorageEvent`            | [KeyStorage 与变更监听](key-storage.md#storageevent)                           | [keyStorage.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L28)           |
-| `RemoveStorageListener`   | [KeyStorage 与变更监听](key-storage.md#removestoragelistener)                  | [keyStorage.ts:36](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L36)           |
-| `StorageListenable`       | [KeyStorage 与变更监听](key-storage.md#storagelistenable)                      | [keyStorage.ts:38](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L38)           |
-| `KeyStorageOptions`       | [KeyStorage 与变更监听](key-storage.md#keystorageoptions)                      | [keyStorage.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L52)           |
-| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:91](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L91)           |
+| `StorageEvent`            | [KeyStorage 与变更监听](key-storage.md#storageevent)                           | [keyStorage.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L45)           |
+| `RemoveStorageListener`   | [KeyStorage 与变更监听](key-storage.md#removestoragelistener)                  | [keyStorage.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L53)           |
+| `StorageListenable`       | [KeyStorage 与变更监听](key-storage.md#storagelistenable)                      | [keyStorage.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L55)           |
+| `KeyStorageOptions`       | [KeyStorage 与变更监听](key-storage.md#keystorageoptions)                      | [keyStorage.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L69)           |
+| `KeyStorage`              | [KeyStorage 与变更监听](key-storage.md#keystorage)                             | [keyStorage.ts:113](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L113)         |
 | `Serializer`              | [序列化与运行时存储](serialization-and-runtime.md#serializer)                  | [serializer.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L19)           |
 | `JsonSerializer`          | [序列化与运行时存储](serialization-and-runtime.md#jsonserializer)              | [serializer.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L41)           |
 | `IdentitySerializer`      | [序列化与运行时存储](serialization-and-runtime.md#identityserializer)          | [serializer.ts:65](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/serializer.ts#L65)           |
