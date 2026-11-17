@@ -12,7 +12,7 @@
  */
 
 import { type FetchRequestInit } from './fetchRequest.js';
-import { type UrlParams } from './urlBuilder.js';
+import { mergeQuery, type UrlParams } from './urlBuilder.js';
 import { mergeRecords } from './utils.js';
 import { mergeHeaders } from './requestHeaders.js';
 
@@ -81,7 +81,7 @@ export function mergeRequest(
   // Merge nested objects
   const urlParams: UrlParams = {
     path: mergeRecords(first.urlParams?.path, second.urlParams?.path),
-    query: mergeRecords(first.urlParams?.query, second.urlParams?.query),
+    query: mergeQuery(first.urlParams?.query, second.urlParams?.query),
   };
 
   const headers = mergeHeaders(first.headers, second.headers);

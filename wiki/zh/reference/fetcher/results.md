@@ -25,7 +25,7 @@ JSON 类型仅为编译期约定，不提供运行时校验。包对 `Response.j
 
 ## FetchExchange {#exchange}
 
-`new FetchExchange(init: FetchExchangeInit)` 要求 `fetcher` 和 `request`，可选 `resultExtractor`、`response`、`error`、`attributes`。`AttributesCapable.attributes` 接受记录或 Map，构造时把条目复制到新 Map。提取器默认 Exchange；请求与响应均保留引用，不复制。
+`new FetchExchange(init: FetchExchangeInit)` 要求 `fetcher` 和 `request`，可选 `resultExtractor`、`response`、`error`、`attributes`。`AttributesCapable.attributes` 接受记录或 Map（任意 realm），构造时把条目复制到新 Map。提取器默认 Exchange；请求与响应均保留引用，不复制。
 
 | 成员                             | 契约                                                                                                                 |
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |

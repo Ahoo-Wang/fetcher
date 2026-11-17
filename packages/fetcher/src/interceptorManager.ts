@@ -3,12 +3,24 @@ import { RequestBodyInterceptor } from './requestBodyInterceptor.js';
 import { FetchInterceptor } from './fetchInterceptor.js';
 import type { FetchImplementation } from './timeout.js';
 import type { FetchExchange } from './fetchExchange.js';
-import { ExchangeError } from './fetcherError.js';
+import { ExchangeError, FetcherError } from './fetcherError.js';
 import { InterceptorRegistry } from './interceptor.js';
 import {
   ValidateStatusInterceptor,
   type ValidateStatus,
 } from './validateStatusInterceptor.js';
+
+/**
+ * The error an exchange records for a failure. A rejection reason of
+ * `undefined` or `null` is still a failure, but on `exchange.error` it would
+ * read as "no error" (and so as recovered); it is recorded as a
+ * {@link FetcherError} saying what was thrown. Any other reason is kept as is.
+ */
+function toExchangeFailure(reason: unknown): unknown {
+  return reason === undefined || reason === null
+    ? new FetcherError(`Rejected with ${reason}`)
+    : reason;
+}
 
 /**
  * Collection of interceptor managers for the Fetcher client.
@@ -210,13 +222,13 @@ export class InterceptorManager {
       return fetchExchange;
     } catch (error: any) {
       // Apply error interceptors
-      fetchExchange.error = error;
+      fetchExchange.error = toExchangeFailure(error);
       try {
         await this.error.intercept(fetchExchange);
       } catch (interceptorError) {
         // A failing error interceptor (or a callback it runs) replaces the
         // error; the rejection is still an ExchangeError, as documented.
-        fetchExchange.error = interceptorError;
+        fetchExchange.error = toExchangeFailure(interceptorError);
       }
 
       // If error interceptors cleared the error, the exchange is considered
