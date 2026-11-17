@@ -186,7 +186,7 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
 ): UseExecutePromiseReturn<R, E>;
 ```
 
-[packages/react/src/core/useExecutePromise.ts:107](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L107)
+[packages/react/src/core/useExecutePromise.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/useExecutePromise.ts#L116)
 
 ### UseExecutePromiseOptions {#api-UseExecutePromiseOptions}
 
