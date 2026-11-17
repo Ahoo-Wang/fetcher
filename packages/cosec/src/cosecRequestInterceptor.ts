@@ -16,6 +16,8 @@ import { setHeader, type RequestInterceptor } from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   CREDENTIALS_WITHHELD_ATTRIBUTE,
+  IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
+  SPACE_ID_ATTRIBUTE,
 } from './constants.js';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
 import { CoSecHeaders } from './types.js';
@@ -32,11 +34,12 @@ import {
 /**
  * Configuration options for CoSecRequestInterceptor.
  *
- * This interface combines the required dependencies (appId and deviceIdStorage)
- * with an optional spaceIdProvider for multi-tenant, multi-space applications.
+ * This interface combines the required deviceIdStorage with an optional
+ * spaceIdProvider for multi-tenant, multi-space applications.
  *
  * @remarks
- * The appId identifies your application in the CoSec authentication system.
+ * CoSec 8.0 does not read an app from a request: the app is the `aud` of the
+ * token. The deprecated `appId` is accepted and ignored.
  * The deviceIdStorage manages persistent device identifiers for tracking.
  * The spaceIdProvider (optional) enables space-scoped resource access control.
  *
@@ -44,13 +47,11 @@ import {
  * ```typescript
  * // Basic configuration
  * const options: CoSecRequestOptions = {
- *   appId: 'my-web-app',
  *   deviceIdStorage: new DeviceIdStorage()
  * };
  *
  * // With space support for multi-tenant applications
  * const optionsWithSpace: CoSecRequestOptions = {
- *   appId: 'my-web-app',
  *   deviceIdStorage: new DeviceIdStorage(),
  *   spaceIdProvider: new DefaultSpaceIdProvider({
  *     spacedResourcePredicate: urlPredicate,
@@ -88,7 +89,6 @@ export interface CoSecRequestOptions
 export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
 /** Attribute key holding the space an exchange was first sent to. */
-const SPACE_ID_ATTRIBUTE = 'CoSec-Space-Id';
 
 export {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
@@ -140,7 +140,6 @@ export {
  *
  * // Create the interceptor
  * const coSecInterceptor = new CoSecRequestInterceptor({
- *   appId: 'my-saas-application',
  *   deviceIdStorage
  * });
  *
@@ -171,7 +170,6 @@ export {
  * });
  *
  * const coSecInterceptor = new CoSecRequestInterceptor({
- *   appId: 'my-saas-application',
  *   deviceIdStorage,
  *   spaceIdProvider
  * });
@@ -192,16 +190,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * in the interceptor chain.
    */
   readonly order = COSEC_REQUEST_INTERCEPTOR_ORDER;
-
-  /**
-   * The application identifier.
-   *
-   * This value is injected into the CoSec-App-Id header for every request.
-   * It identifies your application in the CoSec authentication system.
-   *
-   * @internal
-   */
-  readonly appId: string;
 
   /**
    * Storage for device identifiers.
@@ -229,7 +217,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * Creates a new CoSecRequestInterceptor instance.
    *
    * @param options - The CoSec configuration options
-   * @param options.appId - The application identifier for CoSec authentication
    * @param options.deviceIdStorage - Storage for device identifier management
    * @param options.spaceIdProvider - Optional provider for space identification
    * @param options.isTrusted - Optional predicate for which absolute URLs get the CoSec headers (default: all)
@@ -239,7 +226,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * ```typescript
    * // Basic instantiation
    * const interceptor = new CoSecRequestInterceptor({
-   *   appId: 'my-web-app',
    *   deviceIdStorage: new DeviceIdStorage()
    * });
    *
@@ -249,7 +235,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    *   storage: sessionStorage
    * });
    * const interceptorWithCustom = new CoSecRequestInterceptor({
-   *   appId: 'my-web-app',
    *   deviceIdStorage: customStorage
    * });
    *
@@ -260,19 +245,16 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    *   spaceIdStorage: spaceStorage
    * });
    * const interceptorWithSpace = new CoSecRequestInterceptor({
-   *   appId: 'my-web-app',
    *   deviceIdStorage,
    *   spaceIdProvider: spaceProvider
    * });
    * ```
    */
   constructor({
-    appId,
     deviceIdStorage,
     spaceIdProvider,
     isTrusted,
   }: CoSecRequestOptions) {
-    this.appId = appId;
     this.deviceIdStorage = deviceIdStorage;
     this.spaceIdProvider = spaceIdProvider ?? NoneSpaceIdProvider;
     this.isTrusted = isTrusted;
@@ -294,7 +276,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    *
    * @remarks
    * **Header Values:**
-   * - `CoSec-App-Id`: Always set to the configured appId
    * - `CoSec-Device-Id`: Retrieved from storage or newly generated
    * - `CoSec-Request-Id`: Unique per request (not persisted)
    * - `CoSec-Space-Id`: Set only if spaceIdProvider returns a value
@@ -314,7 +295,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
    * // The interceptor is called automatically by Fetcher
    * const fetcher = new Fetcher()
    *   .addInterceptor(new CoSecRequestInterceptor({
-   *     appId: 'my-app',
    *     deviceIdStorage: new DeviceIdStorage()
    *   }));
    *
@@ -351,7 +331,13 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     // is the same operation, so it keeps the space it was first sent to even
     // if the current space changed meanwhile.
     let spaceId: string | null | undefined;
-    if (exchange.attributes.has(SPACE_ID_ATTRIBUTE)) {
+    if (exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY)) {
+      // The refresh call carries the access token that expired, so the server
+      // reads it as anonymous, and an anonymous request that declares a space
+      // is refused 401 (SCP-3): the refresh is never spaced.
+      spaceId = null;
+      exchange.attributes.set(SPACE_ID_ATTRIBUTE, null);
+    } else if (exchange.attributes.has(SPACE_ID_ATTRIBUTE)) {
       spaceId = exchange.attributes.get(SPACE_ID_ATTRIBUTE);
     } else {
       spaceId = this.spaceIdProvider.resolveSpaceId(exchange);
@@ -362,7 +348,6 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     const requestHeaders = exchange.ensureRequestHeaders();
 
     // Add CoSec headers to the request
-    setHeader(requestHeaders, CoSecHeaders.APP_ID, this.appId);
     setHeader(requestHeaders, CoSecHeaders.DEVICE_ID, deviceId);
     setHeader(requestHeaders, CoSecHeaders.REQUEST_ID, requestId);
     if (spaceId) {

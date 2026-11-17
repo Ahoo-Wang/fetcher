@@ -76,6 +76,9 @@ class MockFetchExchange implements Partial<FetchExchange> {
   }
 }
 
+// CoSec 8.0 does not read this header: the app is the token's `aud`.
+const APP_ID_HEADER = 'CoSec-App-Id';
+
 describe('CoSecRequestInterceptor', () => {
   let mockDeviceIdStorage: DeviceIdStorage;
   let interceptor: CoSecRequestInterceptor;
@@ -191,12 +194,10 @@ describe('CoSecRequestInterceptor', () => {
       expect(mockExchange.requestHeaders[CoSecHeaders.DEVICE_ID]).toBeDefined();
     });
 
-    it('should add CoSec-App-Id header', async () => {
+    it('should not send a CoSec-App-Id header (CoSec 8.0 does not read it)', async () => {
       await interceptor.intercept(mockExchange as unknown as FetchExchange);
 
-      expect(mockExchange.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-        'test-app-id',
-      );
+      expect(mockExchange.requestHeaders[APP_ID_HEADER]).toBeUndefined();
     });
 
     it('should add CoSec-Request-Id header', async () => {
@@ -272,9 +273,7 @@ describe('CoSecRequestInterceptor', () => {
         'application/json',
       );
       expect(mockExchange.requestHeaders['Accept']).toBe('application/json');
-      expect(mockExchange.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-        'test-app-id',
-      );
+      expect(mockExchange.requestHeaders[APP_ID_HEADER]).toBeUndefined();
       expect(mockExchange.requestHeaders[CoSecHeaders.DEVICE_ID]).toBeDefined();
       expect(
         mockExchange.requestHeaders[CoSecHeaders.REQUEST_ID],
@@ -282,15 +281,12 @@ describe('CoSecRequestInterceptor', () => {
     });
 
     it('should overwrite existing CoSec headers', async () => {
-      mockExchange.requestHeaders[CoSecHeaders.APP_ID] = 'old-app-id';
       mockExchange.requestHeaders[CoSecHeaders.DEVICE_ID] = 'old-device-id';
       mockExchange.requestHeaders[CoSecHeaders.REQUEST_ID] = 'old-request-id';
 
       await interceptor.intercept(mockExchange as unknown as FetchExchange);
 
-      expect(mockExchange.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-        'test-app-id',
-      );
+      expect(mockExchange.requestHeaders[APP_ID_HEADER]).toBeUndefined();
       expect(mockExchange.requestHeaders[CoSecHeaders.REQUEST_ID]).toBe(
         'test-request-id-12345',
       );
@@ -357,8 +353,8 @@ describe('CoSecRequestInterceptor', () => {
       await interceptor.intercept(exchangeWithoutHeaders);
 
       expect(exchangeWithoutHeaders.ensureRequestHeaders).toHaveBeenCalled();
-      expect(exchangeWithoutHeaders.ensureRequestHeaders()).toHaveProperty(
-        CoSecHeaders.APP_ID,
+      expect(exchangeWithoutHeaders.ensureRequestHeaders()).not.toHaveProperty(
+        APP_ID_HEADER,
       );
       expect(exchangeWithoutHeaders.ensureRequestHeaders()).toHaveProperty(
         CoSecHeaders.DEVICE_ID,
@@ -370,7 +366,7 @@ describe('CoSecRequestInterceptor', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle empty appId', async () => {
+    it('should ignore an empty appId', async () => {
       const interceptorWithEmptyAppId = new CoSecRequestInterceptor({
         appId: '',
         deviceIdStorage: mockDeviceIdStorage,
@@ -380,10 +376,10 @@ describe('CoSecRequestInterceptor', () => {
         mockExchange as unknown as FetchExchange,
       );
 
-      expect(mockExchange.requestHeaders[CoSecHeaders.APP_ID]).toBe('');
+      expect(mockExchange.requestHeaders[APP_ID_HEADER]).toBeUndefined();
     });
 
-    it('should handle special characters in appId', async () => {
+    it('should ignore an appId, which CoSec 8.0 does not read', async () => {
       const interceptorWithSpecialAppId = new CoSecRequestInterceptor({
         appId: 'app-with-special-chars_123-456',
         deviceIdStorage: mockDeviceIdStorage,
@@ -393,9 +389,7 @@ describe('CoSecRequestInterceptor', () => {
         mockExchange as unknown as FetchExchange,
       );
 
-      expect(mockExchange.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-        'app-with-special-chars_123-456',
-      );
+      expect(mockExchange.requestHeaders[APP_ID_HEADER]).toBeUndefined();
     });
 
     it('should handle unicode characters in space ID', async () => {
@@ -465,9 +459,7 @@ describe('CoSecRequestInterceptor', () => {
           exchangeForMethod as unknown as FetchExchange,
         );
 
-        expect(exchangeForMethod.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-          'test-app-id',
-        );
+        expect(exchangeForMethod.requestHeaders[APP_ID_HEADER]).toBeUndefined();
         expect(
           exchangeForMethod.requestHeaders[CoSecHeaders.DEVICE_ID],
         ).toBeDefined();
@@ -499,9 +491,7 @@ describe('CoSecRequestInterceptor', () => {
           exchangeForUrl as unknown as FetchExchange,
         );
 
-        expect(exchangeForUrl.requestHeaders[CoSecHeaders.APP_ID]).toBe(
-          'test-app-id',
-        );
+        expect(exchangeForUrl.requestHeaders[APP_ID_HEADER]).toBeUndefined();
         expect(
           exchangeForUrl.requestHeaders[CoSecHeaders.DEVICE_ID],
         ).toBeDefined();
@@ -599,7 +589,7 @@ describe('CoSecRequestInterceptor', () => {
 
   describe('CoSecHeaders constants', () => {
     it('should have correct header names', () => {
-      expect(CoSecHeaders.APP_ID).toBe('CoSec-App-Id');
+      expect('APP_ID' in CoSecHeaders).toBe(false);
       expect(CoSecHeaders.DEVICE_ID).toBe('CoSec-Device-Id');
       expect(CoSecHeaders.SPACE_ID).toBe('CoSec-Space-Id');
       expect(CoSecHeaders.REQUEST_ID).toBe('CoSec-Request-Id');

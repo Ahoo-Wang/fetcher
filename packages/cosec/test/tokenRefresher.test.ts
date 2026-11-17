@@ -21,7 +21,7 @@ import type {
   TokenRefresher,
   CoSecTokenRefresherOptions,
 } from '../src';
-import { CoSecTokenRefresher } from '../src';
+import { CoSecTokenRefresher, DEFAULT_REFRESH_TIMEOUT } from '../src';
 import { IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY } from '../src';
 
 describe('tokenRefresher.ts', () => {
@@ -116,7 +116,7 @@ describe('tokenRefresher.ts', () => {
 
       expect(mockPost).toHaveBeenCalledWith<Parameters<Fetcher['post']>>(
         '/api/auth/refresh',
-        { body: testToken },
+        { body: testToken, timeout: DEFAULT_REFRESH_TIMEOUT },
         {
           resultExtractor: ResultExtractors.Json,
           attributes: new Map([[IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true]]),

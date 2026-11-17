@@ -18,6 +18,7 @@ import type { KeyStorageOptions } from '@ahoo-wang/fetcher-storage';
 import { KeyStorage } from '@ahoo-wang/fetcher-storage';
 import { isSharedAcrossTabs, storageEventBus } from './storageEventBus.js';
 import { setRefreshLockName } from './refreshLock.js';
+import { clearAttempt } from './refreshAttempt.js';
 
 /**
  * Default key used for storing CoSec tokens in storage.
@@ -46,7 +47,24 @@ if (!sharedState[SHARED_TOKEN_SERIALIZERS]) {
 export interface TokenStorageOptions
   extends
     Partial<Omit<KeyStorageOptions<JwtCompositeToken>, 'serializer'>>,
-    Partial<EarlyPeriodCapable> {}
+    Partial<EarlyPeriodCapable> {
+  /**
+   * Whether every tab (or process) of the session reads and writes this very
+   * storage, so that they must take turns to refresh: a refresh runs under a
+   * Web Lock, the tab that waited reads the pair the other stored instead of
+   * refreshing it again, and changes are broadcast to the other tabs.
+   *
+   * Defaults to whether the storage is the browser's `localStorage`. Declare
+   * `true` for another storage that tabs share (an IndexedDB or cookie backed
+   * `Storage`). **Declare it only when it is true**: two holders of one pair
+   * that each refresh it end the session (the next refresh of one is a pair
+   * "presented again", IDN-16). `sessionStorage` is not shared (a duplicated
+   * tab starts with a copy of the pair), and neither is a storage held in
+   * memory by each tab; with those, refresh in one place only. Without
+   * `navigator.locks` (an insecure context) tabs cannot take turns either.
+   */
+  sharedAcrossTabs?: boolean;
+}
 
 /**
  * Storage class for managing access and refresh tokens in CoSec authentication.
@@ -74,8 +92,10 @@ export class TokenStorage
     key = DEFAULT_COSEC_TOKEN_KEY,
     eventBus,
     earlyPeriod = 0,
+    sharedAcrossTabs,
     ...reset
   }: TokenStorageOptions = {}) {
+    const shared = sharedAcrossTabs ?? isSharedAcrossTabs(reset.storage);
     let serializer = eventBus
       ? sharedTokenSerializers.get(eventBus)
       : undefined;
@@ -87,17 +107,17 @@ export class TokenStorage
     serializer ??= new JwtCompositeTokenSerializer(earlyPeriod);
     super({
       key,
-      eventBus: storageEventBus(key, eventBus, reset.storage),
+      eventBus: storageEventBus(key, eventBus, reset.storage, shared),
       ...reset,
       serializer,
     });
     sharedTokenSerializers.set(this.eventBus, serializer);
     if (!eventBus) this.ownEventBus();
     this.earlyPeriod = earlyPeriod;
-    // Only tabs sharing the browser's localStorage race on a refresh. A
-    // server process holds many users' storages under the same key; a
-    // process-wide lock there would queue every user's refresh behind one.
-    if (isSharedAcrossTabs(reset.storage)) setRefreshLockName(this, key);
+    // Only tabs sharing a storage race on a refresh. A server process holds
+    // many users' storages under the same key; a process-wide lock there
+    // would queue every user's refresh behind one.
+    if (shared) setRefreshLockName(this, key);
   }
 
   /**
@@ -124,6 +144,12 @@ export class TokenStorage
    */
   signOut(): void {
     this.remove();
+  }
+
+  /** Removes the token and the record of a refresh attempt that went with it. */
+  override remove(): void {
+    super.remove();
+    clearAttempt(this);
   }
 
   /**

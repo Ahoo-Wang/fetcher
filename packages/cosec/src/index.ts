@@ -20,6 +20,15 @@ export * from './idGenerator.js';
 export * from './jwts.js';
 export * from './jwtToken.js';
 export * from './jwtTokenManager.js';
+export {
+  COSEC_PROBLEM_TYPE_PREFIX,
+  CoSecProblemType,
+  getCoSecProblem,
+  readCoSecProblem,
+  retryAfterSeconds,
+  type CoSecProblem,
+  type CoSecProblemSlug,
+} from './problem.js';
 export * from './requestTrust.js';
 export * from './resourceAttributionRequestInterceptor.js';
 export * from './spaceIdProvider.js';

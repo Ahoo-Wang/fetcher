@@ -82,7 +82,7 @@ describe('request trust', () => {
         'https://api.example.com/v2/users',
       ]) {
         expect(sent[url].get('authorization')).toMatch(/^Bearer /);
-        expect(sent[url].get('cosec-app-id')).toBe('app');
+        expect(sent[url].has('cosec-app-id')).toBe(false);
       }
     });
 

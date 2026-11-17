@@ -114,7 +114,6 @@ export interface SpaceIdProvider {
  * ```typescript
  * // Single-space configuration (no space-level isolation needed)
  * const interceptor = new CoSecRequestInterceptor({
- *   appId: 'my-app',
  *   deviceIdStorage,
  *   spaceIdProvider: NoneSpaceIdProvider,
  * });
@@ -366,7 +365,6 @@ export interface SpaceIdProviderOptions {
  *
  * // Use with CoSecRequestInterceptor
  * const interceptor = new CoSecRequestInterceptor({
- *   appId: 'my-app',
  *   deviceIdStorage,
  *   spaceIdProvider
  * });

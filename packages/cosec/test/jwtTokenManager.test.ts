@@ -283,7 +283,11 @@ describe('JwtTokenManager', () => {
       expect(error).toBeInstanceOf(RefreshTokenError);
       expect(error.token).toBe(original);
       expect(tokenStorage.get()).toBeNull();
-      expect(mockStorage.setItem).toHaveBeenCalledTimes(1);
+      // the token is stored once (the storage also holds the refresh
+      // attempt mark, under another key)
+      expect(
+        mockStorage.setItem.mock.calls.filter(([key]) => key === 'test-token'),
+      ).toHaveLength(1);
     },
   );
 });

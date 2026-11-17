@@ -80,3 +80,6 @@ export const TOKEN_SESSION_ATTRIBUTE = 'CoSec-Token-Session';
  * credentials from: its 401 is not about this application's session.
  */
 export const CREDENTIALS_WITHHELD_ATTRIBUTE = 'CoSec-Credentials-Withheld';
+
+/** The `CoSec-Space-Id` the request interceptor resolved for an exchange (`null`: none). */
+export const SPACE_ID_ATTRIBUTE = 'CoSec-Space-Id';
