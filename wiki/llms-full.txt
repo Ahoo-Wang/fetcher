@@ -3879,7 +3879,7 @@ The replacement method receives only the actual argument list; default parameter
 
 ## Names and reflection {#names}
 
-`getParameterNames(func): string[]` parses `Function.toString()`, caches by function in a WeakMap, and returns an empty array on parsing failure; non-functions throw TypeError before parsing. It splits on top-level commas (commas and brackets inside defaults, strings and comments do not split) and strips annotations and defaults. A destructured parameter yields `''`, which keeps later names at their index; a rest parameter yields its name without `...`. Minified names are not a stable naming contract.
+`getParameterNames(func): string[]` parses `Function.toString()`, caches by function in a WeakMap, and returns an empty array on parsing failure; non-functions throw TypeError before parsing. Only the signature is read, never the body; an arrow whose lone parameter has no parentheses (`value => value`, `async value => …`) is read too. It splits on top-level commas (commas and brackets inside defaults, strings, template and regular expression literals, and comments do not split; a `/` after an operand is read as division) and strips annotations and defaults. Names follow the ECMAScript identifier rules, so a Unicode name such as `搜索` or `café` is kept whole and a `\u` escape is decoded. A destructured parameter yields `''`, which keeps later names at their index; a rest parameter yields its name without `...`. Minified names are not a stable naming contract.
 
 `getParameterName(target, propertyKey, index, providedName?)` returns a truthy explicit name first, then an inferred name, otherwise undefined (a destructured parameter has no inferred name). Bound values without a resolved name fall back to `param${index}`. An unnamed `@path()` whose inferred name matches no placeholder of the path template (read in the fetcher's `urlTemplateStyle`) logs a warning once per endpoint: that is what a minifier renaming the parameter looks like. A plain-object argument (spread into its keys) does not warn. Placeholders with no parameter are not reported, since an interceptor may fill them (cosec fills `{tenantId}`/`{ownerId}`); if nothing does, resolving the URL fails with `Missing required path parameter`.
 
@@ -3946,8 +3946,8 @@ void updateUser;
 | <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367) |
 | <a id="request"></a>`request`                               | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387) |
 | <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423) |
-| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L51)                   |
-| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L97)                   |
+| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L55)                   |
+| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L101)                 |
 
 [Package index](./index.md)
 
@@ -4103,8 +4103,8 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | `ParameterRequest`                 | [Parameter binding](parameters.md#parameterrequest)                               | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367)             |
 | `request`                          | [Parameter binding](parameters.md#request)                                        | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387)             |
 | `attribute`                        | [Parameter binding](parameters.md#attribute)                                      | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423)             |
-| `getParameterNames`                | [Parameter binding](parameters.md#getparameternames)                              | [reflection.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L51)                               |
-| `getParameterName`                 | [Parameter binding](parameters.md#getparametername)                               | [reflection.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L97)                               |
+| `getParameterNames`                | [Parameter binding](parameters.md#getparameternames)                              | [reflection.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L55)                               |
+| `getParameterName`                 | [Parameter binding](parameters.md#getparametername)                               | [reflection.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L101)                             |
 | `DECORATOR_TARGET_ATTRIBUTE_KEY`   | [Metadata and execution lifecycle](execution.md#decorator_target_attribute_key)   | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [Metadata and execution lifecycle](execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [Metadata and execution lifecycle](execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
@@ -21608,7 +21608,7 @@ void loadUser;
 
 ## 名称与反射 {#names}
 
-`getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。实现按顶层逗号分割（默认值、字符串和注释中的逗号与括号不会分割），并去掉类型与默认值。解构参数得到 `''`，使后续名称保持原索引；剩余参数得到去掉 `...` 的名称。压缩后的名称不是稳定契约。
+`getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。只读取函数签名，不读函数体；单个参数不带括号的箭头函数（`value => value`、`async value => …`）同样可以读取。实现按顶层逗号分割（默认值、字符串、模板与正则表达式字面量以及注释中的逗号与括号不会分割；跟在操作数之后的 `/` 视为除号），并去掉类型与默认值。名称按 ECMAScript 标识符规则读取，`搜索`、`café` 等 Unicode 名称完整保留，`\u` 转义会被解码。解构参数得到 `''`，使后续名称保持原索引；剩余参数得到去掉 `...` 的名称。压缩后的名称不是稳定契约。
 
 `getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。未命名 `@path()` 的推断名称若不匹配路径模板（按 fetcher 的 `urlTemplateStyle` 读取）的任何占位符，每个端点只输出一次警告：这正是压缩器改名参数的表现。纯对象参数（展开为键）不会警告。没有参数的占位符不报告，因为拦截器可能补上（cosec 补 `{tenantId}`/`{ownerId}`）；若无人补上，解析 URL 会以 `Missing required path parameter` 失败。
 
@@ -21675,8 +21675,8 @@ void updateUser;
 | <a id="parameterrequest"></a>`ParameterRequest`             | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367) |
 | <a id="request"></a>`request`                               | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387) |
 | <a id="attribute"></a>`attribute`                           | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423) |
-| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L51)                   |
-| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L97)                   |
+| <a id="getparameternames"></a>`getParameterNames`           | [reflection.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L55)                   |
+| <a id="getparametername"></a>`getParameterName`             | [reflection.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L101)                 |
 
 [包索引](./index.md)
 
@@ -21832,8 +21832,8 @@ console.assert((await new Health().check()).ok);
 | `ParameterRequest`                 | [参数绑定](parameters.md#parameterrequest)                            | [parameterDecorator.ts:367](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L367)             |
 | `request`                          | [参数绑定](parameters.md#request)                                     | [parameterDecorator.ts:387](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L387)             |
 | `attribute`                        | [参数绑定](parameters.md#attribute)                                   | [parameterDecorator.ts:423](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/parameterDecorator.ts#L423)             |
-| `getParameterNames`                | [参数绑定](parameters.md#getparameternames)                           | [reflection.ts:51](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L51)                               |
-| `getParameterName`                 | [参数绑定](parameters.md#getparametername)                            | [reflection.ts:97](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L97)                               |
+| `getParameterNames`                | [参数绑定](parameters.md#getparameternames)                           | [reflection.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L55)                               |
+| `getParameterName`                 | [参数绑定](parameters.md#getparametername)                            | [reflection.ts:101](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/reflection.ts#L101)                             |
 | `DECORATOR_TARGET_ATTRIBUTE_KEY`   | [元数据与执行生命周期](execution.md#decorator_target_attribute_key)   | [requestExecutor.ts:17](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L17)                     |
 | `DECORATOR_METADATA_ATTRIBUTE_KEY` | [元数据与执行生命周期](execution.md#decorator_metadata_attribute_key) | [requestExecutor.ts:18](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L18)                     |
 | `RequestExecutor`                  | [元数据与执行生命周期](execution.md#requestexecutor)                  | [requestExecutor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/src/requestExecutor.ts#L61)                     |
