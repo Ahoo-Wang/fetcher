@@ -60,14 +60,14 @@ git diff --name-only --diff-filter=d origin/main... | xargs node node_modules/.p
 pnpm build-storybook
 ```
 
-`build-storybook` 包含静态索引检查：验证首页地址与回归标签。
+`build-storybook` 包含静态索引检查：验证首页地址、回归标签，以及浏览器检查要打开的全部故事（`scripts/verify-storybook-targets.mjs`）都在索引中。
 
-先运行 `pnpm storybook`，再运行以下真实浏览器检查；使用独立的无头浏览器：
+先运行 `pnpm storybook`，再运行以下真实浏览器检查；它用本机 Chrome 启动独立的无头浏览器，检查首页导航、示例打开后不自动发请求、窄屏无横向滚动、每个文档页的独立场景导航，以及 HTTP/Fetcher 文档只挂载一个主 iframe 且与单独打开的故事互不影响：
 
 ```bash
 node scripts/verify-storybook-browser.mjs
 ```
 
-文档浏览器检查也可接收服务地址：`node scripts/verify-storybook-browser.mjs http://127.0.0.1:6006`。
+文档浏览器检查也可接收服务地址：`node scripts/verify-storybook-browser.mjs http://127.0.0.1:6006`。检查静态构建时先 `pnpm build-storybook`，再用 `python3 -m http.server 6017 --bind 127.0.0.1 --directory storybook-static` 提供服务并传入 `http://127.0.0.1:6017`。
 
-移动故事时同步检查首页、验证脚本和测试中的地址。历史迁移记录见 `docs/superpowers/plans/2026-09-08-storybook-migration.md`。
+移动或重命名故事时同步更新首页、`scripts/verify-storybook-targets.mjs` 和测试中的地址；缺失的浏览器检查目标会让 `build-storybook` 失败并列出目标名。历史迁移记录见 `docs/superpowers/plans/2026-09-08-storybook-migration.md`。

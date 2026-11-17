@@ -39,6 +39,8 @@ pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
 
+`fix:mermaid` 用 Mermaid CLI 校验每个图表，仓库不安装它。先执行一次 `npm install --global @mermaid-js/mermaid-cli`，或把 `MMDC` 指向一个 `mmdc` 可执行文件；它驱动 Chrome（macOS 上使用已安装的 Google Chrome，其他系统设置 `PUPPETEER_EXECUTABLE_PATH`）。只有 mmdc 接受修复后的版本，才会改写图表。mmdc 或其浏览器无法运行时以状态码 2 退出，不修改任何文件；状态码 1 表示仍有图表无效，这些图表保持原样。`node --test wiki/test/fix-mermaid.test.mjs` 覆盖上述行为。
+
 不手改 llms.txt、llms-full.txt 或 .vitepress/dist。公开 SDK API 变更必须在同一次修改中同步对应 skills/*/references/api.md。
 
 阅读组清单位于 `.vitepress/config/pages.mjs`；首尾页用 `prev: false` 与 `next: false` 限定翻页边界。共享可运行源码使用完整文件引用 `<<< @/examples/http/client.ts` 或 `<<< @/../stories/docs/Filename.tsx`，不使用区域或行范围。LLM 生成器展开源码，目标缺失或越出仓库时拒绝生成。
