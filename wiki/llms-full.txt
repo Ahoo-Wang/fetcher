@@ -7433,11 +7433,11 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 | `useFetcher<R,E>(options?)`       | `RequestOptions`, executor callbacks, and `fetcher` instance/name; defaults to `fetcherRegistrar.default`                  | `loading`, `status`, `result`, `error`, `exchange`, `execute(request)`, `abort`, `reset` |
 | `execute(request)`                | Complete `FetchRequest`; the hook sends a copy with its own `abortController` and leaves your object unchanged             | `Promise<PromiseState<R,E>>` after extraction; never rejects                             |
 | `exchange`                        | Derived from state: the exchange behind `result`, or behind `error` when it is an `ExchangeError`                          | `FetchExchange \| undefined`; undefined while idle or after a non-exchange failure       |
-| `useFetcherQuery<Q,R,E>(options)` | Required `url`, controlled `query`, `autoExecute` (default true); extractor defaults to `JsonResultExtractor`, caller wins | Executor state plus `exchange`; `execute()` sends the current query as POST body         |
+| `useFetcherQuery<Q,R,E>(options)` | Required `url`, controlled `query`, `autoExecute` (default true); extractor defaults to `JsonResultExtractor`, caller wins | Executor state plus `exchange`; `execute()` sends the current query as POST JSON body    |
 
 Fetcher registration is resolved when a request is sent, so a missing named registration becomes error state. `useFetcher` does not default to JSON independently of the selected Fetcher/options: select the extractor explicitly when you need typed JSON. HTTP status, timeout and extraction failures follow the selected Fetcher's interceptor pipeline.
 
-`exchange` is not stored separately: it follows `result` and `error`. After an HTTP 404, `error` is an `ExchangeError` and `exchange.response?.status` is `404`; after `abort()` or `reset()` both are cleared. `useFetcherQuery` follows the [controlled-query contract](./promise-and-query-state#controlled-queries): keep the query in your state, `undefined` means not ready, and a deep-equal query does not resend. Changing `url` or other options updates what the next execution reads; it does not by itself send a new request. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state).
+`exchange` is not stored separately: it follows `result` and `error`. After an HTTP 404, `error` is an `ExchangeError` and `exchange.response?.status` is `404`; after `abort()` or `reset()` both are cleared. `useFetcherQuery` follows the [controlled-query contract](./promise-and-query-state#controlled-queries): keep the query in your state, `undefined` means not ready, and a deep-equal query does not resend. Every other query is sent as JSON with `Content-Type: application/json`: a string, number, boolean or `null` query is encoded too (`'Ada'` is sent as `"Ada"`, `null` as `null`), and `useDebouncedFetcherQuery` sends the same body. Changing `url` or other options updates what the next execution reads; it does not by itself send a new request. Unmount and overlapping request behavior follows [Promise state](./promise-and-query-state).
 
 ## HTTP cancellation and timeout {#http-cancellation}
 
@@ -7531,7 +7531,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
 ): UseFetcherQueryReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L45)
+[packages/react/src/fetcher/useFetcherQuery.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L64)
 
 ### UseFetcherQueryOptions {#api-UseFetcherQueryOptions}
 
@@ -7559,7 +7559,7 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L32)
+[packages/react/src/fetcher/useFetcherQuery.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L35)
 
 ## Related topics
 
@@ -7854,14 +7854,14 @@ export interface UseQueryReturn<R, E = FetcherError> extends Omit<
 
 # API hook factories
 
-The two factories turn an existing service object's asynchronous methods into stable hook names: `getUser` becomes `useGetUser`. Create the hook collection outside rendering. Both preserve the service's `this` binding and inspect own methods and its prototype chain, with the nearest property winning.
+The two factories turn an existing service object's asynchronous methods into stable hook names: `getUser` becomes `useGetUser`. Create the hook collection outside rendering. Both preserve the service's `this` binding and inspect own methods and its prototype chain, with the nearest property winning. Two different methods whose hook names collide (`load` and `Load` both make `useLoad`) make the factory throw an error naming both methods, instead of silently keeping one.
 
-| Factory / utility                | Contract                                                                                                                                                                                |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createExecuteApiHooks({ api })` | Each hook takes executor options and returns state plus `execute(...originalParameters): Promise<PromiseState>`. No automatic invocation.                                               |
-| `createQueryApiHooks({ api })`   | Each hook takes [controlled-query](./promise-and-query-state#controlled-queries) options (`query`, `attributes`, `autoExecute`) and calls `method(query, attributes, abortController)`. |
-| `methodNameToHookName(name)`     | Prefixes `use` and uppercases the first character; empty name throws.                                                                                                                   |
-| `collectMethods(obj)`            | Returns a Map of bound methods: own and prototype-chain function properties, nearest wins. Skips `constructor`, `Object.prototype` and accessors, so collecting never runs a getter.    |
+| Factory / utility                | Contract                                                                                                                                                                                                                                 |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createExecuteApiHooks({ api })` | Each hook takes executor options and returns state plus `execute(...originalParameters): Promise<PromiseState>`. No automatic invocation.                                                                                                |
+| `createQueryApiHooks({ api })`   | Each hook takes [controlled-query](./promise-and-query-state#controlled-queries) options (`query`, `attributes`, `autoExecute`) and calls `method(query, attributes, abortController)`.                                                  |
+| `methodNameToHookName(name)`     | Prefixes `use` and uppercases the first character; empty name throws.                                                                                                                                                                    |
+| `collectMethods(obj)`            | Returns a Map of bound methods: own and prototype-chain function properties, nearest wins. Skips `constructor`, `Object.prototype` (of any realm, such as an iframe or a `vm` context) and accessors, so collecting never runs a getter. |
 
 Execute hooks pass the controller only when a hook sets `appendAbortController: true`: the method is then called as `method(...params, abortController)`, and a `@api` method picks the controller up wherever it lands, so replacing, aborting or unmounting an execution cancels its request. Leave it off for methods with optional trailing parameters, where the controller would take a parameter's place; wrap such a method in your own service method instead. Query factories forward attributes and controller automatically. Both `execute` functions resolve to the final state and never reject.
 
@@ -7923,7 +7923,7 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
 ): Map<string, T>;
 ```
 
-[packages/react/src/api/apiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L28)
+[packages/react/src/api/apiHooks.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L47)
 
 ### CreateApiHooksOptions {#api-CreateApiHooksOptions}
 
@@ -7933,7 +7933,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 }
 ```
 
-[packages/react/src/api/apiHooks.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L50)
+[packages/react/src/api/apiHooks.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L69)
 
 ### HookName {#api-HookName}
 
@@ -7941,7 +7941,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 export type HookName<K extends string> = `use${Capitalize<K>}`;
 ```
 
-[packages/react/src/api/apiHooks.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L54)
+[packages/react/src/api/apiHooks.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L73)
 
 ### IsPromiseFunction {#api-IsPromiseFunction}
 
@@ -7951,7 +7951,7 @@ export type IsPromiseFunction<T> = T extends (...args: any[]) => Promise<any>
   : false;
 ```
 
-[packages/react/src/api/apiHooks.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L56)
+[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
 
 ### FunctionParameters {#api-FunctionParameters}
 
@@ -7961,7 +7961,7 @@ export type FunctionParameters<T> = T extends (...args: infer P) => Promise<any>
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L60)
+[packages/react/src/api/apiHooks.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L79)
 
 ### FunctionReturnType {#api-FunctionReturnType}
 
@@ -7973,7 +7973,7 @@ export type FunctionReturnType<T> = T extends (
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L64)
+[packages/react/src/api/apiHooks.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L83)
 
 ### ApiMethod {#api-ApiMethod}
 
@@ -7983,7 +7983,7 @@ export type ApiMethod<TArgs extends any[] = any[], TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L70)
+[packages/react/src/api/apiHooks.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L89)
 
 ### QueryMethod {#api-QueryMethod}
 
@@ -7995,7 +7995,7 @@ export type QueryMethod<Q = any, TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
+[packages/react/src/api/apiHooks.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L94)
 
 ### ApiHooksMapping {#api-ApiHooksMapping}
 
@@ -8011,7 +8011,7 @@ export type ApiHooksMapping<
 };
 ```
 
-[packages/react/src/api/apiHooks.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L81)
+[packages/react/src/api/apiHooks.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L100)
 
 ### createExecuteApiHooks {#api-createExecuteApiHooks}
 
@@ -25164,11 +25164,11 @@ export function ReactRequests({ baseURL = '/api' }: { baseURL?: string }) {
 | `useFetcher<R,E>(options?)`       | `RequestOptions`、执行器回调及 `fetcher` 实例/名称，默认 `fetcherRegistrar.default`            | `loading`、`status`、`result`、`error`、`exchange`、`execute(request)`、`abort`、`reset` |
 | `execute(request)`                | 完整 `FetchRequest`；Hook 发送带有自己 `abortController` 的副本，不修改你的对象                | 提取完成后的 `Promise<PromiseState<R,E>>`；从不拒绝                                      |
 | `exchange`                        | 由状态派生：`result` 背后的 exchange，或 `error` 为 `ExchangeError` 时其背后的 exchange        | `FetchExchange \| undefined`；idle 或非 exchange 失败时为 undefined                      |
-| `useFetcherQuery<Q,R,E>(options)` | 必填 `url`、受控 `query`、`autoExecute`（默认 true）；默认 `JsonResultExtractor`，调用者可覆盖 | 执行状态加 `exchange`；`execute()` 将当前查询作为 POST body 发送                         |
+| `useFetcherQuery<Q,R,E>(options)` | 必填 `url`、受控 `query`、`autoExecute`（默认 true）；默认 `JsonResultExtractor`，调用者可覆盖 | 执行状态加 `exchange`；`execute()` 将当前查询作为 POST JSON body 发送                    |
 
 Fetcher 注册在发送请求时解析，缺失的命名注册会进入错误状态。`useFetcher` 本身不会独立于选定的 Fetcher/options 默认使用 JSON；需要 JSON 时显式选提取器。HTTP 状态、超时和提取失败遵循该 Fetcher 的拦截器管线。
 
-`exchange` 不单独存储，而是跟随 `result` 和 `error`。HTTP 404 之后，`error` 是 `ExchangeError`，`exchange.response?.status` 为 `404`；`abort()` 或 `reset()` 之后两者都被清除。`useFetcherQuery` 遵循[受控查询契约](./promise-and-query-state#controlled-queries)：查询保存在你的状态中，`undefined` 表示未就绪，深相等的查询不会重新发送。`url` 或其他选项变化只更新下次执行读取的值，本身不会发送新请求。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。
+`exchange` 不单独存储，而是跟随 `result` 和 `error`。HTTP 404 之后，`error` 是 `ExchangeError`，`exchange.response?.status` 为 `404`；`abort()` 或 `reset()` 之后两者都被清除。`useFetcherQuery` 遵循[受控查询契约](./promise-and-query-state#controlled-queries)：查询保存在你的状态中，`undefined` 表示未就绪，深相等的查询不会重新发送。其他查询都以 JSON 发送，`Content-Type: application/json`：字符串、数字、布尔值和 `null` 查询同样会编码（`'Ada'` 发送为 `"Ada"`，`null` 发送为 `null`），`useDebouncedFetcherQuery` 发送相同的正文。`url` 或其他选项变化只更新下次执行读取的值，本身不会发送新请求。卸载与重叠请求见 [Promise 状态](./promise-and-query-state)。
 
 ## HTTP 取消与超时 {#http-cancellation}
 
@@ -25262,7 +25262,7 @@ export function useFetcherQuery<Q, R, E = FetcherError>(
 ): UseFetcherQueryReturn<R, E>;
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L45)
+[packages/react/src/fetcher/useFetcherQuery.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L64)
 
 ### UseFetcherQueryOptions {#api-UseFetcherQueryOptions}
 
@@ -25290,7 +25290,7 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 }
 ```
 
-[packages/react/src/fetcher/useFetcherQuery.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L32)
+[packages/react/src/fetcher/useFetcherQuery.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/fetcher/useFetcherQuery.ts#L35)
 
 ## 相关专题
 
@@ -25585,14 +25585,14 @@ export interface UseQueryReturn<R, E = FetcherError> extends Omit<
 
 # API Hook 工厂
 
-两个工厂把现有服务对象的异步方法转换为稳定 Hook 名称，例如 `getUser` 变成 `useGetUser`。在渲染之外创建 Hook 集合。它们保留服务 `this`，扫描自身及原型链方法，同名属性以最近的定义为准。
+两个工厂把现有服务对象的异步方法转换为稳定 Hook 名称，例如 `getUser` 变成 `useGetUser`。在渲染之外创建 Hook 集合。它们保留服务 `this`，扫描自身及原型链方法，同名属性以最近的定义为准。两个不同方法生成相同 Hook 名称时（`load` 与 `Load` 都生成 `useLoad`），工厂会抛出指明这两个方法的错误，而不是静默只保留其一。
 
-| 工厂 / 工具                      | 契约                                                                                                                                                                  |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `createExecuteApiHooks({ api })` | 各 Hook 接受执行器选项，返回状态和 `execute(...原参数): Promise<PromiseState>`；不自动调用。                                                                          |
-| `createQueryApiHooks({ api })`   | 各 Hook 接受[受控查询](./promise-and-query-state#controlled-queries)选项（`query`、`attributes`、`autoExecute`），调用 `method(query, attributes, abortController)`。 |
-| `methodNameToHookName(name)`     | 添加 `use` 并大写首字符；空名称抛错。                                                                                                                                 |
-| `collectMethods(obj)`            | 返回绑定方法的 Map：自身及原型链上的函数属性，最近的定义优先。跳过 `constructor`、`Object.prototype` 和访问器，因此收集时不会执行 getter。                            |
+| 工厂 / 工具                      | 契约                                                                                                                                                                                |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `createExecuteApiHooks({ api })` | 各 Hook 接受执行器选项，返回状态和 `execute(...原参数): Promise<PromiseState>`；不自动调用。                                                                                        |
+| `createQueryApiHooks({ api })`   | 各 Hook 接受[受控查询](./promise-and-query-state#controlled-queries)选项（`query`、`attributes`、`autoExecute`），调用 `method(query, attributes, abortController)`。               |
+| `methodNameToHookName(name)`     | 添加 `use` 并大写首字符；空名称抛错。                                                                                                                                               |
+| `collectMethods(obj)`            | 返回绑定方法的 Map：自身及原型链上的函数属性，最近的定义优先。跳过 `constructor`、`Object.prototype`（任意 realm，例如 iframe 或 `vm` 上下文）和访问器，因此收集时不会执行 getter。 |
 
 只有 Hook 设置 `appendAbortController: true` 时，执行 Hook 才传入 controller：方法以 `method(...params, abortController)` 调用，`@api` 方法无论 controller 落在哪个位置都能识别，因此替换、中止或卸载执行会取消其请求。方法带可选尾参数时不要开启，否则 controller 会占据参数位置；这时可在自己的服务方法中包装它。查询工厂自动转发 attributes 和 controller。两种 `execute` 都解析为最终状态，从不拒绝。
 
@@ -25654,7 +25654,7 @@ export function collectMethods<T extends (...args: any[]) => Promise<any>>(
 ): Map<string, T>;
 ```
 
-[packages/react/src/api/apiHooks.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L28)
+[packages/react/src/api/apiHooks.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L47)
 
 ### CreateApiHooksOptions {#api-CreateApiHooksOptions}
 
@@ -25664,7 +25664,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 }
 ```
 
-[packages/react/src/api/apiHooks.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L50)
+[packages/react/src/api/apiHooks.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L69)
 
 ### HookName {#api-HookName}
 
@@ -25672,7 +25672,7 @@ export interface CreateApiHooksOptions<API extends Record<string, any>> {
 export type HookName<K extends string> = `use${Capitalize<K>}`;
 ```
 
-[packages/react/src/api/apiHooks.ts:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L54)
+[packages/react/src/api/apiHooks.ts:73](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L73)
 
 ### IsPromiseFunction {#api-IsPromiseFunction}
 
@@ -25682,7 +25682,7 @@ export type IsPromiseFunction<T> = T extends (...args: any[]) => Promise<any>
   : false;
 ```
 
-[packages/react/src/api/apiHooks.ts:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L56)
+[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
 
 ### FunctionParameters {#api-FunctionParameters}
 
@@ -25692,7 +25692,7 @@ export type FunctionParameters<T> = T extends (...args: infer P) => Promise<any>
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L60)
+[packages/react/src/api/apiHooks.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L79)
 
 ### FunctionReturnType {#api-FunctionReturnType}
 
@@ -25704,7 +25704,7 @@ export type FunctionReturnType<T> = T extends (
   : never;
 ```
 
-[packages/react/src/api/apiHooks.ts:64](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L64)
+[packages/react/src/api/apiHooks.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L83)
 
 ### ApiMethod {#api-ApiMethod}
 
@@ -25714,7 +25714,7 @@ export type ApiMethod<TArgs extends any[] = any[], TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:70](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L70)
+[packages/react/src/api/apiHooks.ts:89](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L89)
 
 ### QueryMethod {#api-QueryMethod}
 
@@ -25726,7 +25726,7 @@ export type QueryMethod<Q = any, TReturn = any> = (
 ) => Promise<TReturn>;
 ```
 
-[packages/react/src/api/apiHooks.ts:75](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L75)
+[packages/react/src/api/apiHooks.ts:94](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L94)
 
 ### ApiHooksMapping {#api-ApiHooksMapping}
 
@@ -25742,7 +25742,7 @@ export type ApiHooksMapping<
 };
 ```
 
-[packages/react/src/api/apiHooks.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L81)
+[packages/react/src/api/apiHooks.ts:100](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/api/apiHooks.ts#L100)
 
 ### createExecuteApiHooks {#api-createExecuteApiHooks}
 
