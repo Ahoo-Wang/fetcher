@@ -20,7 +20,11 @@ import { AuthorizationRequestInterceptor } from './authorizationRequestIntercept
 import { AuthorizationResponseInterceptor } from './authorizationResponseInterceptor.js';
 import { CoSecRequestInterceptor } from './cosecRequestInterceptor.js';
 import { DeviceIdStorage } from './deviceIdStorage.js';
-import { ForbiddenErrorInterceptor } from './forbiddenErrorInterceptor.js';
+import {
+  ForbiddenErrorInterceptor,
+  type ForbiddenErrorInterceptorOptions,
+} from './forbiddenErrorInterceptor.js';
+import type { CoSecProblem } from './problem.js';
 import { JwtTokenManager } from './jwtTokenManager.js';
 import { ResourceAttributionRequestInterceptor } from './resourceAttributionRequestInterceptor.js';
 import type { TokenRefresher } from './tokenRefresher.js';
@@ -234,7 +238,10 @@ export interface CoSecConfig
    * };
    * ```
    */
-  readonly onUnauthorized?: (exchange: FetchExchange) => Promise<void> | void;
+  readonly onUnauthorized?: (
+    exchange: FetchExchange,
+    problem?: CoSecProblem,
+  ) => Promise<void> | void;
 
   /**
    * Handler invoked when an HTTP 403 Forbidden response is received.
@@ -269,7 +276,20 @@ export interface CoSecConfig
    * };
    * ```
    */
-  readonly onForbidden?: (exchange: FetchExchange) => Promise<void>;
+  readonly onForbidden?: (
+    exchange: FetchExchange,
+    problem?: CoSecProblem,
+  ) => Promise<void>;
+
+  /**
+   * Callback invoked for a `403 scope-rejected` (see
+   * {@link ForbiddenErrorInterceptorOptions.onScopeRejected}). Without it,
+   * `onForbidden` receives it too, with the problem as its second argument.
+   */
+  readonly onScopeRejected?: (
+    exchange: FetchExchange,
+    problem: CoSecProblem,
+  ) => Promise<void>;
 }
 
 /**
@@ -523,10 +543,11 @@ export class CoSecConfigurer implements FetcherConfigurer {
       );
     }
 
-    if (this.config.onForbidden) {
+    if (this.config.onForbidden || this.config.onScopeRejected) {
       fetcher.interceptors.error.use(
         new ForbiddenErrorInterceptor({
           onForbidden: this.config.onForbidden,
+          onScopeRejected: this.config.onScopeRejected,
         }),
       );
     }

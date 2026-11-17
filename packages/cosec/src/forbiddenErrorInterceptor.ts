@@ -13,6 +13,11 @@
 
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types.js';
+import {
+  CoSecProblemType,
+  resolveCoSecProblem,
+  type CoSecProblem,
+} from './problem.js';
 
 /**
  * The name identifier for the ForbiddenErrorInterceptor.
@@ -51,7 +56,30 @@ export interface ForbiddenErrorInterceptorOptions {
    * };
    * ```
    */
-  onForbidden: (exchange: FetchExchange) => Promise<void>;
+  onForbidden?: (
+    exchange: FetchExchange,
+    problem?: CoSecProblem,
+  ) => Promise<void>;
+
+  /**
+   * Callback invoked for a `403 scope-rejected`: the app of the request is
+   * not the host's (the token's `aud`), or the `CoSec-Space-Id` it sent
+   * (`getHeader(exchange.request.headers, CoSecHeaders.SPACE_ID)`) is a space
+   * the signed-in principal has no role in, or one beginning with `(`. The
+   * remedy differs from a `forbidden`: another space, or a token for the
+   * app. Retrying the same request is refused again.
+   *
+   * **The client does not drop the stored space or fall back to the default
+   * space by itself**: that would silently move the user's next writes into
+   * another space. The application decides.
+   *
+   * Without it, `onForbidden` receives a `scope-rejected` as well, with its
+   * problem as the second argument.
+   */
+  onScopeRejected?: (
+    exchange: FetchExchange,
+    problem: CoSecProblem,
+  ) => Promise<void>;
 }
 
 /**
@@ -182,9 +210,22 @@ export class ForbiddenErrorInterceptor implements ErrorInterceptor {
   async intercept(exchange: FetchExchange): Promise<void> {
     // Check if the response status indicates forbidden access (403)
     if (exchange.response?.status === ResponseCodes.FORBIDDEN) {
-      // Invoke the custom forbidden error handler
+      const problem = await resolveCoSecProblem(exchange);
+      const { onForbidden, onScopeRejected } = this.options;
+      // `forbidden` and `scope-rejected` have different remedies; a 403 with
+      // no CoSec body (another service, a proxy) is reported as before.
+      if (
+        problem?.slug === CoSecProblemType.SCOPE_REJECTED &&
+        onScopeRejected
+      ) {
+        await onScopeRejected(exchange, problem);
+        return;
+      }
       // Allow the callback to perform async operations
-      await this.options.onForbidden(exchange);
+      // The problem is the second argument only when there is one: a handler
+      // written for 6.x sees exactly what it saw.
+      if (problem) await onForbidden?.(exchange, problem);
+      else await onForbidden?.(exchange);
     }
   }
 }

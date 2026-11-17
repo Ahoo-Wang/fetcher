@@ -12,7 +12,11 @@
  */
 
 import type { FetchExchange } from '@ahoo-wang/fetcher';
-import { readProblemDetails, type ProblemDetails } from '@ahoo-wang/fetcher';
+import {
+  isProblemDetailsResponse,
+  readProblemDetails,
+  type ProblemDetails,
+} from '@ahoo-wang/fetcher';
 
 /**
  * Prefix of the `type` of every problem CoSec answers a refusal with
@@ -139,22 +143,38 @@ export function getCoSecProblem(error: unknown): CoSecProblem | undefined {
 }
 
 /**
- * The CoSec problem of an exchange's refusal, read at most once per exchange:
+ * The CoSec problem of an exchange's refusal, read at most once per response:
  * from the error the status validation raised when it carries one, otherwise
- * from a copy of the response body.
+ * from a copy of the response body. It answers at once (not a promise) when
+ * nothing has to be read: an error that carries the problem, or a response
+ * that is not `application/problem+json`.
  */
-export async function resolveCoSecProblem(
+export function resolveCoSecProblem(
   exchange: FetchExchange,
-): Promise<CoSecProblem | undefined> {
+): CoSecProblem | undefined | Promise<CoSecProblem | undefined> {
+  const response = exchange.response;
+  // A retry replaces the response: the memo answers for one response only.
   const memo = exchange.attributes?.get(PROBLEM_ATTRIBUTE) as
-    CoSecProblem | null | undefined;
-  if (memo !== undefined) return memo ?? undefined;
-  let problem = getCoSecProblem(exchange.error);
-  if (!problem && exchange.response) {
-    problem = await readCoSecProblem(exchange.response);
+    | { response: Response | undefined; problem: CoSecProblem | undefined }
+    | undefined;
+  if (memo && memo.response === response) return memo.problem;
+  const remember = (problem: CoSecProblem | undefined) => {
+    exchange.attributes?.set(PROBLEM_ATTRIBUTE, { response, problem });
+    return problem;
+  };
+  const known = getCoSecProblem(exchange.error);
+  if (known || !response || !hasProblemBody(response)) return remember(known);
+  return readCoSecProblem(response).then(remember, () => remember(undefined));
+}
+
+function hasProblemBody(response: Response): boolean {
+  try {
+    return isProblemDetailsResponse(response);
+  } catch {
+    // A Response of another realm or a stand-in without headers: it has no
+    // problem to read, and reading must never fail a request.
+    return false;
   }
-  exchange.attributes?.set(PROBLEM_ATTRIBUTE, problem ?? null);
-  return problem;
 }
 
 /**

@@ -11,9 +11,14 @@
  * limitations under the License.
  */
 
-import type { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
+import type {
+  FetchExchange,
+  RequestHeaders,
+  RequestInterceptor,
+} from '@ahoo-wang/fetcher';
 import {
   DEFAULT_INTERCEPTOR_ORDER_STEP,
+  deleteHeader,
   getHeader,
   setHeader,
 } from '@ahoo-wang/fetcher';
@@ -21,6 +26,7 @@ import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   CREDENTIALS_WITHHELD_ATTRIBUTE,
   IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
+  SPACE_ID_ATTRIBUTE,
   TOKEN_SESSION_ATTRIBUTE,
 } from './constants.js';
 import type { JwtTokenManagerCapable } from './types.js';
@@ -87,6 +93,7 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
     }
     if (!currentToken) {
       exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, null);
+      dropSpace(exchange, requestHeaders);
       return;
     }
 
@@ -111,5 +118,24 @@ export class AuthorizationRequestInterceptor implements RequestInterceptor {
       exchange.attributes.set(this.name, authorization);
       exchange.attributes.set(TOKEN_SESSION_ATTRIBUTE, currentToken);
     }
+  }
+}
+
+/**
+ * An anonymous request that declares a space is refused 401 `unauthorized`
+ * (SCP-3), so a request that has no token to send does not send the space it
+ * was given: the answer would say "sign in" about a space, not about the
+ * request. Only the header the CoSec interceptor set is removed.
+ */
+function dropSpace(
+  exchange: FetchExchange,
+  requestHeaders: RequestHeaders,
+): void {
+  const spaceId = exchange.attributes.get(SPACE_ID_ATTRIBUTE);
+  if (
+    typeof spaceId === 'string' &&
+    getHeader(requestHeaders, CoSecHeaders.SPACE_ID) === spaceId
+  ) {
+    deleteHeader(requestHeaders, CoSecHeaders.SPACE_ID);
   }
 }

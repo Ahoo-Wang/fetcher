@@ -13,6 +13,11 @@
 import type { ErrorInterceptor, FetchExchange } from '@ahoo-wang/fetcher';
 import { ResponseCodes } from './types.js';
 import {
+  getCoSecProblem,
+  resolveCoSecProblem,
+  type CoSecProblem,
+} from './problem.js';
+import {
   NonReplayableRequestError,
   RefreshSessionChangedError,
   RefreshTokenError,
@@ -43,7 +48,10 @@ export interface UnauthorizedErrorInterceptorOptions {
    * @param exchange - The fetch exchange containing the request and response details
    *                   that resulted in the unauthorized error
    */
-  onUnauthorized: (exchange: FetchExchange) => Promise<void> | void;
+  onUnauthorized: (
+    exchange: FetchExchange,
+    problem?: CoSecProblem,
+  ) => Promise<void> | void;
 }
 
 /**
@@ -115,7 +123,7 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
    * });
    * ```
    */
-  async intercept(exchange: FetchExchange): Promise<void> {
+  intercept(exchange: FetchExchange): void | Promise<void> {
     const notification = exchange.attributes?.get(this.name);
     if (
       exchange.error instanceof RefreshSessionChangedError ||
@@ -133,7 +141,20 @@ export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
     ) {
       if (typeof notification === 'function' && !notification()) return;
       exchange.attributes?.set(this.name, true);
-      await this.options.onUnauthorized(exchange);
+      // Why the user must sign in: the refresh that was refused, or the
+      // response that was. `token-expired` after a refresh the server refused
+      // is the session's end (or a refresh route closed to anonymous callers).
+      // The callback runs at once unless a response body has to be read, and
+      // a handler written for 6.x sees only the exchange when there is no
+      // problem.
+      const { onUnauthorized } = this.options;
+      const notify = (problem: CoSecProblem | undefined) =>
+        problem ? onUnauthorized(exchange, problem) : onUnauthorized(exchange);
+      const found =
+        exchange.error instanceof RefreshTokenError
+          ? getCoSecProblem(exchange.error)
+          : resolveCoSecProblem(exchange);
+      return found instanceof Promise ? found.then(notify) : notify(found);
     }
   }
 }

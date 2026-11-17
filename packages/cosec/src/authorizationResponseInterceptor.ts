@@ -29,7 +29,9 @@ import { isTrustedRequest } from './requestTrust.js';
 import { isOneShotBody } from './requestBody.js';
 
 export { NonReplayableRequestError } from './errors.js';
-import { assertTokenSession } from './refreshSession.js';
+import { assertTokenSession, isSameToken } from './refreshSession.js';
+import type { JwtCompositeToken } from './jwtToken.js';
+import { CoSecProblemType, resolveCoSecProblem } from './problem.js';
 import {
   AUTHORIZATION_REQUEST_INTERCEPTOR_NAME,
   type AuthorizationInterceptorOptions,
@@ -124,6 +126,22 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
 
     const currentToken = this.options.tokenManager.currentToken;
     assertTokenSession(exchange, currentToken);
+
+    // A 401 of CoSec 8.0 says why, and only `token-expired` is one a refresh
+    // can cure. `unauthorized`: no credential was seen. `token-revoked`,
+    // `token-invalid`: the session ended or the credential is not accepted
+    // (IDN-3, IDN-4, IDN-10..13, IDN-18), and the refresh would be refused.
+    // Any other 401 (no problem body, a type this client does not know) is
+    // refreshed once, as before.
+    const problem = await resolveCoSecProblem(exchange);
+    if (problem?.slug === CoSecProblemType.UNAUTHORIZED) return;
+    if (
+      problem?.slug === CoSecProblemType.TOKEN_REVOKED ||
+      problem?.slug === CoSecProblemType.TOKEN_INVALID
+    ) {
+      this.endSession(exchange);
+      return;
+    }
     if (
       !this.options.tokenManager.isRefreshable &&
       (!exchange.attributes?.has(TOKEN_SESSION_ATTRIBUTE) ||
@@ -187,6 +205,23 @@ export class AuthorizationResponseInterceptor implements ResponseInterceptor {
    *
    * @internal
    */
+  /**
+   * The session ended on the server: the pair that was sent is dead, so it
+   * is removed (only when it is still the stored one: another tab may have
+   * signed in again meanwhile) and the unauthorized notification goes to the
+   * exchange that removed it, once.
+   *
+   * @internal
+   */
+  endSession(exchange: FetchExchange): void {
+    const { tokenManager } = this.options;
+    const sent = exchange.attributes.get(TOKEN_SESSION_ATTRIBUTE) as
+      JwtCompositeToken | null | undefined;
+    const ended = !!sent && isSameToken(sent, tokenManager.currentToken);
+    if (ended) tokenManager.tokenStorage.remove();
+    exchange.attributes.set(UNAUTHORIZED_ERROR_INTERCEPTOR_NAME, () => ended);
+  }
+
   async retry(exchange: FetchExchange): Promise<void> {
     const { request, response } = exchange.fetcher.interceptors;
     await request.intercept(exchange);

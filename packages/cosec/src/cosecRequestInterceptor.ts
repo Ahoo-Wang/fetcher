@@ -16,6 +16,8 @@ import { setHeader, type RequestInterceptor } from '@ahoo-wang/fetcher';
 import {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
   CREDENTIALS_WITHHELD_ATTRIBUTE,
+  IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY,
+  SPACE_ID_ATTRIBUTE,
 } from './constants.js';
 import type { AppIdCapable, DeviceIdStorageCapable } from './types.js';
 import { CoSecHeaders } from './types.js';
@@ -87,7 +89,6 @@ export interface CoSecRequestOptions
 export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
 /** Attribute key holding the space an exchange was first sent to. */
-const SPACE_ID_ATTRIBUTE = 'CoSec-Space-Id';
 
 export {
   COSEC_REQUEST_INTERCEPTOR_ORDER,
@@ -330,7 +331,13 @@ export class CoSecRequestInterceptor implements RequestInterceptor {
     // is the same operation, so it keeps the space it was first sent to even
     // if the current space changed meanwhile.
     let spaceId: string | null | undefined;
-    if (exchange.attributes.has(SPACE_ID_ATTRIBUTE)) {
+    if (exchange.attributes.has(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY)) {
+      // The refresh call carries the access token that expired, so the server
+      // reads it as anonymous, and an anonymous request that declares a space
+      // is refused 401 (SCP-3): the refresh is never spaced.
+      spaceId = null;
+      exchange.attributes.set(SPACE_ID_ATTRIBUTE, null);
+    } else if (exchange.attributes.has(SPACE_ID_ATTRIBUTE)) {
       spaceId = exchange.attributes.get(SPACE_ID_ATTRIBUTE);
     } else {
       spaceId = this.spaceIdProvider.resolveSpaceId(exchange);
