@@ -17,10 +17,9 @@ import {
   CoSecProblemType,
   getCoSecProblem,
   readCoSecProblem,
-  resolveCoSecProblem,
   retryAfterSeconds,
-  toCoSecProblem,
 } from '../src';
+import { resolveCoSecProblem, toCoSecProblem } from '../src/problem';
 import { problemResponse } from './support/fakeCoSec';
 
 describe('CoSec problems', () => {
