@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Copyright [2021-present] [ahoo wang <ahoowang@qq.com> (https://github.com/Ahoo-Wang)].
@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+# Stop at the first failing step: a failed install, format, lint, build or test
+# must not run the later steps or print the success message. `sh` runs this
+# script (package.json "init"), so only POSIX options are used.
+set -eu
 
 # Install dependencies
 pnpm install

@@ -2993,6 +2993,8 @@ pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
 
+`fix:mermaid` validates each diagram with the Mermaid CLI, which the repository does not install. Install it once with `npm install --global @mermaid-js/mermaid-cli`, or set `MMDC` to an `mmdc` executable; it drives Chrome (on macOS the installed Google Chrome, elsewhere set `PUPPETEER_EXECUTABLE_PATH`). It rewrites a diagram only after mmdc accepts the fixed version. When mmdc or its browser cannot run, it exits with 2 and changes no file; exit 1 means some diagrams are still invalid and were left as they were. `node --test wiki/test/fix-mermaid.test.mjs` covers this behaviour.
+
 Do not hand-edit llms.txt, llms-full.txt or .vitepress/dist. Public SDK API changes must update the matching skills/*/references/api.md in the same change.
 
 Reading groups are listed in `.vitepress/config/pages.mjs`; stop pagination at the first and last page with `prev: false` and `next: false`. Shared runnable sources use full-file `<<< @/examples/http/client.ts` or `<<< @/../stories/docs/Filename.tsx` references; do not use regions or line ranges. The LLM generator expands these files and rejects missing or out-of-repository targets.
@@ -20767,6 +20769,8 @@ pnpm --dir wiki fix:mermaid
 pnpm --dir wiki build
 node --test wiki/test/documentation.test.mjs
 ```
+
+`fix:mermaid` 用 Mermaid CLI 校验每个图表，仓库不安装它。先执行一次 `npm install --global @mermaid-js/mermaid-cli`，或把 `MMDC` 指向一个 `mmdc` 可执行文件；它驱动 Chrome（macOS 上使用已安装的 Google Chrome，其他系统设置 `PUPPETEER_EXECUTABLE_PATH`）。只有 mmdc 接受修复后的版本，才会改写图表。mmdc 或其浏览器无法运行时以状态码 2 退出，不修改任何文件；状态码 1 表示仍有图表无效，这些图表保持原样。`node --test wiki/test/fix-mermaid.test.mjs` 覆盖上述行为。
 
 不手改 llms.txt、llms-full.txt 或 .vitepress/dist。公开 SDK API 变更必须在同一次修改中同步对应 skills/*/references/api.md。
 
