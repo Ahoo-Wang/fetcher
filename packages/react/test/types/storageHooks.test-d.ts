@@ -22,7 +22,7 @@ type State = { count: number } | undefined;
 declare const optional: KeyStorage<State>;
 declare const maybeState: State;
 
-export function plainOptionalDefault() {
+export function usePlainOptionalDefault() {
   const fallback: State = undefined;
   const [value] = useKeyStorage(optional, fallback);
   expectTypeOf(value).toEqualTypeOf<State | null>();
@@ -30,7 +30,7 @@ export function plainOptionalDefault() {
   expectTypeOf(unnarrowed).toEqualTypeOf<State | null>();
 }
 
-export function immerOptionalDefault() {
+export function useImmerOptionalDefault() {
   const fallback: State = undefined;
   const [value, update] = useImmerKeyStorage(optional, fallback);
   expectTypeOf(value).toEqualTypeOf<State | null>();
@@ -41,7 +41,7 @@ export function immerOptionalDefault() {
 
 // A real default still removes null.
 declare const theme: KeyStorage<string>;
-export function definiteDefaults() {
+export function useDefiniteDefaults() {
   const [value] = useKeyStorage(theme, 'light');
   expectTypeOf(value).toEqualTypeOf<string>();
   const [immerValue] = useImmerKeyStorage(theme, 'light');
@@ -61,7 +61,7 @@ const preferences = new KeyStorage<Preferences>({
   storage: new InMemoryStorage(),
 });
 
-export function readonlyWithDefault() {
+export function useReadonlyWithDefault() {
   const [value, update] = useImmerKeyStorage(preferences, initial);
   expectTypeOf(value).toEqualTypeOf<Preferences>();
   update(draft => {
@@ -72,7 +72,7 @@ export function readonlyWithDefault() {
   update(() => null);
 }
 
-export function readonlyWithoutDefault() {
+export function useReadonlyWithoutDefault() {
   const [value, update] = useImmerKeyStorage(preferences);
   expectTypeOf(value).toEqualTypeOf<Preferences | null>();
   update(draft => {
