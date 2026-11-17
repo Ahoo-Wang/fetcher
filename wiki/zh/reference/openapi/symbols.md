@@ -13,6 +13,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | 符号                    | 参考                                                         |
 | ----------------------- | ------------------------------------------------------------ |
 | `Callback`              | [文档与操作](documents-and-operations#callback)              |
+| `CallbackExpression`    | [文档与操作](documents-and-operations#callbackexpression)    |
 | `CommonExtensions`      | [安全与扩展](security-and-extensions#commonextensions)       |
 | `ComponentTypeMap`      | [Schema 与引用](schemas-and-references#componenttypemap)     |
 | `Components`            | [Schema 与引用](schemas-and-references#components)           |
@@ -24,6 +25,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `ExternalDocumentation` | [文档与操作](documents-and-operations#externaldocumentation) |
 | `HTTPMethod`            | [文档与操作](documents-and-operations#httpmethod)            |
 | `Header`                | [文档与操作](documents-and-operations#header)                |
+| `HttpStatusCodeKey`     | [文档与操作](documents-and-operations#httpstatuscodekey)     |
 | `Info`                  | [文档与操作](documents-and-operations#info)                  |
 | `IsReference`           | [Schema 与引用](schemas-and-references#isreference)          |
 | `License`               | [文档与操作](documents-and-operations#license)               |
@@ -36,6 +38,7 @@ description: '完整根入口导出、行为契约及源码位置索引。'
 | `Parameter`             | [文档与操作](documents-and-operations#parameter)             |
 | `ParameterLocation`     | [文档与操作](documents-and-operations#parameterlocation)     |
 | `PathItem`              | [文档与操作](documents-and-operations#pathitem)              |
+| `PathKey`               | [文档与操作](documents-and-operations#pathkey)               |
 | `Paths`                 | [文档与操作](documents-and-operations#paths)                 |
 | `Reference`             | [Schema 与引用](schemas-and-references#reference)            |
 | `RequestBody`           | [文档与操作](documents-and-operations#requestbody)           |

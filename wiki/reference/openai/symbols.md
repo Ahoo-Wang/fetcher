@@ -13,6 +13,7 @@ Find a known symbol below. For installation and entry-point selection, start at 
 | Symbol                            | Reference                                                               |
 | --------------------------------- | ----------------------------------------------------------------------- |
 | `ChatClient`                      | [Client and chat completions](client-and-completions#chatclient)        |
+| `ChatClientOptions`               | [Client and chat completions](client-and-completions#chatclientoptions) |
 | `ChatRequest`                     | [Client and chat completions](client-and-completions#chatrequest)       |
 | `ChatResponse`                    | [Client and chat completions](client-and-completions#chatresponse)      |
 | `ChatTool`                        | [Client and chat completions](client-and-completions#chattool)          |

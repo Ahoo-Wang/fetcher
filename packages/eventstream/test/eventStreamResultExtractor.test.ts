@@ -11,122 +11,123 @@
  * limitations under the License.
  */
 
-import { describe, expect, it } from 'vitest';
-import type { JsonServerSentEventStream, ServerSentEventStream } from '../src';
+import { describe, expect, it, vi } from 'vitest';
 import type { FetchRequest } from '@ahoo-wang/fetcher';
-import { ExchangeError, FetchExchange } from '@ahoo-wang/fetcher';
+import { FetchExchange } from '@ahoo-wang/fetcher';
 import {
+  EventStreamConvertError,
+  EventStreamIncompleteError,
   EventStreamResultExtractor,
   JsonEventStreamResultExtractor,
+  jsonEventStreamResultExtractor,
 } from '../src';
+import { foreignResponse } from './foreignResponse';
 
-describe('EventStreamResultExtractor', () => {
-  const mockRequest = { url: '/test' } as FetchRequest;
+const SSE = { 'Content-Type': 'text/event-stream' };
 
-  it('should return ServerSentEventStream when response supports event stream', () => {
-    const eventStreamResponse = new Response('');
+function exchangeOf(response: Response) {
+  return new FetchExchange({
+    fetcher: {} as any,
+    request: { url: '/test' } as FetchRequest,
+    response,
+  });
+}
 
-    // Mock the requiredEventStream function on the response
-    const mockEventStream = {} as ServerSentEventStream;
-    Object.defineProperty(eventStreamResponse, 'requiredEventStream', {
-      configurable: true,
-      enumerable: true,
-      value: () => mockEventStream,
+async function collect<T>(stream: ReadableStream<T>) {
+  const values: T[] = [];
+  for await (const value of stream) values.push(value);
+  return values;
+}
+
+describe.each([
+  [
+    'the global Response',
+    (body?: BodyInit | null, init?: ResponseInit) => new Response(body, init),
+  ],
+  ['a Response from another constructor', foreignResponse],
+])('result extractors with %s', (_, createResponse) => {
+  it('EventStreamResultExtractor returns the raw event stream', async () => {
+    const response = createResponse('data: one\n\ndata: two\n\n', {
+      headers: SSE,
     });
-
-    const eventStreamExchange = new FetchExchange({
-      fetcher: {} as any,
-      request: mockRequest,
-      response: eventStreamResponse,
-    });
-
-    const result = EventStreamResultExtractor(eventStreamExchange);
-    expect(result).toBe(mockEventStream);
+    const events = await collect(
+      EventStreamResultExtractor(exchangeOf(response)),
+    );
+    expect(events.map(event => event.data)).toEqual(['one', 'two']);
   });
 
-  it('should throw ExchangeError when server does not support ServerSentEventStream', () => {
-    const noEventStreamResponse = new Response('');
-    // Mock the requiredEventStream function to throw ExchangeError
-    Object.defineProperty(noEventStreamResponse, 'requiredEventStream', {
-      configurable: true,
-      enumerable: true,
-      value: () => {
-        throw new ExchangeError(
-          new FetchExchange({
-            fetcher: {} as any,
-            request: mockRequest,
-            response: noEventStreamResponse,
-          }),
-          'ServerSentEventStream is not supported',
-        );
-      },
-    });
+  it('JsonEventStreamResultExtractor parses each event as JSON', async () => {
+    const response = createResponse('data: {"id":1}\n\n', { headers: SSE });
+    const events = await collect(
+      JsonEventStreamResultExtractor(exchangeOf(response)),
+    );
+    expect(events.map(event => event.data)).toEqual([{ id: 1 }]);
+  });
 
-    const noEventStreamExchange = new FetchExchange({
-      fetcher: {} as any,
-      request: mockRequest,
-      response: noEventStreamResponse,
+  it('jsonEventStreamResultExtractor ends at the terminating event', async () => {
+    const extractor = jsonEventStreamResultExtractor<{ id: number }>(
+      event => event.data === '[DONE]',
+    );
+    const done = createResponse('data: {"id":1}\n\ndata: [DONE]\n\n', {
+      headers: SSE,
     });
+    const events = await collect(extractor(exchangeOf(done)));
+    expect(events.map(event => event.data)).toEqual([{ id: 1 }]);
 
-    expect(() => EventStreamResultExtractor(noEventStreamExchange)).toThrow(
-      ExchangeError,
+    const cut = createResponse('data: {"id":1}\n\n', { headers: SSE });
+    await expect(collect(extractor(exchangeOf(cut)))).rejects.toBeInstanceOf(
+      EventStreamIncompleteError,
     );
   });
-});
 
-describe('JsonEventStreamResultExtractor', () => {
-  const mockRequest = { url: '/test' } as FetchRequest;
-  it('should return JsonServerSentEventStream when response supports json event stream', () => {
-    const jsonEventStreamResponse = new Response('');
-
-    // Mock the requiredJsonEventStream function on the response
-    const mockJsonEventStream = {} as JsonServerSentEventStream<any>;
-    Object.defineProperty(jsonEventStreamResponse, 'requiredJsonEventStream', {
-      configurable: true,
-      enumerable: true,
-      value: () => mockJsonEventStream,
+  it('rejects a response that is not an event stream', () => {
+    const response = createResponse('{}', {
+      headers: { 'Content-Type': 'application/json' },
     });
-
-    const jsonEventStreamExchange = new FetchExchange({
-      fetcher: {} as any,
-      request: mockRequest,
-      response: jsonEventStreamResponse,
-    });
-
-    const result = JsonEventStreamResultExtractor(jsonEventStreamExchange);
-    expect(result).toBe(mockJsonEventStream);
+    expect(() => EventStreamResultExtractor(exchangeOf(response))).toThrow(
+      new EventStreamConvertError(
+        response,
+        'Event stream is not available. Response content-type: [application/json]',
+      ),
+    );
+    expect(() => JsonEventStreamResultExtractor(exchangeOf(response))).toThrow(
+      EventStreamConvertError,
+    );
   });
 
-  it('should throw ExchangeError when server does not support JsonServerSentEventStream', () => {
-    const noJsonEventStreamResponse = new Response('');
-    // Mock the requiredJsonEventStream function to throw ExchangeError
-    Object.defineProperty(
-      noJsonEventStreamResponse,
-      'requiredJsonEventStream',
-      {
-        configurable: true,
-        enumerable: true,
-        value: () => {
-          throw new ExchangeError(
-            new FetchExchange({
-              fetcher: {} as any,
-              request: mockRequest,
-              response: noJsonEventStreamResponse,
-            }),
-            'JsonServerSentEventStream is not supported',
-          );
-        },
-      },
+  it('rejects an event stream without a body', () => {
+    const response = createResponse(null, { headers: SSE });
+    expect(() => EventStreamResultExtractor(exchangeOf(response))).toThrow(
+      'Response body is null',
     );
+  });
 
-    const noJsonEventStreamExchange = new FetchExchange({
-      fetcher: {} as any,
-      request: mockRequest,
-      response: noJsonEventStreamResponse,
+  it('rejects an event stream whose body is already used', async () => {
+    const response = createResponse('data: one\n\n', { headers: SSE });
+    await response.text();
+    expect(() => JsonEventStreamResultExtractor(exchangeOf(response))).toThrow(
+      'Response body is already used',
+    );
+  });
+
+  it('cancels the body when the consumer stops early', async () => {
+    let cancelled = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('data: {"id":1}\n\n'));
+      },
+      cancel() {
+        cancelled = true;
+      },
     });
-
-    expect(() =>
-      JsonEventStreamResultExtractor(noJsonEventStreamExchange),
-    ).toThrow(ExchangeError);
+    const response = createResponse(body, { headers: SSE });
+    for await (const event of JsonEventStreamResultExtractor(
+      exchangeOf(response),
+    )) {
+      expect(event.data).toEqual({ id: 1 });
+      break;
+    }
+    // Cancellation reaches the body through the pipe chain asynchronously.
+    await vi.waitFor(() => expect(cancelled).toBe(true));
   });
 });
