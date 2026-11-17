@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "6.0.1",
+  "version": "6.1.0",
   "description": "Enterprise-grade CoSec authentication integration for the Fetcher HTTP client with comprehensive security features including automatic token management, device tracking, and request attribution.",
   "keywords": [
     "fetch",
@@ -26,7 +26,7 @@
   },
   "type": "module",
   "engines": {
-    "node": "^20.19.0 || >=22.12.0"
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "main": "./dist/index.umd.cjs",
   "module": "./dist/index.es.js",

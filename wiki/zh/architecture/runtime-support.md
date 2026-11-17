@@ -7,13 +7,13 @@ description: 检查平台能力，并在共享客户端前界定可变身份状�
 
 先确定运行环境，再决定共享哪些客户端对象。核心将传输委托给原生 Fetch，或委托给运行时、框架通过客户端 `fetch` 选项提供的 `fetch`（Tauri、埋点、测试）；存储和 React 层还引入平台与生命周期前提。
 
-| 环境        | 前提                                                                 | 应用责任                                                                                                                      |
-| ----------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 浏览器 HTTP | Fetch 及端点所用的原生请求/响应 API                                  | 与服务端一起配置来源、CORS、Cookie 和响应验证                                                                                 |
-| 浏览器 SSE  | 可读响应体及管线所用的流 API                                         | 管理流消费与取消                                                                                                              |
-| Node 消费者 | 库清单声明 Node `>=18.20.8`；CoSec 声明 `^20.19.0` 或 `>=22.12.0`    | 检查所选包及实际依赖链；CI 在 Node 20.19.0 与 22.12.0 上用 `require()` 与 `import()` 加载每个打包入口，并非每个工具的实测矩阵 |
-| 仓库开发    | Node `>=22.12.0`、pnpm `10.34.5`                                     | 使用仓库工具链构建和测试                                                                                                      |
-| React       | peer 为 React `^19.0.0`；仓库开发与测试使用 React/ReactDOM `^19.3.0` | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18                                                                  |
+| 环境        | 前提                                                                        | 应用责任                                                                                                                                   |
+| ----------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 浏览器 HTTP | Fetch 及端点所用的原生请求/响应 API                                         | 与服务端一起配置来源、CORS、Cookie 和响应验证                                                                                              |
+| 浏览器 SSE  | 可读响应体及管线所用的流 API                                                | 管理流消费与取消                                                                                                                           |
+| Node 消费者 | 库清单声明 Node `>=18.20.8`；CoSec 声明 `^22.12.0`、`^24.0.0` 或 `>=26.0.0` | 检查所选包及实际依赖链；CI 在 Node 20.19.0（跳过 CoSec）与 22.12.0 上用 `require()` 与 `import()` 加载每个打包入口，并非每个工具的实测矩阵 |
+| 仓库开发    | Node `>=22.12.0`、pnpm `10.34.5`                                            | 使用仓库工具链构建和测试                                                                                                                   |
+| React       | peer 为 React `^19.0.0`；仓库开发与测试使用 React/ReactDOM `^19.3.0`        | 验证框架的 SSR 导入/渲染/水合路径；不能据此推断支持 React 18                                                                               |
 
 要求来源为 [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)、[packages/cosec/package.json:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L29)、[package.json:47](https://github.com/Ahoo-Wang/fetcher/blob/main/package.json#L47)、[pnpm-workspace.yaml:31](https://github.com/Ahoo-Wang/fetcher/blob/main/pnpm-workspace.yaml#L31) 及[包清单](./package-boundaries.md)。流提取检查响应体的实现见 [packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)。
 

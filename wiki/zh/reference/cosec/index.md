@@ -14,9 +14,9 @@ description: 'Cosec 参考 — Fetcher 6.0.0'
 pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-storage
 ```
 
-命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。CoSec 需要 Node `^20.19.0 || >=22.12.0`（其他包声明 `>=18.20.8`）：nanoid 仅提供 ES 模块，CoSec 的 CommonJS 入口需要支持 `require()` 加载 ES 模块的 Node。默认 token/device/space 存储仅在值保存于浏览器 `localStorage` 时跨标签页广播；其他环境（Node SSR、`sessionStorage`、注入的存储）中每个默认存储使用自己的总线，因此按请求创建的存储不会通过 `BroadcastChannel` 共享状态。SSR 请求隔离应注入请求独有的存储，见[配置](./configuration.md)。
+命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。CoSec 需要 Node `^22.12.0 || ^24.0.0 || >=26.0.0`（其他包声明 `>=18.20.8`），即 nanoid 6 支持的版本：nanoid 仅提供 ES 模块，CoSec 的 CommonJS 入口需要支持 `require()` 加载 ES 模块的 Node。默认 token/device/space 存储仅在值保存于浏览器 `localStorage` 时跨标签页广播；其他环境（Node SSR、`sessionStorage`、注入的存储）中每个默认存储使用自己的总线，因此按请求创建的存储不会通过 `BroadcastChannel` 共享状态。SSR 请求隔离应注入请求独有的存储，见[配置](./configuration.md)。
 
-本包对消费者声明 Node **^20.19.0 || >=22.12.0**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
+本包对消费者声明 Node **^22.12.0 || ^24.0.0 || >=26.0.0**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
