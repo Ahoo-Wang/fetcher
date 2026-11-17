@@ -94,4 +94,62 @@ describe('UrlResolveInterceptor', () => {
     interceptor.intercept(exchange);
     expect(exchange.request.url).toBe(firstUrl);
   });
+
+  // Regression test for #2009: a relative base URL must not be prefixed again
+  // when the same exchange re-runs the request chain (CoSec 401 retry).
+  it.each(['/api', 'api', '/api/', ''])(
+    'should not prefix the relative base URL %j again on a re-run',
+    baseURL => {
+      const fetcher = { urlBuilder: new UrlBuilder(baseURL) } as Fetcher;
+      const interceptor = new UrlResolveInterceptor();
+      const exchange = new FetchExchange({
+        fetcher,
+        request: {
+          url: '/resource/{id}',
+          urlParams: { path: { id: 1 }, query: { limit: 1 } },
+        },
+      });
+
+      interceptor.intercept(exchange);
+      const firstUrl = exchange.request.url;
+      expect(firstUrl).toBe(
+        `${baseURL.replace(/\/+$/, '')}/resource/1?limit=1`,
+      );
+
+      interceptor.intercept(exchange);
+      interceptor.intercept(exchange);
+      expect(exchange.request.url).toBe(firstUrl);
+    },
+  );
+
+  it('should apply URL params set before a re-run without the base URL again', () => {
+    const fetcher = { urlBuilder: new UrlBuilder('/api') } as Fetcher;
+    const interceptor = new UrlResolveInterceptor();
+    const exchange = new FetchExchange({
+      fetcher,
+      request: { url: '/resource', urlParams: { query: { limit: 1 } } },
+    });
+
+    interceptor.intercept(exchange);
+    exchange.request.urlParams = { query: { retry: 1 } };
+    interceptor.intercept(exchange);
+
+    expect(exchange.request.url).toBe('/api/resource?limit=1&retry=1');
+    expect(exchange.request.urlParams).toBeUndefined();
+  });
+
+  it('should resolve a URL replaced before a re-run in full', () => {
+    const fetcher = { urlBuilder: new UrlBuilder('/api') } as Fetcher;
+    const interceptor = new UrlResolveInterceptor();
+    const exchange = new FetchExchange({
+      fetcher,
+      request: { url: '/resource' },
+    });
+
+    interceptor.intercept(exchange);
+    exchange.request.url = '/other';
+    interceptor.intercept(exchange);
+
+    expect(exchange.request.url).toBe('/api/other');
+  });
 });

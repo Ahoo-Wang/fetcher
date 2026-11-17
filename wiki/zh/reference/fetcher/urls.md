@@ -9,7 +9,7 @@ description: 'URL 构建与模板 — @ahoo-wang/fetcher 5.0.0'
 
 ## 构建器 {#builder}
 
-`new UrlBuilder(baseURL: string, urlTemplateStyle?)` 提供可修改的 `baseURL` 和 `urlTemplateResolver`。`build(url: string, params?: UrlParams): string` 解析路径与查询；`resolveRequestUrl(request: FetchRequest)` 委托给 `build`。`UrlBuilderCapable` 要求 `urlBuilder` 字段。`UrlParams.path`、`.query` 均为可选 `Record<string, any>`。
+`new UrlBuilder(baseURL: string, urlTemplateStyle?)` 提供可修改的 `baseURL` 和 `urlTemplateResolver`。`build(url: string, params?: UrlParams): string` 解析路径与查询；`applyParams(url: string, params?: UrlParams): string` 对已拼接基础地址的 URL 做同样处理，不再次添加前缀；`resolveRequestUrl(request: FetchRequest)` 委托给 `build`。`UrlBuilderCapable` 要求 `urlBuilder` 字段。`UrlParams.path`、`.query` 均为可选 `Record<string, any>`。
 
 `combineURLs(baseURL, relativeURL)` 去掉拼接处前后多余斜杠。相对 URL 为空时原样返回基础地址；第二个 URL 是绝对地址或协议相对地址时覆盖基础地址。`isAbsoluteURL` 识别可选 scheme 后跟 `//` 的形式，并不识别所有 URI scheme，例如不会把 `data:` 当作绝对地址。
 
@@ -29,7 +29,7 @@ description: 'URL 构建与模板 — @ahoo-wang/fetcher 5.0.0'
 | `urlTemplateRegexResolve(template, regex, params?)`        | 使用调用者提供的正则捕获组确定键名，执行同样的替换规则。                                                                                                                    |
 | `urlTemplateRegexExtract(template, regex)`                 | 循环调用 `regex.exec`，必须使用 global 正则以推进匹配。                                                                                                                     |
 
-`Date` 值转为 ISO 8601 文本，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 避免重复解析。名称和顺序常量见[拦截器](./interceptors.md)。无论是否传入参数映射，缺失模板参数都在网络 I/O 前失败。
+`Date` 值转为 ISO 8601 文本，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 并记住生成的 URL。对同一请求再次运行（如 CoSec 401 重试）时保留该 URL，因此 `/api` 这类相对基础地址不会被重复拼接；再次运行前设置的 URL 参数用 `applyParams` 附加，替换后的 URL 则完整解析。名称和顺序常量见[拦截器](./interceptors.md)。无论是否传入参数映射，缺失模板参数都在网络 I/O 前失败。
 
 ## 完整示例 {#example}
 
@@ -57,7 +57,7 @@ console.assert(
 | <a id="urlparams"></a>`UrlParams`                                            | [urlBuilder.ts:28](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L28)                     |
 | <a id="urlbuilder"></a>`UrlBuilder`                                          | [urlBuilder.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L105)                   |
 | <a id="tosearchparams"></a>`toSearchParams`                                  | [urlBuilder.ts:77](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L77)                     |
-| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:199](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L199)                   |
+| <a id="urlbuildercapable"></a>`UrlBuilderCapable`                            | [urlBuilder.ts:211](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlBuilder.ts#L211)                   |
 | <a id="urltemplatestyle"></a>`UrlTemplateStyle`                              | [urlTemplateResolver.ts:20](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L20)   |
 | <a id="geturltemplateresolver"></a>`getUrlTemplateResolver`                  | [urlTemplateResolver.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L63)   |
 | <a id="urltemplateresolver"></a>`UrlTemplateResolver`                        | [urlTemplateResolver.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlTemplateResolver.ts#L92)   |
