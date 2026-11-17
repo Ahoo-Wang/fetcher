@@ -49,10 +49,9 @@ export function storageEventBus<T>(
   key: string,
   eventBus: TypedEventBus<StorageEvent<T>> | undefined,
   storage: Storage | undefined,
+  shared: boolean = isSharedAcrossTabs(storage),
 ): TypedEventBus<StorageEvent<T>> {
   if (eventBus) return eventBus;
   const delegate = new SerialTypedEventBus<StorageEvent<T>>(key);
-  return isSharedAcrossTabs(storage)
-    ? new BroadcastTypedEventBus({ delegate })
-    : delegate;
+  return shared ? new BroadcastTypedEventBus({ delegate }) : delegate;
 }
