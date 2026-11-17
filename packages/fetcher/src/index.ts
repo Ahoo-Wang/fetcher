@@ -38,3 +38,11 @@ export * from './utils.js';
 export * from './validateStatusInterceptor.js';
 
 export * from './requestHeaders.js';
+// Realm-independent checks other packages (decorator) rely on; the rest of
+// realm.ts stays internal.
+export {
+  isAbortController,
+  isAbortSignal,
+  isMap,
+  isPlainObject,
+} from './realm.js';

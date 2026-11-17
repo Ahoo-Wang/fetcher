@@ -22,11 +22,15 @@ import {
   formatUrlParam,
   type FetchExchangeInit,
   getFetcher,
+  isAbortController,
+  isAbortSignal,
+  isMap,
+  isPlainObject,
   JsonResultExtractor,
+  mergeHeaderOverrides,
+  mergeQuery,
   mergeRecordToMap,
   mergeRequest,
-  mergeHeaders,
-  setHeader,
   resolveTimeout,
   type RequestHeaders,
   type UrlParams,
@@ -91,11 +95,17 @@ function warnInferredPathNameMismatch(
   checkedEndpoints.add(metadata.endpoint);
 }
 
-/** An object literal or `Object.create(null)`: the only objects spread into keys. */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
+/**
+ * Sets `key` as an own data field: assigning `__proto__` would replace the
+ * record's prototype instead and the value would be lost.
+ */
+function setField(record: Record<string, any>, key: string, value: unknown) {
+  Object.defineProperty(record, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
 }
 
 function formatHeader(value: unknown): string | undefined {
@@ -293,11 +303,12 @@ export class FunctionMetadata implements NamedCapable {
       ...this.api.urlParams?.path,
       ...this.endpoint.urlParams?.path,
     };
-    const queryParams: Record<string, any> = {
-      ...this.api.urlParams?.query,
-      ...this.endpoint.urlParams?.query,
-    };
-    const headers = mergeHeaders(this.api.headers, this.endpoint.headers);
+    // Query arguments; merged over the metadata query (a record or a
+    // URLSearchParams) once all are bound.
+    const queryParams: Record<string, any> = {};
+    // Removals (`undefined` entries) are kept until the Fetcher's own merge,
+    // so they remove its default headers too.
+    let headers = mergeHeaderOverrides(this.api.headers, this.endpoint.headers);
     let body: any = undefined;
     let signal: AbortSignal | null | undefined = undefined;
     let abortController: AbortController | null | undefined = undefined;
@@ -305,11 +316,12 @@ export class FunctionMetadata implements NamedCapable {
     const attributes: Map<string, any> = this.resolveAttributes();
     // Process parameters based on their decorators
     args.forEach((value, index) => {
-      if (value instanceof AbortSignal) {
+      // Recognized from any realm: an iframe's signal cancels too.
+      if (isAbortSignal(value)) {
         signal = value;
         return;
       }
-      if (value instanceof AbortController) {
+      if (isAbortController(value)) {
         abortController = value;
         return;
       }
@@ -325,7 +337,7 @@ export class FunctionMetadata implements NamedCapable {
           this.processQueryParam(funParameter, value, queryParams);
           break;
         case ParameterType.HEADER:
-          this.processHeaderParam(funParameter, value, headers);
+          headers = this.processHeaderParam(funParameter, value, headers);
           break;
         case ParameterType.BODY:
           body = value;
@@ -340,7 +352,10 @@ export class FunctionMetadata implements NamedCapable {
     });
     const urlParams: UrlParams = {
       path: pathParams,
-      query: queryParams,
+      query: mergeQuery(
+        mergeQuery(this.api.urlParams?.query, this.endpoint.urlParams?.query),
+        queryParams,
+      ),
     };
     const endpointRequest: FetchRequestInit = {
       method: this.endpoint.method,
@@ -373,10 +388,12 @@ export class FunctionMetadata implements NamedCapable {
   }
 
   /**
-   * Binds a path or query argument. A plain object is spread into its keys
-   * (`@query() filter: { status, page }`); anything else, arrays and dates
-   * included, is bound to the parameter's name and serialized by fetcher's
-   * `UrlBuilder`. Absent values (`undefined`, `null`) are left out.
+   * Binds a path or query argument. A plain object, from any realm, is spread
+   * into its keys (`@query() filter: { status, page }`); anything else,
+   * arrays and dates included, is bound to the parameter's name and
+   * serialized by fetcher's `UrlBuilder`. Absent values (`undefined`,
+   * `null`) are left out. Every key is set as an own field, `__proto__`
+   * included.
    */
   private processHttpParam(
     param: ParameterMetadata,
@@ -388,11 +405,11 @@ export class FunctionMetadata implements NamedCapable {
     }
     if (isPlainObject(value)) {
       for (const [key, item] of Object.entries(value)) {
-        if (item !== undefined && item !== null) params[key] = item;
+        if (item !== undefined && item !== null) setField(params, key, item);
       }
       return;
     }
-    params[param.name || `param${param.index}`] = value;
+    setField(params, param.name || `param${param.index}`, value);
   }
 
   private processPathParam(
@@ -415,27 +432,34 @@ export class FunctionMetadata implements NamedCapable {
    * Binds a header argument: a plain object sets one header per key, any
    * other value the header named after the parameter. An array is sent as a
    * comma-separated list, a date in ISO 8601. An `undefined` or `null` entry
-   * of an object removes that header.
+   * of an object removes that header, a default of the Fetcher's included.
+   *
+   * @returns The headers with this argument merged over them
    */
   private processHeaderParam(
     param: ParameterMetadata,
     value: any,
     headers: RequestHeaders,
-  ) {
-    if (value === undefined || value === null) return;
+  ): RequestHeaders {
+    if (value === undefined || value === null) return headers;
     const entries: [string, unknown][] = isPlainObject(value)
       ? Object.entries(value)
       : [[param.name || `param${param.index}`, value]];
-    for (const [name, headerValue] of entries) {
-      setHeader(headers, name, formatHeader(headerValue));
-    }
+    // fromEntries defines own fields, so `__proto__` stays a header name.
+    return mergeHeaderOverrides(
+      headers,
+      Object.fromEntries(
+        entries.map(([name, headerValue]) => [name, formatHeader(headerValue)]),
+      ),
+    );
   }
 
   /**
    * Binds an attribute argument. An explicitly named one
    * (`@attribute('user')`) stores the value under that name. Otherwise a Map
    * or plain object is merged entry by entry, and any other value is stored
-   * under the inferred parameter name.
+   * under the inferred parameter name. A Map or plain object from another
+   * realm counts too.
    */
   private processAttributeParam(
     param: ParameterMetadata,
@@ -447,7 +471,7 @@ export class FunctionMetadata implements NamedCapable {
       attributes.set(param.name, value);
       return;
     }
-    if (value instanceof Map || isPlainObject(value)) {
+    if (isMap(value) || isPlainObject(value)) {
       mergeRecordToMap(value, attributes);
       return;
     }

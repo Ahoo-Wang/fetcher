@@ -233,3 +233,70 @@ describe('request bodies from another realm (#2003)', () => {
     expect(sent[0].contentType).toBe('application/json');
   });
 });
+
+describe('exported realm checks', () => {
+  it('are exported from the package entry', async () => {
+    const entry = await import('../src');
+    expect(entry.isPlainObject).toBeTypeOf('function');
+    expect(entry.isMap).toBe(isMap);
+    expect(entry.isAbortSignal).toBeTypeOf('function');
+    expect(entry.isAbortController).toBeTypeOf('function');
+  });
+
+  it('isPlainObject accepts plain objects from any realm', async () => {
+    const { isPlainObject } = await import('../src');
+    expect(isPlainObject({ a: 1 })).toBe(true);
+    expect(isPlainObject(Object.create(null))).toBe(true);
+    expect(isPlainObject(JSON.parse('{"__proto__":1}'))).toBe(true);
+    expect(isPlainObject(runInNewContext('({ a: 1 })'))).toBe(true);
+    expect(isPlainObject(runInNewContext('JSON.parse("{}")'))).toBe(true);
+    expect(isPlainObject(runInNewContext('Object.create(null)'))).toBe(true);
+  });
+
+  it('isPlainObject rejects instances, arrays and built-ins from any realm', async () => {
+    const { isPlainObject } = await import('../src');
+    class Point {}
+    for (const value of [
+      new Point(),
+      [],
+      new Date(),
+      new Map(),
+      Object.create(Object.create(null)),
+      Object.create({}),
+      runInNewContext('new (class P {})()'),
+      runInNewContext('[]'),
+      runInNewContext('new Date()'),
+      null,
+      'text',
+      1,
+      () => {},
+      new Proxy(
+        {},
+        {
+          getPrototypeOf() {
+            throw new Error('trap');
+          },
+        },
+      ),
+    ]) {
+      expect(isPlainObject(value)).toBe(false);
+    }
+  });
+
+  it('isAbortSignal and isAbortController read the internal slots', async () => {
+    const { isAbortController, isAbortSignal } = await import('../src');
+    const controller = new AbortController();
+    expect(isAbortSignal(controller.signal)).toBe(true);
+    expect(isAbortController(controller)).toBe(true);
+    expect(isAbortSignal(fromOtherRealm(new AbortController().signal))).toBe(
+      true,
+    );
+    expect(isAbortController(fromOtherRealm(new AbortController()))).toBe(true);
+    expect(isAbortSignal(controller)).toBe(false);
+    expect(isAbortController(controller.signal)).toBe(false);
+    expect(
+      isAbortSignal({ aborted: true, [Symbol.toStringTag]: 'AbortSignal' }),
+    ).toBe(false);
+    expect(isAbortController({ signal: controller.signal })).toBe(false);
+  });
+});

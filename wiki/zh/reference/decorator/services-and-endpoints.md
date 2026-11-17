@@ -21,15 +21,15 @@ description: '服务与端点 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 ## API 元数据与优先级 {#metadata}
 
-| `ApiMetadata` 字段            | 解析规则                                                                   |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| `basePath?: string`           | 端点真值覆盖 API 路径，再回退空值。                                        |
-| `fetcher?: string \| Fetcher` | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。                    |
-| `headers?` / `urlParams?`     | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。 |
-| `timeout?: number`            | 端点已定义值（含零）、API、客户端默认值依次回退。                          |
-| `resultExtractor?`            | 端点、API、`JsonResultExtractor`。                                         |
-| `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                   |
-| `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                     |
+| `ApiMetadata` 字段            | 解析规则                                                                                                                                                                                                                                                                                       |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `basePath?: string`           | 端点真值覆盖 API 路径，再回退空值。                                                                                                                                                                                                                                                            |
+| `fetcher?: string \| Fetcher` | 端点非 nullish 值优先，再 API，通过 `getFetcher` 解析。                                                                                                                                                                                                                                        |
+| `headers?` / `urlParams?`     | 客户端默认值（头）、API、端点、绑定参数/request 值依次覆盖；头忽略大小写。任一层的删除（`undefined` 头，或 `@header()` 中 null/undefined 条目）也会删除客户端默认值。`URLSearchParams` 形式的 query 会保留，包括重复键；后一层的名称替换该名称的所有值（[`mergeQuery`](../fetcher/urls.md)）。 |
+| `timeout?: number`            | 端点已定义值（含零）、API、客户端默认值依次回退。                                                                                                                                                                                                                                              |
+| `resultExtractor?`            | 端点、API、`JsonResultExtractor`。                                                                                                                                                                                                                                                             |
+| `returnType?`                 | 端点、API、`EndpointReturnType.RESULT`。                                                                                                                                                                                                                                                       |
+| `attributes?`                 | API 条目、端点条目、参数属性依次覆盖。                                                                                                                                                                                                                                                         |
 
 `ApiMetadataCapable.apiMetadata` 支持实例配置。`buildRequestExecutor` 每次调用都将实例元数据浅展开覆盖装饰器元数据，不做缓存，因此替换或原地修改 `apiMetadata` 都在下次调用生效。端点元数据仍优先。浅合并意味着实例 headers 对象先整体替换类 headers，再参与端点/请求合并。
 

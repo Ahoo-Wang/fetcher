@@ -11,16 +11,16 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 `parameter(type: ParameterType, name = '')` 返回传统方法参数装饰器。`ParameterMetadata` 保存 `type`、可选 `name`、`index` 和可选 `explicit`（名称是否由装饰器给出而非推断）；`PARAMETER_METADATA_KEY` 是目标/属性上的元数据 Symbol。
 
-参数按形状绑定。只有普通对象（对象字面量或 `Object.create(null)`）会展开为键；其他值，包括数组、`Date` 和类实例，都绑定到参数名（显式名称，否则推断名称，否则 `param${index}`），由 fetcher 序列化。
+参数按形状绑定。只有普通对象（对象字面量、解析得到的 JSON 或 `Object.create(null)`，来自任意 realm，包括同源 iframe；见 fetcher 的 [`isPlainObject`](../fetcher/requests.md#realm)）会展开为键，每个键都设为自有字段，因此 `__proto__` 键或名称与其他名称一样发送；其他值，包括数组、`Date` 和类实例，都绑定到参数名（显式名称，否则推断名称，否则 `param${index}`），由 fetcher 序列化。
 
-| 工厂 / ParameterType               | 其他参数（标量、数组、`Date`、实例）                                 | 普通对象参数                               | Nullish 行为                                                     |
-| ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ | ---------------------------------------------------------------- |
-| `path(name = '')` / PATH           | 绑定到参数名                                                         | 展开条目，忽略显式 name                    | 跳过 null/undefined 参数或条目                                   |
-| `query(name = '')` / QUERY         | 绑定到参数名；数组重复该键（`ids=1&ids=2`），`Date` 以 ISO 8601 发送 | 展开条目                                   | 跳过 null/undefined 参数或条目                                   |
-| `header(name = '')` / HEADER       | 设置以参数名命名的请求头；数组以 `, ` 连接，`Date` 以 ISO 8601 发送  | 每个条目设置一个请求头，大小写不敏感       | 整个参数 null/undefined 时跳过，条目为 null/undefined 时删除该头 |
-| `body()` / BODY                    | 整个请求正文                                                         | 整个请求正文                               | 按原值赋值，再参与 request 合并                                  |
-| `request()` / REQUEST              | 应为 `ParameterRequest`                                              | 最后合并到已解析请求                       | 假值变为空请求                                                   |
-| `attribute(name = '')` / ATTRIBUTE | 存入参数名下                                                         | 显式名称：整体存入该名下；未命名：合并条目 | 跳过 undefined；null 与其他值一样存入                            |
+| 工厂 / ParameterType               | 其他参数（标量、数组、`Date`、实例）                                 | 普通对象参数                               | Nullish 行为                                                                            |
+| ---------------------------------- | -------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `path(name = '')` / PATH           | 绑定到参数名                                                         | 展开条目，忽略显式 name                    | 跳过 null/undefined 参数或条目                                                          |
+| `query(name = '')` / QUERY         | 绑定到参数名；数组重复该键（`ids=1&ids=2`），`Date` 以 ISO 8601 发送 | 展开条目                                   | 跳过 null/undefined 参数或条目                                                          |
+| `header(name = '')` / HEADER       | 设置以参数名命名的请求头；数组以 `, ` 连接，`Date` 以 ISO 8601 发送  | 每个条目设置一个请求头，大小写不敏感       | 整个参数 null/undefined 时跳过，条目为 null/undefined 时删除该头，包括 Fetcher 的默认头 |
+| `body()` / BODY                    | 整个请求正文                                                         | 整个请求正文                               | 按原值赋值，再参与 request 合并                                                         |
+| `request()` / REQUEST              | 应为 `ParameterRequest`                                              | 最后合并到已解析请求                       | 假值变为空请求                                                                          |
+| `attribute(name = '')` / ATTRIBUTE | 存入参数名下                                                         | 显式名称：整体存入该名下；未命名：合并条目 | 跳过 undefined；null 与其他值一样存入                                                   |
 
 显式命名的 `@attribute('user')` 无论值是什么都存入 `user` 名下。未命名的 `@attribute()` 逐条合并 `Map` 或普通对象，其他值存入推断名称下。
 
@@ -38,7 +38,7 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 ## 取消与继承元数据 {#cancellation}
 
-`AbortSignal` 或 `AbortController` 参数在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 或 controller 与 Fetcher timeout 同时生效，先触发者生效，详见[取消](../fetcher/errors-and-cancellation.md)。
+`AbortSignal` 或 `AbortController` 参数（来自任意 realm，包括同源 iframe）在装饰器元数据之前识别，即使没有装饰器也有效。多个同类参数最后一个优先；request 参数还能覆盖。signal 或 controller 与 Fetcher timeout 同时生效，先触发者生效，详见[取消](../fetcher/errors-and-cancellation.md)。
 
 继承参数元数据采用写时复制，装饰重写方法不会修改父类 Map。未加自身端点装饰器的重写方法保留自己的实现，`@api` 不会用父类的请求替换它。类绑定遍历继承的字符串与 Symbol 命名方法，静态方法不在该遍历中。继承/重写端点也应显式填写参数名称。
 
