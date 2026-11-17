@@ -11,7 +11,7 @@ description: '拦截器与资源归属 — Fetcher 6.0.0'
 
 1. CoSecRequestInterceptor 跳过被 [`isTrusted`](#request-trust) 拒绝的请求；否则设置应用/设备/请求头，以及解析得到的真值空间 ID。
 2. AuthorizationRequestInterceptor 跳过不受信任的请求（不注入 Authorization、不刷新），并保留已有 Authorization；否则检查会话所有权，access 过期且 refresh 有效时刷新，再注入受管理的 Bearer token。
-3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，随后核心传输发送请求。
+3. ResourceAttributionRequestInterceptor 在 URL 解析前填充租户/所有者路径参数，占位符在请求实际解析所用的模板中查找：Fetcher `baseURL` 与请求 URL 拼接后的模板；请求 URL 为绝对地址时仅查找请求 URL。随后核心传输发送请求。
 4. AuthorizationResponseInterceptor 在正常状态校验前处理受管理凭据的 401。刷新后仅删除自己注入的陈旧凭据，并完整重跑 exchange 管线，最多一次。
 5. 剩余失败进入错误拦截器。Unauthorized 通过通知所有权守卫处理 401/RefreshTokenError（`RefreshUnavailableError` 表示刷新未能到达服务端，会话保留，不通知）；Forbidden 处理 403。回调都不会自动恢复失败请求。
 
@@ -48,7 +48,7 @@ sequenceDiagram
 | `CoSecRequestInterceptor` / `CoSecRequestOptions`                      | 必填 appId、deviceIdStorage；spaceIdProvider 默认 NoneSpaceIdProvider；可选 isTrusted | Promise&lt;void&gt;；不受信任的请求什么都不做；否则覆盖应用/设备/请求头；仅为真值 ID 写空间头；存储/provider 失败传播                                 |
 | `AuthorizationRequestInterceptor` / `AuthorizationInterceptorOptions`  | 必填 tokenManager（JwtTokenManagerCapable）；可选 isTrusted                           | Promise&lt;void&gt;；不受信任的请求什么都不做；保留显式 Authorization，需要时刷新受管理 token                                                         |
 | `AuthorizationResponseInterceptor`                                     | 同 AuthorizationInterceptorOptions                                                    | Promise&lt;void&gt;；仅 401、匹配受管理凭据，最多 AUTHORIZATION_RESPONSE_MAX_RETRY=1                                                                  |
-| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅匹配模板且当前路径值为假值时填充                                                                     |
+| `ResourceAttributionRequestInterceptor` / `ResourceAttributionOptions` | 必填 tokenStorage；tenantId='tenantId'、ownerId='ownerId' 是**占位符名称**            | void；从解码的 access payload 取 tenantId/sub；仅当 baseURL + 请求 URL 模板（请求 URL 为绝对地址时仅请求 URL）包含该占位符且当前路径值为假值时填充    |
 | `UnauthorizedErrorInterceptor` / options                               | 必填 onUnauthorized，返回 void 或 Promise&lt;void&gt;                                 | Promise&lt;void&gt;；跳过 RefreshSessionChangedError、RefreshUnavailableError 及重复/过时通知；回调错误成为 exchange 错误（`ExchangeError` 的 cause） |
 | `ForbiddenErrorInterceptor` / options                                  | 必填 onForbidden，返回 Promise&lt;void&gt;                                            | Promise&lt;void&gt;；仅 response.status=403 时执行回调；回调错误成为 exchange 错误（`ExchangeError` 的 cause）                                        |
 
@@ -225,19 +225,19 @@ cosec.deviceIdStorage.destroy();
 
 <span id="resourceattributionoptions"></span>
 
-**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L27)
+**`ResourceAttributionOptions`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L29)
 
 <span id="resource_attribution_request_interceptor_name"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:45](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L45)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L47)
 
 <span id="resource_attribution_request_interceptor_order"></span>
 
-**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L53)
+**`RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L55)
 
 <span id="resourceattributionrequestinterceptor"></span>
 
-**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L61)
+**`ResourceAttributionRequestInterceptor`** — [packages/cosec/src/resourceAttributionRequestInterceptor.ts:63](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/resourceAttributionRequestInterceptor.ts#L63)
 
 <span id="spaceidprovider"></span>
 
