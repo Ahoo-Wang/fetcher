@@ -62,12 +62,18 @@ export interface UseExecutePromiseReturn<
   reset: () => void;
 }
 
+/**
+ * Whether `error` is an `AbortError`, or wraps one through `cause`: Fetcher
+ * wraps a request aborted by the caller's signal in an `ExchangeError`.
+ */
 function isAbortError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    (error as { name?: unknown }).name === 'AbortError'
-  );
+  const seen = new Set<unknown>();
+  while (typeof error === 'object' && error !== null && !seen.has(error)) {
+    if ((error as { name?: unknown }).name === 'AbortError') return true;
+    seen.add(error);
+    error = (error as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 /** Runs a user callback; its failure is reported, never thrown. */
@@ -100,9 +106,12 @@ async function settle<R>(
 /**
  * Runs promises one at a time and tracks the latest one's state.
  *
- * Each execution is identified by its `AbortController`: only the execution
- * whose controller is current may write state, and every cancellation —
- * a newer execution, `abort()`, `reset()`, unmounting — aborts it.
+ * Each execution is identified by its `AbortController`, current from the
+ * moment `execute` is called: only the execution whose controller is current
+ * may write state, and every cancellation — a newer execution, `abort()`,
+ * `reset()`, unmounting — aborts it. An execution is current before the one
+ * it replaces is aborted, so an `execute` called from `onAbort` (or from an
+ * abort listener) replaces it in turn instead of being lost.
  */
 export function useExecutePromise<R = unknown, E = FetcherError>(
   options?: UseExecutePromiseOptions<R, E>,
@@ -114,28 +123,36 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
   const disposedRef = useRef(false);
   const latestOptions = useLatest(options);
 
-  /** Aborts the execution in flight; `true` if there was one. */
-  const cancel = useCallback((): boolean => {
-    const controller = controllerRef.current;
-    if (!controller) return false;
-    controllerRef.current = undefined;
-    controller.abort();
-    invokeCallback('onAbort', latestOptions.current?.onAbort, undefined);
-    return true;
-  }, [latestOptions]);
+  /**
+   * Aborts a controller that is no longer current. Its abort listeners and
+   * `onAbort` may call `execute`, so it must not be current any more.
+   */
+  const release = useCallback(
+    (controller: AbortController | undefined): void => {
+      if (!controller) return;
+      controller.abort();
+      invokeCallback('onAbort', latestOptions.current?.onAbort, undefined);
+    },
+    [latestOptions],
+  );
 
   const execute = useCallback(
     async (supplier: PromiseSupplier<R>): Promise<PromiseState<R, E>> => {
-      if (disposedRef.current) {
-        // StrictMode replays layout effects before passive ones, so an
-        // execution from a replayed layout effect sees the hook disposed
-        // until the replay finishes, within the same task.
-        await Promise.resolve();
-        if (disposedRef.current) return idleState();
-      }
-      cancel();
       const controller = new AbortController();
+      const previous = controllerRef.current;
       controllerRef.current = controller;
+      release(previous);
+      if (disposedRef.current) {
+        // Layout effects reconnect before passive ones (a StrictMode replay,
+        // a revealed Activity), so an execution from such a layout effect
+        // sees the hook disposed until the passive setup, in the same task.
+        // It stays current meanwhile: a later execute or abort() cancels it.
+        await Promise.resolve();
+        if (disposedRef.current && controllerRef.current === controller) {
+          controllerRef.current = undefined;
+        }
+      }
+      if (controllerRef.current !== controller) return idleState();
       setLoading();
       const settled = await settle(supplier, controller);
       if (controllerRef.current !== controller) return idleState();
@@ -159,17 +176,25 @@ export function useExecutePromise<R = unknown, E = FetcherError>(
       await invokeCallback('onError', latestOptions.current?.onError, error);
       return errorState(error);
     },
-    [cancel, setLoading, setSuccess, setError, setIdle, latestOptions],
+    [release, setLoading, setSuccess, setError, setIdle, latestOptions],
   );
 
+  // Both settle the state before aborting, so an execution started from
+  // `onAbort` keeps its `loading` state.
   const abort = useCallback(() => {
-    if (cancel()) setIdle();
-  }, [cancel, setIdle]);
+    const controller = controllerRef.current;
+    if (!controller) return;
+    controllerRef.current = undefined;
+    setIdle();
+    release(controller);
+  }, [release, setIdle]);
 
   const reset = useCallback(() => {
-    cancel();
+    const controller = controllerRef.current;
+    controllerRef.current = undefined;
     setIdle();
-  }, [cancel, setIdle]);
+    release(controller);
+  }, [release, setIdle]);
 
   // Unmounting cancels. Under StrictMode the component survives the simulated
   // unmount, so the cancelled execution must leave `loading` too.

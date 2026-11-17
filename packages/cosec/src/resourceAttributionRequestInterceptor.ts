@@ -13,7 +13,9 @@
 
 import type { FetchExchange, RequestInterceptor } from '@ahoo-wang/fetcher';
 import {
+  combineURLs,
   DEFAULT_INTERCEPTOR_ORDER_STEP,
+  isAbsoluteURL,
   URL_RESOLVE_INTERCEPTOR_ORDER,
 } from '@ahoo-wang/fetcher';
 import type { TokenStorage } from './tokenStorage.js';
@@ -98,10 +100,16 @@ export class ResourceAttributionRequestInterceptor implements RequestInterceptor
     }
 
     // Extract path parameters from the URL template
+    // The URL is resolved from the baseURL and the request URL together, so
+    // placeholders are looked for in both — unless an absolute request URL
+    // replaces the baseURL.
+    const { urlBuilder } = exchange.fetcher;
+    const url = exchange.request.url;
+    const template = isAbsoluteURL(url)
+      ? url
+      : combineURLs(urlBuilder.baseURL, url);
     const extractedPathParams =
-      exchange.fetcher.urlBuilder.urlTemplateResolver.extractPathParams(
-        exchange.request.url,
-      );
+      urlBuilder.urlTemplateResolver.extractPathParams(template);
     const tenantIdPathKey = this.tenantIdPathKey;
     const requestPathParams = exchange.ensureRequestUrlParams().path;
     const tenantId = principal.tenantId;
