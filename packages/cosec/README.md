@@ -13,7 +13,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus \
 
 Peer dependencies: `fetcher`, `fetcher-eventbus`, and `fetcher-storage`.
 
-Requires Node `^20.19.0 || >=22.12.0`. Its dependency nanoid is ES modules only, so the CommonJS entry (`require`) loads only where `require()` of an ES module works.
+Requires Node `^22.12.0 || ^24.0.0 || >=26.0.0`, the Node versions nanoid 6 supports, from the first 22 release where `require()` of an ES module works: nanoid is ES modules only, and the CommonJS entry (`require`) loads it that way.
 
 ## Example
 

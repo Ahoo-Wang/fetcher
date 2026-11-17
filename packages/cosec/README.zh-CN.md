@@ -12,7 +12,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus \
 
 Peer 依赖：`fetcher`、`fetcher-eventbus` 和 `fetcher-storage`。
 
-需要 Node `^20.19.0 || >=22.12.0`。依赖 nanoid 仅提供 ES 模块，因此 CommonJS 入口（`require`）只能在支持 `require()` 加载 ES 模块的 Node 中加载。
+需要 Node `^22.12.0 || ^24.0.0 || >=26.0.0`，即 nanoid 6 支持的 Node 版本，并从 22 系列中首个支持 `require()` 加载 ES 模块的版本起：nanoid 仅提供 ES 模块，CommonJS 入口（`require`）以这种方式加载它。
 
 ## 示例
 
