@@ -16,7 +16,7 @@ description: '防抖执行 — @ahoo-wang/fetcher-react 6.0.0'
 | `useDebouncedValue(value, options)`                  | 返回 `{ value, pending, flush }`。首次渲染直接返回 `value`；之后的变化（按深比较）在延迟后应用。                                                                                    |
 | `useDebouncedQuery` / `useDebouncedFetcherQuery`     | `query` 被防抖的[受控查询](./promise-and-query-state#controlled-queries)：首个查询立即执行，之后的变化在延迟后执行。增加 `pending` 和 `flush()`；`execute()` 重新执行已应用的查询。 |
 
-同时开启 leading/trailing 时，首次立即调用；孤立的 leading 调用不会额外执行一次 trailing。延迟内的后续调用可以安排 trailing。`cancel()` 删除计划任务，但保留上次 leading 时间戳，不取消已运行请求；反之，请求 `abort()` 不清除等待中的定时器，要取消整个用户操作应两者都调用。卸载清除定时器，请求 Hook 还会取消当前执行。
+一轮连续调用（burst）指相邻间隔都小于 `delay` 的一串调用，在 `delay` 内没有新调用时结束。`leading` 立即执行这一轮的首个调用，`trailing` 在这一轮结束时执行最后一个调用。两者都开启时，孤立的 leading 调用不会额外执行一次 trailing，持续落在延迟内的调用也不会再次触发 leading。`cancel()` 删除计划任务但不结束这一轮，紧接着的调用不算新的 leading 调用；它也不取消已运行请求；反之，请求 `abort()` 不清除等待中的定时器，要取消整个用户操作应两者都调用。卸载清除定时器，请求 Hook 还会取消当前执行。卸载以及 StrictMode 重放、`Activity` 隐藏时的 effect 清理都会结束这一轮：重放后挂载 effect 的首个调用会再次立即执行。
 
 查询变体与 `useQuery` 一样把查询保存在你的状态中。传入的查询与已应用的查询不同时 `pending` 为 true；`flush()` 立即应用它（用于“应用”按钮或回车）。把查询改回已应用的值会丢弃等待中的变化。应用新查询时，在途请求在新执行开始时被取消，而不是每次按键时。防抖后的 `undefined` 使查询未就绪，但不会取消已经运行的工作。回调变体中的回调异常和 rejected promise 需要自行处理；定时器不会把拒绝交给 `run` 调用者。请求 Hook 由执行器的错误状态覆盖。
 
@@ -103,7 +103,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 ): UseDebouncedCallbackReturn<T>;
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L43)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L52)
 
 ### UseDebouncedCallbackOptions {#api-UseDebouncedCallbackOptions}
 
@@ -127,7 +127,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
 }
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L26)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L29)
 
 ### useDebouncedValue {#api-useDebouncedValue}
 
