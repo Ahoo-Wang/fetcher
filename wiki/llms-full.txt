@@ -6572,9 +6572,9 @@ CoSec request metadata, resource attribution, JWT storage and refresh integrated
 pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-storage
 ```
 
-The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. CoSec requires Node `^20.19.0 || >=22.12.0` (the other packages declare `>=18.20.8`): nanoid is ES modules only, so CoSec's CommonJS entry needs a Node where `require()` loads ES modules. Default token/device storages construct broadcast transports immediately. For SSR request isolation, inject request-owned storage and local buses as described in [configuration](./configuration.md).
+The command includes CoSec → Storage/EventBus → Fetcher; nanoid is installed as a regular dependency. CoSec requires Node `^20.19.0 || >=22.12.0` (the other packages declare `>=18.20.8`): nanoid is ES modules only, so CoSec's CommonJS entry needs a Node where `require()` loads ES modules. Default token/device/space storages broadcast across tabs only when they keep their value in the browser's `localStorage`; elsewhere (Node SSR, `sessionStorage`, an injected store) each default storage gets a bus of its own, so per-request storages never share state through a `BroadcastChannel`. For SSR request isolation, inject request-owned storage as described in [configuration](./configuration.md).
 
-Version **5.0.0** declares Node **>=18.20.8** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
+The package declares Node **^20.19.0 || >=22.12.0** for consumers. Repository development requires Node **>=22.12.0** and pnpm **10.34.5**.
 
 ## Minimal example
 
@@ -6720,11 +6720,11 @@ Token parsing is local decoding and expiration bookkeeping. It does not verify s
 
 `JwtPayload` declares required jti/sub/exp/iat and optional iss/aud/nbf. `CoSecJwtPayload` adds tenantId, policies, roles, attributes. `IJwtToken<Payload>` combines token/payload/isExpired with `EarlyPeriodCapable`. `RefreshTokenStatusCapable` supplies readonly isRefreshNeeded/isRefreshable. `AccessToken` and `RefreshToken` are one-string-field shapes; `CompositeToken` combines them.
 
-JSON parse failures from deserialize propagate. New sign-ins receive a random sessionId; deserialization preserves a nonempty stored sessionId and derives a stable legacy identifier otherwise. The legacy identifier is session bookkeeping, not a cryptographic integrity check.
+JSON parse failures from deserialize propagate, and a parsed value that is not a composite token (a non-array object with string accessToken and refreshToken) throws TypeError; TokenStorage then removes the stored record and reads it as absent, so no `Bearer undefined` is sent. New sign-ins receive a random sessionId; deserialization preserves a nonempty stored sessionId and derives a stable legacy identifier otherwise. The legacy identifier is session bookkeeping, not a cryptographic integrity check.
 
 ## TokenStorage
 
-`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a broadcast bus with serial delegate named for the actual key (closed by `destroy()`; a bus passed in `eventBus` stays open), and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
+`TokenStorage(options={})` extends KeyStorage&lt;JwtCompositeToken&gt;. Options are partial KeyStorageOptions excluding serializer, plus earlyPeriod. Defaults: key=`DEFAULT_COSEC_TOKEN_KEY` (`cosec-token`), earlyPeriod=0, a serial bus named for the actual key, wrapped in a cross-tab broadcast bus only when the storage is the browser's `localStorage` (closed by `destroy()`; a bus passed in `eventBus` stays open), and inherited environment storage. Serialization is selected internally. Instances sharing an event bus must use the same earlyPeriod or construction throws.
 
 | Member                              | Result                                                       |
 | ----------------------------------- | ------------------------------------------------------------ |
@@ -6803,27 +6803,27 @@ try {
 
 <span id="ijwttoken"></span>
 
-**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L46)
+**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L47)
 
 <span id="jwttoken"></span>
 
-**`JwtToken`** — [packages/cosec/src/jwtToken.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L81)
+**`JwtToken`** — [packages/cosec/src/jwtToken.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L82)
 
 <span id="refreshtokenstatuscapable"></span>
 
-**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L129)
+**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L130)
 
 <span id="jwtcompositetoken"></span>
 
-**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L168)
+**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L169)
 
 <span id="jwtcompositetokenserializer"></span>
 
-**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L257)
+**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L258)
 
 <span id="jwtcompositetokenserializer-instance"></span>
 
-**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L329)
+**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:332](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L332)
 
 <span id="refreshtokenerror"></span>
 
@@ -6839,7 +6839,7 @@ try {
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L66)
 
 <span id="default_cosec_token_key"></span>
 
@@ -6942,7 +6942,7 @@ By default an absolute request URL on any origin receives the access token and t
 
 ## Device and space selection
 
-`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses broadcast with a serial delegate named for the actual key, and `destroy()` closes such a default bus; a bus passed in `eventBus` stays open. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
+`DeviceIdStorage(options={})` and `SpaceIdStorage(options={})` extend KeyStorage&lt;string&gt;. Options are partial KeyStorageOptions; each forces its identity serializer. Their default keys are `cosec-device-id` and `cosec-space-id`; default buses are serial buses named for the actual key, broadcast across tabs only when the storage is the browser's `localStorage`, and `destroy()` closes such a default bus; a bus passed in `eventBus` stays open. Storage selection is inherited from KeyStorage. Custom event buses/storage can be injected; cleanup follows [KeyStorage](../storage/key-storage).
 
 `DeviceIdStorage.generateDeviceId(): string` calls the exported `idGenerator`, but does not store the result. `getOrCreate(): string` returns a truthy stored ID or generates/stores a new one. `IdGenerator.generateId(): string` is implemented by `NanoIdGenerator` with nanoid; `idGenerator` is its shared instance.
 
@@ -8563,14 +8563,14 @@ export interface UseEventSubscriptionReturn {
 
 `SecurityProvider` requires an existing `TokenStorage` and children, then makes `useSecurity` state available through context. Token creation/refresh belongs to CoSec; a route guard only decides which React node to render and is not a server authorization boundary.
 
-| API                                       | Contract                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useSecurity(tokenStorage, options = {})` | Returns currentUser, authenticated, signIn, signOut; missing token uses `ANONYMOUS_USER` (sub anonymous, empty jti, zero iat/exp). `authenticated` (access token unexpired) is computed at render; the hook re-renders when the refresh token expires, so an idle page signs out then, while a refreshable session is renewed by the next request. |
-| `signIn(tokenOrAsyncProvider)`            | Await provider if supplied, store token, invoke onSignIn. Returns Promise&lt;void&gt;; provider/storage/callback failures propagate.                                                                                                                                                                                                               |
-| `signOut()`                               | Remove token and invoke onSignOut; synchronous exceptions propagate.                                                                                                                                                                                                                                                                               |
-| `useSecurityContext()`                    | Returns context; throws outside SecurityProvider.                                                                                                                                                                                                                                                                                                  |
-| `RouteGuard`                              | Authenticated: children. Otherwise returns fallback (omitted renders nothing) and calls onUnauthorized after commit.                                                                                                                                                                                                                               |
-| `RefreshableRouteGuard`                   | Requires tokenManager. Refreshes when isRefreshNeeded and isRefreshable; authenticated children win, otherwise the refreshing node while it refreshes, or fallback when nothing is refreshable or the refresh rejects. Default refreshing text is `Refreshing...`.                                                                                 |
+| API                                       | Contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useSecurity(tokenStorage, options = {})` | Returns currentUser, authenticated, signIn, signOut; missing token uses `ANONYMOUS_USER` (sub anonymous, empty jti, zero iat/exp). `authenticated` (access token unexpired) is computed at render; the hook re-renders when the refresh token expires, so an idle page signs out then, while a refreshable session is renewed by the next request.                                                                                                                      |
+| `signIn(tokenOrAsyncProvider)`            | Await provider if supplied, store token, invoke onSignIn. Returns Promise&lt;void&gt;; provider/storage/callback failures propagate. A `signIn` or `signOut` started meanwhile through any `useSecurity` on the same storage supersedes a pending provider: its token is not stored and onSignIn is not called.                                                                                                                                                         |
+| `signOut()`                               | Remove token and invoke onSignOut; synchronous exceptions propagate.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `useSecurityContext()`                    | Returns context; throws outside SecurityProvider.                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `RouteGuard`                              | Authenticated: children. Otherwise returns fallback (omitted renders nothing) and calls onUnauthorized after commit.                                                                                                                                                                                                                                                                                                                                                    |
+| `RefreshableRouteGuard`                   | Requires tokenManager. Refreshes when isRefreshNeeded and isRefreshable; authenticated children win, otherwise the refreshing node while it refreshes, or fallback when nothing is refreshable or the refresh rejects. Each session gets its own refresh: when storage switches to another session that needs one, the guard refreshes it, and the outcome of the replaced session's refresh does not change what it shows. Default refreshing text is `Refreshing...`. |
 
 `RouteGuard.onUnauthorized` runs in an effect after the render commits, once each time `authenticated` becomes (or starts out) false, so it can call `navigate()`; StrictMode in development may run it twice, as it does any effect. The latest callback is used; changing it alone does not call it again. `RefreshableRouteGuard` logs refresh errors; it does not expose a local error state or cancel the token manager on unmount. The manager and storage remain application-owned. Context updates follow storage subscriptions, not an independent timer that recomputes authentication every second. Switching tokenStorage changes subscription and action targets; callbacks read latest options.
 
@@ -8660,7 +8660,7 @@ export function useSecurity(
 
 Implementation defaults: `options = {}`.
 
-[packages/react/src/cosec/useSecurity.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L155)
+[packages/react/src/cosec/useSecurity.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L166)
 
 ### ANONYMOUS_USER {#api-ANONYMOUS_USER}
 
@@ -24301,9 +24301,9 @@ export async function readAnswer(
 pnpm add @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-storage
 ```
 
-命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。CoSec 需要 Node `^20.19.0 || >=22.12.0`（其他包声明 `>=18.20.8`）：nanoid 仅提供 ES 模块，CoSec 的 CommonJS 入口需要支持 `require()` 加载 ES 模块的 Node。默认 token/device 存储会立即创建广播传输。SSR 请求隔离应注入请求独有的存储与本地总线，见[配置](./configuration.md)。
+命令包含 CoSec → Storage/EventBus → Fetcher；nanoid 作为普通依赖自动安装。CoSec 需要 Node `^20.19.0 || >=22.12.0`（其他包声明 `>=18.20.8`）：nanoid 仅提供 ES 模块，CoSec 的 CommonJS 入口需要支持 `require()` 加载 ES 模块的 Node。默认 token/device/space 存储仅在值保存于浏览器 `localStorage` 时跨标签页广播；其他环境（Node SSR、`sessionStorage`、注入的存储）中每个默认存储使用自己的总线，因此按请求创建的存储不会通过 `BroadcastChannel` 共享状态。SSR 请求隔离应注入请求独有的存储，见[配置](./configuration.md)。
 
-版本 **5.0.0** 对消费者声明 Node **>=18.20.8**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
+本包对消费者声明 Node **^20.19.0 || >=22.12.0**；仓库开发另需 Node **>=22.12.0** 和 pnpm **10.34.5**。
 
 ## 最小示例
 
@@ -24449,11 +24449,11 @@ Token 解析只进行本地解码与过期管理，不验证签名、issuer、au
 
 `JwtPayload` 声明必填 jti/sub/exp/iat，可选 iss/aud/nbf。`CoSecJwtPayload` 添加 tenantId、policies、roles、attributes。`IJwtToken<Payload>` 将 token/payload/isExpired 与 `EarlyPeriodCapable` 合并。`RefreshTokenStatusCapable` 提供 readonly isRefreshNeeded/isRefreshable。`AccessToken`、`RefreshToken` 各有一个字符串字段，`CompositeToken` 合并二者。
 
-deserialize 的 JSON 解析错误会传播。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
+deserialize 的 JSON 解析错误会传播；解析结果不是 composite token（非数组对象且 accessToken、refreshToken 均为字符串）时抛 TypeError，TokenStorage 随即移除该存储记录并视为不存在，不会发送 `Bearer undefined`。新登录生成随机 sessionId；反序列化保留非空已存 sessionId，否则推导稳定旧协议标识。旧标识用于会话管理，不是密码学完整性验证。
 
 ## TokenStorage
 
-`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、广播总线（serial delegate 名称取实际 key；由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
+`TokenStorage(options={})` 继承 KeyStorage&lt;JwtCompositeToken&gt;。选项为去掉 serializer 的部分 KeyStorageOptions 加 earlyPeriod。默认 key=`DEFAULT_COSEC_TOKEN_KEY`（`cosec-token`）、earlyPeriod=0、以实际 key 命名的 serial 总线，仅当存储为浏览器 `localStorage` 时再包装为跨标签页广播总线（由 `destroy()` 关闭，通过 `eventBus` 传入的总线保持打开）以及继承的环境存储。序列化器内部选择。共享事件总线的实例必须使用相同 earlyPeriod，否则构造抛错。
 
 | 成员                                | 结果                                     |
 | ----------------------------------- | ---------------------------------------- |
@@ -24532,27 +24532,27 @@ try {
 
 <span id="ijwttoken"></span>
 
-**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L46)
+**`IJwtToken`** — [packages/cosec/src/jwtToken.ts:47](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L47)
 
 <span id="jwttoken"></span>
 
-**`JwtToken`** — [packages/cosec/src/jwtToken.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L81)
+**`JwtToken`** — [packages/cosec/src/jwtToken.ts:82](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L82)
 
 <span id="refreshtokenstatuscapable"></span>
 
-**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:129](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L129)
+**`RefreshTokenStatusCapable`** — [packages/cosec/src/jwtToken.ts:130](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L130)
 
 <span id="jwtcompositetoken"></span>
 
-**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:168](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L168)
+**`JwtCompositeToken`** — [packages/cosec/src/jwtToken.ts:169](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L169)
 
 <span id="jwtcompositetokenserializer"></span>
 
-**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:257](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L257)
+**`JwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:258](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L258)
 
 <span id="jwtcompositetokenserializer-instance"></span>
 
-**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:329](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L329)
+**`jwtCompositeTokenSerializer`** — [packages/cosec/src/jwtToken.ts:332](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtToken.ts#L332)
 
 <span id="refreshtokenerror"></span>
 
@@ -24568,7 +24568,7 @@ try {
 
 <span id="jwttokenmanager"></span>
 
-**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L74)
+**`JwtTokenManager`** — [packages/cosec/src/jwtTokenManager.ts:66](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/jwtTokenManager.ts#L66)
 
 <span id="default_cosec_token_key"></span>
 
@@ -24671,7 +24671,7 @@ sequenceDiagram
 
 ## 设备与空间选择
 
-`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认广播总线的 serial delegate 名称取实际 key，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
+`DeviceIdStorage(options={})` 和 `SpaceIdStorage(options={})` 继承 KeyStorage&lt;string&gt;。选项为部分 KeyStorageOptions，每个类都强制使用自己的 identity serializer。默认键分别是 `cosec-device-id`、`cosec-space-id`，默认总线是以实际 key 命名的 serial 总线，仅当存储为浏览器 `localStorage` 时跨标签页广播，`destroy()` 会关闭这种默认总线；通过 `eventBus` 传入的总线保持打开。存储选择继承自 KeyStorage，可注入事件总线/存储；清理遵循 [KeyStorage](../storage/key-storage)。
 
 `DeviceIdStorage.generateDeviceId(): string` 调用导出的 `idGenerator`，但不存储结果。`getOrCreate(): string` 返回已有真值 ID，否则生成并存储。`IdGenerator.generateId(): string` 由 `NanoIdGenerator` 使用 nanoid 实现，`idGenerator` 是共享实例。
 
@@ -26292,14 +26292,14 @@ export interface UseEventSubscriptionReturn {
 
 `SecurityProvider` 要求现有 `TokenStorage` 和 children，通过 context 提供 `useSecurity` 状态。令牌创建/刷新由 CoSec 负责；路由守卫仅决定渲染哪个 React 节点，不是服务端授权边界。
 
-| API                                       | 契约                                                                                                                                                                                                                                                                           |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `useSecurity(tokenStorage, options = {})` | 返回 currentUser、authenticated、signIn、signOut；无令牌使用 `ANONYMOUS_USER`，其 sub 为 anonymous、jti 为空、iat/exp 为零。`authenticated`（access token 未过期）在渲染时计算；refresh token 到期时 Hook 会重新渲染，闲置页面随之退出登录，而仍可续期的会话由下一个请求续期。 |
-| `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。                                                                                                                                                                      |
-| `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                                                                                                                                       |
-| `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                                                                                                                                       |
-| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                                                                                                                                        |
-| `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则刷新期间显示 refreshing 节点，无法刷新或刷新失败时显示 fallback，默认文字 `Refreshing...`。                                                                                   |
+| API                                       | 契约                                                                                                                                                                                                                                                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useSecurity(tokenStorage, options = {})` | 返回 currentUser、authenticated、signIn、signOut；无令牌使用 `ANONYMOUS_USER`，其 sub 为 anonymous、jti 为空、iat/exp 为零。`authenticated`（access token 未过期）在渲染时计算；refresh token 到期时 Hook 会重新渲染，闲置页面随之退出登录，而仍可续期的会话由下一个请求续期。                     |
+| `signIn(tokenOrAsyncProvider)`            | 如有 provider 则等待，存储令牌，再调用 onSignIn；返回 Promise&lt;void&gt;，provider/存储/回调失败会传播。provider 等待期间，同一存储上任何 `useSecurity` 发起的 `signIn` 或 `signOut` 都会使它失效：不存储其令牌，也不调用 onSignIn。                                                              |
+| `signOut()`                               | 删除令牌并调用 onSignOut；同步异常传播。                                                                                                                                                                                                                                                           |
+| `useSecurityContext()`                    | 返回上下文，在 SecurityProvider 外抛错。                                                                                                                                                                                                                                                           |
+| `RouteGuard`                              | 已认证渲染 children；否则返回 fallback（省略则无内容），并在提交后调用 onUnauthorized。                                                                                                                                                                                                            |
+| `RefreshableRouteGuard`                   | 必填 tokenManager；isRefreshNeeded 和 isRefreshable 同时成立时刷新。已认证优先渲染 children，否则刷新期间显示 refreshing 节点，无法刷新或刷新失败时显示 fallback。每个会话各自刷新：存储切换为另一个需要刷新的会话时，守卫为它发起刷新，被替代会话的刷新结果不影响显示，默认文字 `Refreshing...`。 |
 
 `RouteGuard.onUnauthorized` 在 render 提交后的 effect 中运行，每次 `authenticated` 变为（或初始即为）false 时调用一次，因此可以在其中调用 `navigate()`；开发环境的 StrictMode 可能像对待任何 effect 一样运行两次。使用的是最新的回调；仅回调变化不会再次调用。`RefreshableRouteGuard` 仅记录刷新失败，不暴露本地错误状态，也不在卸载时取消 token manager；manager 和 storage 仍归应用所有。context 随存储订阅更新，没有独立每秒重算认证状态的定时器。切换 tokenStorage 会更换订阅和操作目标；回调读取最新 options。
 
@@ -26389,7 +26389,7 @@ export function useSecurity(
 
 实现默认值: `options = {}`.
 
-[packages/react/src/cosec/useSecurity.ts:155](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L155)
+[packages/react/src/cosec/useSecurity.ts:166](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/cosec/useSecurity.ts#L166)
 
 ### ANONYMOUS_USER {#api-ANONYMOUS_USER}
 
