@@ -9,7 +9,7 @@ A result extractor controls the runtime result, independently of the TypeScript 
 
 ## Extractor selection {#extractors}
 
-`ResultExtractor<R>` is `(exchange: FetchExchange) => R | Promise<R>`; `ResultExtractorCapable` declares its optional field. `ResultExtractors` is a lookup object for these exact exports:
+`ResultExtractor<R>` is `(exchange: FetchExchange) => R | Promise<R>`; each body extractor below returns a Promise of its body and is a `ResultExtractor` of the body type (`TextResultExtractor` is a `ResultExtractor<string>`); `ResultExtractorCapable` declares its optional field. `ResultExtractors` is a lookup object for these exact exports:
 
 | Property / exported function                 | Resolved value              | Body use                                     |
 | -------------------------------------------- | --------------------------- | -------------------------------------------- |
@@ -70,15 +70,15 @@ console.assert(first === second && first.name === 'Ada');
 | <a id="fetchexchangeinit"></a>`FetchExchangeInit`                   | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)       |
 | <a id="fetchexchange"></a>`FetchExchange`                           | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)     |
 | <a id="resultextractor"></a>`ResultExtractor`                       | [resultExtractor.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L23)   |
-| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L31)   |
-| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L42)   |
-| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L55)   |
-| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L67)   |
-| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L79)   |
+| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L35)   |
+| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L46)   |
+| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L59)   |
+| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L71)   |
+| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L80)   |
 | <a id="blobresultextractor"></a>`BlobResultExtractor`               | [resultExtractor.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L92)   |
-| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106) |
-| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120) |
-| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131) |
+| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L103) |
+| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L116) |
+| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L128) |
 | <a id="partialby"></a>`PartialBy`                                   | [types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L31)                       |
 | <a id="requiredby"></a>`RequiredBy`                                 | [types.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L50)                       |
 | <a id="removereadonlyfields"></a>`RemoveReadonlyFields`             | [types.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L83)                       |

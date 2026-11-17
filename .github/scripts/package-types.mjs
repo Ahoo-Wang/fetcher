@@ -59,6 +59,20 @@ export const IGNORED = [
   },
 ];
 
+/**
+ * Packages left out of the cross-entry class check (`consumer.cross.mts`),
+ * each with why. Remove a package once its exported classes pass.
+ */
+export const CROSS_EXEMPT = {
+  '@ahoo-wang/fetcher-cosec': 'Exported classes still have private members.',
+  '@ahoo-wang/fetcher-decorator':
+    'Exported classes still have private members.',
+  '@ahoo-wang/fetcher-eventbus': 'Exported classes still have private members.',
+  '@ahoo-wang/fetcher-eventstream':
+    'Exported classes still have private members.',
+  '@ahoo-wang/fetcher-storage': 'Exported classes still have private members.',
+};
+
 const PROBLEM_FIELDS = ['entrypoint', 'resolutionKind'];
 
 function matches(value, expected) {
@@ -156,12 +170,19 @@ export function consumerEntries(manifest) {
 }
 
 /**
- * The two consumer sources for one package: `consumer.mts` imports every
- * entry that resolves from ES modules, `consumer.cts` every entry that
- * resolves from CommonJS. Type-only namespace imports load each declaration
- * file, global augmentations included, without needing a runtime.
+ * The consumer sources for one package: `consumer.mts` imports every entry
+ * that resolves from ES modules, `consumer.cts` every entry that resolves
+ * from CommonJS. Type-only namespace imports load each declaration file,
+ * global augmentations included, without needing a runtime.
+ *
+ * `consumer.cross.mts` loads both declarations of every entry that resolves
+ * both ways and requires an instance of each exported class to be
+ * assignable from one to the other, both ways: an object made through the
+ * CommonJS entry (by a dependency, say) is used where the ES module entry's
+ * type is expected. A `private` member breaks this, since TypeScript keeps
+ * the two declarations of a private member apart.
  */
-export function consumerSources(entries) {
+export function consumerSources(entries, { cross = true } = {}) {
   const source = side =>
     entries
       .filter(entry => entry[side])
@@ -171,9 +192,35 @@ export function consumerSources(entries) {
           `export type Entry${index} = typeof entry${index};\n`,
       )
       .join('') || 'export {};\n';
+  const both = cross
+    ? entries.filter(entry => entry.import && entry.require)
+    : [];
+  const crossSource =
+    both.length === 0
+      ? 'export {};\n'
+      : 'type Instances<M> = {\n' +
+        '  [K in keyof M as M[K] extends abstract new (...args: any) => any\n' +
+        '    ? K\n' +
+        '    : never]: M[K] extends abstract new (...args: any) => infer I\n' +
+        '    ? I\n' +
+        '    : never;\n' +
+        '};\n' +
+        both
+          .map(
+            (entry, index) =>
+              `import type * as esm${index} from '${entry.specifier}';\n` +
+              `import type * as cjs${index} from '${entry.specifier}' ` +
+              `with { 'resolution-mode': 'require' };\n` +
+              `declare const esmInstances${index}: Instances<typeof esm${index}>;\n` +
+              `declare const cjsInstances${index}: Instances<typeof cjs${index}>;\n` +
+              `export const fromCjs${index}: Instances<typeof esm${index}> = cjsInstances${index};\n` +
+              `export const fromEsm${index}: Instances<typeof cjs${index}> = esmInstances${index};\n`,
+          )
+          .join('');
   return {
     'consumer.mts': source('import'),
     'consumer.cts': source('require'),
+    'consumer.cross.mts': crossSource,
   };
 }
 
@@ -190,7 +237,7 @@ export function consumerConfig(module) {
       skipLibCheck: false,
       noEmit: true,
     },
-    files: ['consumer.mts', 'consumer.cts'],
+    files: ['consumer.mts', 'consumer.cts', 'consumer.cross.mts'],
   };
 }
 
@@ -335,7 +382,9 @@ export function installConsumer(root, tarballs, destination) {
 /** Type-checks the dual consumer of one package; diagnostics by mode. */
 function checkConsumer(root, project, manifest) {
   const directory = mkdtempSync(join(project, 'check-'));
-  const sources = consumerSources(consumerEntries(manifest));
+  const sources = consumerSources(consumerEntries(manifest), {
+    cross: !(manifest.name in CROSS_EXEMPT),
+  });
   for (const [file, source] of Object.entries(sources))
     writeFileSync(join(directory, file), source);
   const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc');

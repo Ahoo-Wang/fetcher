@@ -147,7 +147,7 @@ export class ValidateStatusInterceptor implements ResponseInterceptor {
    * @param validateStatus - Function that determines if a status code is valid
    */
   constructor(
-    private readonly validateStatus: ValidateStatus = DEFAULT_VALIDATE_STATUS,
+    readonly validateStatus: ValidateStatus = DEFAULT_VALIDATE_STATUS,
   ) {}
 
   /**

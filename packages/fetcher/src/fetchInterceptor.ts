@@ -77,7 +77,7 @@ export class FetchInterceptor implements RequestInterceptor {
    * @param fetchImplementation - The `fetch` to send requests with; the
    * global `fetch` by default.
    */
-  constructor(private readonly fetchImplementation?: FetchImplementation) {}
+  constructor(readonly fetchImplementation?: FetchImplementation) {}
 
   /**
    * Intercept and process HTTP requests.

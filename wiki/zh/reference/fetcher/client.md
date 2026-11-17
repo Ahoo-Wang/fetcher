@@ -42,7 +42,7 @@ description: '客户端与注册 — @ahoo-wang/fetcher 5.0.0'
 
 `FetcherRegistrar.register(name, client): void`、`unregister(name): boolean`、`get(name): Fetcher | undefined` 管理条目。缺失时 `requiredGet(name)` 与 `default` getter 抛出 `Error`。设置 `default` 会注册到 `'default'`；`fetchers` 返回新的 `Map`，值仍是相同客户端。注销不会中止正在进行的请求。
 
-`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
+`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用；`Fetcher` 等导出类没有 `private` 成员，因此 ESM 与 CommonJS 声明可互相接受对方的实例）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
 
 ## 完整示例 {#example}
 

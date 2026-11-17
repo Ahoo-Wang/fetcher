@@ -26,12 +26,12 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 `TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request, fetchImplementation?): Promise<Response>` 使用 `fetchImplementation` 发送，其类型 `FetchImplementation` 为 `(input: string, init?: RequestInit) => Promise<Response>`（默认在调用时读取全局 `fetch`）。URL 作为第一个参数，并传入干净的 `RequestInit`：不含 `url`、`timeout`、`urlParams` 和 `abortController`，取消通过合并后的 `signal` 传递。行为如下：
 
-| 输入                                     | 行为                                                                                                                                                            |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                       |
-| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝，调用者取消以其 abort reason 拒绝。 |
+| 输入                                     | 行为                                                                                                                                                                                                                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                                                                                    |
+| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝（先拒绝再中止信号，因此在中止时立即拒绝的 fetch 无法替换它），调用者取消以其 abort reason 拒绝。 |
 
-传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
+传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。无论是否有 `AbortSignal.any`，调用者的 `signal` 与 `abortController` 在收到响应头后仍能取消正文读取；没有它时，每个已发送请求会在调用者信号上保留一个小监听器，直到其中一个信号中止。
 
 ## 所有权与清理 {#cancellation}
 
@@ -73,8 +73,8 @@ try {
 | <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
 | <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
 | <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L132)                                     |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L184)                                     |
+| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L138)                                     |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L192)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L61)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L69)   |

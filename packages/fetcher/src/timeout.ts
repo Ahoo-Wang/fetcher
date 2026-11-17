@@ -90,39 +90,45 @@ export function resolveTimeout(
 
 /**
  * Combines abort signals: the result aborts, with that signal's reason, as
- * soon as any of them does. `dispose` detaches the listeners the fallback
- * adds to long-lived caller signals; it is a no-op with `AbortSignal.any`.
+ * soon as any of them does.
+ *
+ * Without `AbortSignal.any` the result is forwarded to by listeners on the
+ * input signals. `detach(signals)` removes them from those signals only, so
+ * the rest keep forwarding, and `dispose` removes them all; both are no-ops
+ * with `AbortSignal.any`. Once any input aborts, every listener is removed.
  */
 function anySignal(signals: AbortSignal[]): {
   signal?: AbortSignal;
+  detach: (signals: AbortSignal[]) => void;
   dispose: () => void;
 } {
   const noop = () => {};
   if (signals.length <= 1) {
-    return { signal: signals[0], dispose: noop };
+    return { signal: signals[0], detach: noop, dispose: noop };
   }
   if (typeof AbortSignal.any === 'function') {
-    return { signal: AbortSignal.any(signals), dispose: noop };
+    return { signal: AbortSignal.any(signals), detach: noop, dispose: noop };
   }
   const controller = new AbortController();
   const aborted = signals.find(signal => signal.aborted);
   if (aborted) {
     controller.abort(aborted.reason);
-    return { signal: controller.signal, dispose: noop };
+    return { signal: controller.signal, detach: noop, dispose: noop };
   }
   const onAbort = (event: Event) => {
     controller.abort((event.target as AbortSignal).reason);
     dispose();
   };
-  const dispose = () => {
-    for (const signal of signals) {
+  const detach = (detached: AbortSignal[]) => {
+    for (const signal of detached) {
       signal.removeEventListener('abort', onAbort);
     }
   };
+  const dispose = () => detach(signals);
   for (const signal of signals) {
     signal.addEventListener('abort', onAbort);
   }
-  return { signal: controller.signal, dispose };
+  return { signal: controller.signal, detach, dispose };
 }
 
 /**
@@ -155,7 +161,9 @@ function toRequestInit(request: FetchRequest, signal?: AbortSignal) {
  *   rejects with a {@link FetchTimeoutError}.
  *
  * The timeout covers the request up to the response headers; reading the body
- * afterwards is bounded only by the caller's signal or controller. The
+ * afterwards is bounded only by the caller's signal or controller, with or
+ * without `AbortSignal.any`. (Without it, the caller's signals keep a small
+ * listener for a sent request until one of them aborts.) The
  * caller's objects are never modified: the request is not written to and the
  * caller's controller is never aborted by the timeout, so the same request can
  * be sent again.
@@ -191,33 +199,46 @@ export async function timeoutFetch(
   if (request.signal) signals.push(request.signal);
   if (request.abortController) signals.push(request.abortController.signal);
 
+  // On success the caller's signals keep forwarding to the combined signal:
+  // the body is still being read with it. On failure nothing reads it.
   if (!timeout || timeout <= 0) {
     const { signal, dispose } = anySignal(signals);
     try {
       return await send(url, toRequestInit(request, signal));
-    } finally {
+    } catch (error) {
       dispose();
+      throw error;
     }
   }
 
   const timeoutController = new AbortController();
-  const { signal, dispose } = anySignal([...signals, timeoutController.signal]);
+  const { signal, detach, dispose } = anySignal([
+    ...signals,
+    timeoutController.signal,
+  ]);
   let timerId: ReturnType<typeof setTimeout> | undefined;
   // Rejects even if a fetch implementation ignores the signal.
   const timeoutPromise = new Promise<never>((_, reject) => {
     timerId = setTimeout(() => {
       const error = new FetchTimeoutError(request);
-      timeoutController.abort(error);
+      // Rejected before the abort: a fetch implementation that rejects
+      // synchronously on abort must not win the race with its own error.
       reject(error);
+      timeoutController.abort(error);
     }, timeout);
   });
   try {
-    return await Promise.race([
+    const response = await Promise.race([
       send(url, toRequestInit(request, signal)),
       timeoutPromise,
     ]);
+    // The timeout covers the headers only.
+    detach([timeoutController.signal]);
+    return response;
+  } catch (error) {
+    dispose();
+    throw error;
   } finally {
     clearTimeout(timerId);
-    dispose();
   }
 }

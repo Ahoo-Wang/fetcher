@@ -3127,7 +3127,7 @@ Create a `Fetcher` for shared URL, headers, timeout, and interceptor policy. Req
 
 `FetcherRegistrar.register(name, client): void`, `unregister(name): boolean`, and `get(name): Fetcher | undefined` manage entries. `requiredGet(name)` and the `default` getter throw `Error` when absent. Assigning `default` registers under `'default'`; `fetchers` returns a new `Map` whose values are the same clients. Unregistering does not abort in-flight requests.
 
-`getFetcher(fetcher?, defaultFetcher?)` accepts a direct instance, a registry name, or no value. A string is a name and must exist; any other value is used as the fetcher (no `instanceof` check, so a fetcher from another copy of the package works); a falsy argument chooses the supplied fallback and then the global default. `FetcherCapable` exposes that optional field. `NamedCapable` supplies `name`, and `FetcherConfigurer.applyTo(fetcher): void` is the structural contract used by configurable extensions.
+`getFetcher(fetcher?, defaultFetcher?)` accepts a direct instance, a registry name, or no value. A string is a name and must exist; any other value is used as the fetcher (no `instanceof` check, so a fetcher from another copy of the package works, and its ESM and CommonJS declarations accept each other's instances, as `Fetcher` and the other exported classes have no `private` members); a falsy argument chooses the supplied fallback and then the global default. `FetcherCapable` exposes that optional field. `NamedCapable` supplies `name`, and `FetcherConfigurer.applyTo(fetcher): void` is the structural contract used by configurable extensions.
 
 ## Complete example {#example}
 
@@ -3355,7 +3355,7 @@ A result extractor controls the runtime result, independently of the TypeScript 
 
 ## Extractor selection {#extractors}
 
-`ResultExtractor<R>` is `(exchange: FetchExchange) => R | Promise<R>`; `ResultExtractorCapable` declares its optional field. `ResultExtractors` is a lookup object for these exact exports:
+`ResultExtractor<R>` is `(exchange: FetchExchange) => R | Promise<R>`; each body extractor below returns a Promise of its body and is a `ResultExtractor` of the body type (`TextResultExtractor` is a `ResultExtractor<string>`); `ResultExtractorCapable` declares its optional field. `ResultExtractors` is a lookup object for these exact exports:
 
 | Property / exported function                 | Resolved value              | Body use                                     |
 | -------------------------------------------- | --------------------------- | -------------------------------------------- |
@@ -3416,15 +3416,15 @@ console.assert(first === second && first.name === 'Ada');
 | <a id="fetchexchangeinit"></a>`FetchExchangeInit`                   | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)       |
 | <a id="fetchexchange"></a>`FetchExchange`                           | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)     |
 | <a id="resultextractor"></a>`ResultExtractor`                       | [resultExtractor.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L23)   |
-| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L31)   |
-| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L42)   |
-| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L55)   |
-| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L67)   |
-| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L79)   |
+| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L35)   |
+| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L46)   |
+| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L59)   |
+| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L71)   |
+| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L80)   |
 | <a id="blobresultextractor"></a>`BlobResultExtractor`               | [resultExtractor.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L92)   |
-| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106) |
-| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120) |
-| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131) |
+| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L103) |
+| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L116) |
+| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L128) |
 | <a id="partialby"></a>`PartialBy`                                   | [types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L31)                       |
 | <a id="requiredby"></a>`RequiredBy`                                 | [types.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L50)                       |
 | <a id="removereadonlyfields"></a>`RemoveReadonlyFields`             | [types.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L83)                       |
@@ -3498,9 +3498,9 @@ console.assert(client.interceptors.request.eject('trace'));
 | <a id="orderedcapable"></a>`OrderedCapable`                                   | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                 |
 | <a id="sortorder"></a>`sortOrder`                                             | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                 |
 | <a id="tosorted"></a>`toSorted`                                               | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                 |
-| <a id="request_body_interceptor_name"></a>`REQUEST_BODY_INTERCEPTOR_NAME`     | [requestBodyInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L25) |
-| <a id="request_body_interceptor_order"></a>`REQUEST_BODY_INTERCEPTOR_ORDER`   | [requestBodyInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L30) |
-| <a id="requestbodyinterceptor"></a>`RequestBodyInterceptor`                   | [requestBodyInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L50) |
+| <a id="request_body_interceptor_name"></a>`REQUEST_BODY_INTERCEPTOR_NAME`     | [requestBodyInterceptor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L32) |
+| <a id="request_body_interceptor_order"></a>`REQUEST_BODY_INTERCEPTOR_ORDER`   | [requestBodyInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L37) |
+| <a id="requestbodyinterceptor"></a>`RequestBodyInterceptor`                   | [requestBodyInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L55) |
 | <a id="url_resolve_interceptor_name"></a>`URL_RESOLVE_INTERCEPTOR_NAME`       | [urlResolveInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L25)   |
 | <a id="url_resolve_interceptor_order"></a>`URL_RESOLVE_INTERCEPTOR_ORDER`     | [urlResolveInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L30)   |
 | <a id="urlresolveinterceptor"></a>`UrlResolveInterceptor`                     | [urlResolveInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L57)   |
@@ -3534,12 +3534,12 @@ Validation skips exchanges with no response. An outer pipeline failure is normal
 
 `TimeoutCapable.timeout?: number` uses milliseconds. `resolveTimeout(requestTimeout?, optionsTimeout?)` returns the request value whenever it is not undefined, including zero; otherwise the client value. `timeoutFetch(request, fetchImplementation?): Promise<Response>` sends with `fetchImplementation`, a `FetchImplementation` (`(input: string, init?: RequestInit) => Promise<Response>`; the global `fetch`, read at call time, by default). It passes the URL as the first argument and a clean `RequestInit`: `url`, `timeout`, `urlParams`, and `abortController` are left out, and cancellation arrives as the merged `signal`. It behaves as follows:
 
-| Inputs                                          | Behavior                                                                                                                                                                                                  |
-| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Timeout not positive (`0`, negative, undefined) | No timer; native fetch is aborted by `request.signal` or `abortController.signal`, whichever fires first.                                                                                                 |
-| Positive timeout                                | Race native fetch with a timer combined with the caller's `signal` and `abortController`; whichever fires first aborts. The timer rejects with `FetchTimeoutError`, a caller abort with its abort reason. |
+| Inputs                                          | Behavior                                                                                                                                                                                                                                                                                            |
+| ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Timeout not positive (`0`, negative, undefined) | No timer; native fetch is aborted by `request.signal` or `abortController.signal`, whichever fires first.                                                                                                                                                                                           |
+| Positive timeout                                | Race native fetch with a timer combined with the caller's `signal` and `abortController`; whichever fires first aborts. The timer rejects with `FetchTimeoutError` (before it aborts the signal, so a fetch that rejects at once on abort cannot replace it), a caller abort with its abort reason. |
 
-Supply a finite positive duration to enable the timer. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation.
+Supply a finite positive duration to enable the timer. The timer stops when fetch resolves its Response, **not when response-body consumption finishes**. Streaming idle/total deadlines require caller-managed cancellation. The caller's `signal` and `abortController` still cancel the body after the headers, with or without `AbortSignal.any`; without it, they keep a small listener for each sent request until one of them aborts.
 
 ## Ownership and cleanup {#cancellation}
 
@@ -3581,8 +3581,8 @@ try {
 | <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
 | <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
 | <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L132)                                     |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L184)                                     |
+| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L138)                                     |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L192)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L61)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L69)   |
@@ -20900,7 +20900,7 @@ export async function loadUser(id: string): Promise<User> {
 
 `FetcherRegistrar.register(name, client): void`、`unregister(name): boolean`、`get(name): Fetcher | undefined` 管理条目。缺失时 `requiredGet(name)` 与 `default` getter 抛出 `Error`。设置 `default` 会注册到 `'default'`；`fetchers` 返回新的 `Map`，值仍是相同客户端。注销不会中止正在进行的请求。
 
-`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
+`getFetcher(fetcher?, defaultFetcher?)` 接受实例、注册名或空值。字符串视为名称，必须已注册；其他值直接作为 fetcher 使用（不做 `instanceof` 检查，另一份包副本创建的 fetcher 也可用；`Fetcher` 等导出类没有 `private` 成员，因此 ESM 与 CommonJS 声明可互相接受对方的实例）；假值优先选择传入的后备客户端，再选择全局默认实例。`FetcherCapable` 声明此可选字段，`NamedCapable` 声明 `name`，`FetcherConfigurer.applyTo(fetcher): void` 是扩展配置器使用的结构契约。
 
 ## 完整示例 {#example}
 
@@ -21128,7 +21128,7 @@ console.assert(
 
 ## 选择提取器 {#extractors}
 
-`ResultExtractor<R>` 为 `(exchange: FetchExchange) => R | Promise<R>`；`ResultExtractorCapable` 声明其可选字段。`ResultExtractors` 中的属性直接对应下列导出函数：
+`ResultExtractor<R>` 为 `(exchange: FetchExchange) => R | Promise<R>`；下列正文提取器返回正文的 Promise，并且是正文类型的 `ResultExtractor`（`TextResultExtractor` 是 `ResultExtractor<string>`）；`ResultExtractorCapable` 声明其可选字段。`ResultExtractors` 中的属性直接对应下列导出函数：
 
 | 属性 / 导出函数                              | Promise 解析后的值          | 正文读取                             |
 | -------------------------------------------- | --------------------------- | ------------------------------------ |
@@ -21189,15 +21189,15 @@ console.assert(first === second && first.name === 'Ada');
 | <a id="fetchexchangeinit"></a>`FetchExchangeInit`                   | [fetchExchange.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L41)       |
 | <a id="fetchexchange"></a>`FetchExchange`                           | [fetchExchange.ts:105](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/fetchExchange.ts#L105)     |
 | <a id="resultextractor"></a>`ResultExtractor`                       | [resultExtractor.ts:23](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L23)   |
-| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L31)   |
-| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:42](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L42)   |
-| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L55)   |
-| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:67](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L67)   |
-| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:79](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L79)   |
+| <a id="resultextractorcapable"></a>`ResultExtractorCapable`         | [resultExtractor.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L35)   |
+| <a id="exchangeresultextractor"></a>`ExchangeResultExtractor`       | [resultExtractor.ts:46](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L46)   |
+| <a id="responseresultextractor"></a>`ResponseResultExtractor`       | [resultExtractor.ts:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L59)   |
+| <a id="jsonresultextractor"></a>`JsonResultExtractor`               | [resultExtractor.ts:71](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L71)   |
+| <a id="textresultextractor"></a>`TextResultExtractor`               | [resultExtractor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L80)   |
 | <a id="blobresultextractor"></a>`BlobResultExtractor`               | [resultExtractor.ts:92](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L92)   |
-| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:106](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L106) |
-| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:120](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L120) |
-| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:131](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L131) |
+| <a id="arraybufferresultextractor"></a>`ArrayBufferResultExtractor` | [resultExtractor.ts:103](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L103) |
+| <a id="bytesresultextractor"></a>`BytesResultExtractor`             | [resultExtractor.ts:116](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L116) |
+| <a id="resultextractors"></a>`ResultExtractors`                     | [resultExtractor.ts:128](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/resultExtractor.ts#L128) |
 | <a id="partialby"></a>`PartialBy`                                   | [types.ts:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L31)                       |
 | <a id="requiredby"></a>`RequiredBy`                                 | [types.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L50)                       |
 | <a id="removereadonlyfields"></a>`RemoveReadonlyFields`             | [types.ts:83](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/types.ts#L83)                       |
@@ -21271,9 +21271,9 @@ console.assert(client.interceptors.request.eject('trace'));
 | <a id="orderedcapable"></a>`OrderedCapable`                                   | [orderedCapable.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L29)                 |
 | <a id="sortorder"></a>`sortOrder`                                             | [orderedCapable.ts:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L53)                 |
 | <a id="tosorted"></a>`toSorted`                                               | [orderedCapable.ts:87](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/orderedCapable.ts#L87)                 |
-| <a id="request_body_interceptor_name"></a>`REQUEST_BODY_INTERCEPTOR_NAME`     | [requestBodyInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L25) |
-| <a id="request_body_interceptor_order"></a>`REQUEST_BODY_INTERCEPTOR_ORDER`   | [requestBodyInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L30) |
-| <a id="requestbodyinterceptor"></a>`RequestBodyInterceptor`                   | [requestBodyInterceptor.ts:50](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L50) |
+| <a id="request_body_interceptor_name"></a>`REQUEST_BODY_INTERCEPTOR_NAME`     | [requestBodyInterceptor.ts:32](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L32) |
+| <a id="request_body_interceptor_order"></a>`REQUEST_BODY_INTERCEPTOR_ORDER`   | [requestBodyInterceptor.ts:37](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L37) |
+| <a id="requestbodyinterceptor"></a>`RequestBodyInterceptor`                   | [requestBodyInterceptor.ts:55](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/requestBodyInterceptor.ts#L55) |
 | <a id="url_resolve_interceptor_name"></a>`URL_RESOLVE_INTERCEPTOR_NAME`       | [urlResolveInterceptor.ts:25](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L25)   |
 | <a id="url_resolve_interceptor_order"></a>`URL_RESOLVE_INTERCEPTOR_ORDER`     | [urlResolveInterceptor.ts:30](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L30)   |
 | <a id="urlresolveinterceptor"></a>`UrlResolveInterceptor`                     | [urlResolveInterceptor.ts:57](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/urlResolveInterceptor.ts#L57)   |
@@ -21307,12 +21307,12 @@ Fetcher 默认管线拒绝 200–299 之外的 HTTP 状态。原生 fetch 本身
 
 `TimeoutCapable.timeout?: number` 单位为毫秒。`resolveTimeout(requestTimeout?, optionsTimeout?)` 在请求值不是 undefined 时直接返回它（包括零），否则使用客户端值。`timeoutFetch(request, fetchImplementation?): Promise<Response>` 使用 `fetchImplementation` 发送，其类型 `FetchImplementation` 为 `(input: string, init?: RequestInit) => Promise<Response>`（默认在调用时读取全局 `fetch`）。URL 作为第一个参数，并传入干净的 `RequestInit`：不含 `url`、`timeout`、`urlParams` 和 `abortController`，取消通过合并后的 `signal` 传递。行为如下：
 
-| 输入                                     | 行为                                                                                                                                                            |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                       |
-| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝，调用者取消以其 abort reason 拒绝。 |
+| 输入                                     | 行为                                                                                                                                                                                                                         |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| timeout 不是正数（`0`、负数、undefined） | 不启用定时器；原生 fetch 由 `request.signal` 或 `abortController.signal` 中先触发者中止。                                                                                                                                    |
+| timeout 为正数                           | 原生 fetch 与定时器竞速，定时器与调用者的 `signal`、`abortController` 组合，先触发者中止。定时器以 `FetchTimeoutError` 拒绝（先拒绝再中止信号，因此在中止时立即拒绝的 fetch 无法替换它），调用者取消以其 abort reason 拒绝。 |
 
-传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。
+传入有限正数才启用定时器。fetch 返回 Response 时定时器即结束，**不会等待响应正文消费完成**。流的空闲/总时限需要调用者管理取消。无论是否有 `AbortSignal.any`，调用者的 `signal` 与 `abortController` 在收到响应头后仍能取消正文读取；没有它时，每个已发送请求会在调用者信号上保留一个小监听器，直到其中一个信号中止。
 
 ## 所有权与清理 {#cancellation}
 
@@ -21354,8 +21354,8 @@ try {
 | <a id="fetchtimeouterror"></a>`FetchTimeoutError`                                 | [timeout.ts:35](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L35)                                       |
 | <a id="timeoutcapable"></a>`TimeoutCapable`                                       | [timeout.ts:60](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L60)                                       |
 | <a id="resolvetimeout"></a>`resolveTimeout`                                       | [timeout.ts:81](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L81)                                       |
-| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:132](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L132)                                     |
-| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:184](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L184)                                     |
+| <a id="fetchimplementation"></a>`FetchImplementation`                             | [timeout.ts:138](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L138)                                     |
+| <a id="timeoutfetch"></a>`timeoutFetch`                                           | [timeout.ts:192](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/timeout.ts#L192)                                     |
 | <a id="httpstatusvalidationerror"></a>`HttpStatusValidationError`                 | [validateStatusInterceptor.ts:27](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L27)   |
 | <a id="validatestatus"></a>`ValidateStatus`                                       | [validateStatusInterceptor.ts:61](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L61)   |
 | <a id="validate_status_interceptor_name"></a>`VALIDATE_STATUS_INTERCEPTOR_NAME`   | [validateStatusInterceptor.ts:69](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/src/validateStatusInterceptor.ts#L69)   |
