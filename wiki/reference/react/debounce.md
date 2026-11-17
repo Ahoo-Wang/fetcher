@@ -103,7 +103,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
 ): UseDebouncedCallbackReturn<T>;
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:43](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L43)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L52)
 
 ### UseDebouncedCallbackOptions {#api-UseDebouncedCallbackOptions}
 
@@ -127,7 +127,7 @@ export interface UseDebouncedCallbackReturn<T extends (...args: any[]) => any> {
 }
 ```
 
-[packages/react/src/core/debounced/useDebouncedCallback.ts:26](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L26)
+[packages/react/src/core/debounced/useDebouncedCallback.ts:29](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/src/core/debounced/useDebouncedCallback.ts#L29)
 
 ### useDebouncedValue {#api-useDebouncedValue}
 
