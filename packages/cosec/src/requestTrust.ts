@@ -28,9 +28,12 @@ const REQUEST_TRUST_ATTRIBUTE = 'CoSec-Request-Trust';
  *   For a relative URL that the URL parser resolves to another host (such as
  *   `\host/path`), the resolved absolute URL.
  * @param exchange - The exchange being sent
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export type RequestTrust = (url: string, exchange: FetchExchange) => boolean;
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface RequestTrustCapable {
   /**
    * Which absolute request URLs may carry CoSec credentials. By default every
@@ -94,6 +97,8 @@ function isTrustedRelative(
  * ```typescript
  * new CoSecConfigurer({ appId, tokenRefresher, isTrusted: sameOriginTrust });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const sameOriginTrust: RequestTrust = (url, exchange) => {
   const target = originOf(url);
@@ -110,6 +115,8 @@ export const sameOriginTrust: RequestTrust = (url, exchange) => {
  * request may; with it, a relative request URL may when it stays on the
  * configured `baseURL`'s scheme and host, and an absolute one — or a relative
  * one the URL parser takes to another host — when `isTrusted` accepts it.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isTrustedRequest(
   exchange: FetchExchange,

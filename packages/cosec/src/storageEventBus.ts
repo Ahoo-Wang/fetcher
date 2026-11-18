@@ -22,6 +22,8 @@ import {
  * Whether a storage backend is the browser's `localStorage`, the one store
  * every tab of an origin shares. `undefined` stands for the default backend,
  * which is `localStorage` in a browser and a new `InMemoryStorage` elsewhere.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isSharedAcrossTabs(storage: Storage | undefined): boolean {
   if (typeof window === 'undefined') return false;
@@ -44,6 +46,8 @@ export function isSharedAcrossTabs(storage: Storage | undefined): boolean {
  * is private to this storage, so its changes stay in this storage instead of
  * reaching every other storage with the same key in the process. A storage
  * that gets a new bus owns it (`ownEventBus()`), and closes it on destroy.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function storageEventBus<T>(
   key: string,

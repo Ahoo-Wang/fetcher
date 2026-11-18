@@ -25,6 +25,8 @@ const OWNER_ID_PATH_KEY = 'ownerId';
 
 /**
  * Configuration options for resource attribution
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface ResourceAttributionOptions {
   /**
@@ -43,6 +45,8 @@ export interface ResourceAttributionOptions {
 
 /**
  * Name identifier for the ResourceAttributionRequestInterceptor
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME =
   'ResourceAttributionRequestInterceptor';
@@ -51,6 +55,8 @@ export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME =
  * before URL resolution, so the tenant and owner path parameters it adds are
  * in place when the URL template is resolved, and after interceptors with the
  * default order (0).
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
   URL_RESOLVE_INTERCEPTOR_ORDER - DEFAULT_INTERCEPTOR_ORDER_STEP;
@@ -59,6 +65,8 @@ export const RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_ORDER =
  * Request interceptor that automatically adds tenant and owner ID path parameters to requests
  * based on the current authentication token. This is useful for multi-tenant applications where
  * requests need to include tenant-specific information in the URL path.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class ResourceAttributionRequestInterceptor implements RequestInterceptor {
   readonly name = RESOURCE_ATTRIBUTION_REQUEST_INTERCEPTOR_NAME;

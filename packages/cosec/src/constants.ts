@@ -19,6 +19,8 @@ import { DEFAULT_INTERCEPTOR_ORDER_STEP } from '@ahoo-wang/fetcher';
 /**
  * The name identifier for the UnauthorizedErrorInterceptor.
  * Used for interceptor registration and identification in the interceptor chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const UNAUTHORIZED_ERROR_INTERCEPTOR_NAME =
   'UnauthorizedErrorInterceptor';
@@ -42,6 +44,8 @@ export const UNAUTHORIZED_ERROR_INTERCEPTOR_NAME =
  * const interceptor = new CoSecRequestInterceptor(options);
  * console.log(interceptor.order); // -9007199254740990
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const COSEC_REQUEST_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + DEFAULT_INTERCEPTOR_ORDER_STEP;
@@ -69,14 +73,22 @@ export const COSEC_REQUEST_INTERCEPTOR_ORDER =
  * logoutExchange.attributes.set(IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY, true);
  * await fetcher.fetch(logoutExchange);
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const IGNORE_REFRESH_TOKEN_ATTRIBUTE_KEY = 'Ignore-Refresh-Token';
 
-/** Exchange attribute holding the token session a request was sent with. */
+/**
+ * Exchange attribute holding the token session a request was sent with.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
+ */
 export const TOKEN_SESSION_ATTRIBUTE = 'CoSec-Token-Session';
 
 /**
  * Set on an exchange whose request the trust policy kept the CoSec headers or
  * credentials from: its 401 is not about this application's session.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const CREDENTIALS_WITHHELD_ATTRIBUTE = 'CoSec-Credentials-Withheld';

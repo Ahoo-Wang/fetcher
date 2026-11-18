@@ -26,6 +26,8 @@ import type { TokenStorage } from '@ahoo-wang/fetcher-cosec';
  * - Sign-out method for clearing authentication
  *
  * Used internally by the SecurityContext to type the context value.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export type SecurityContextValue = UseSecurityReturn;
 
@@ -37,6 +39,8 @@ export type SecurityContextValue = UseSecurityReturn;
  *
  * The context value is undefined by default, requiring components to be wrapped by
  * SecurityProvider to access authentication functionality.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const SecurityContext = createContext<SecurityContextValue | undefined>(
   undefined,
@@ -45,6 +49,8 @@ export const SecurityContext = createContext<SecurityContextValue | undefined>(
 /**
  * Configuration options for the SecurityProvider component.
  * Extends UseSecurityOptions to include provider-specific settings like token storage and children.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface SecurityContextOptions extends UseSecurityOptions {
   /**
@@ -103,6 +109,8 @@ export interface SecurityContextOptions extends UseSecurityOptions {
  *   );
  * }
  * ```
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function SecurityProvider({
   tokenStorage,
@@ -142,6 +150,8 @@ export function SecurityProvider({
  *   );
  * }
  * ```
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function useSecurityContext(): SecurityContextValue {
   const context = useContext(SecurityContext);

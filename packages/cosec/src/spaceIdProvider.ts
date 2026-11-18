@@ -63,6 +63,8 @@ type SpaceId = string;
  *   }
  * };
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface SpaceIdProvider {
   /**
@@ -119,6 +121,8 @@ export interface SpaceIdProvider {
  *   spaceIdProvider: NoneSpaceIdProvider,
  * });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const NoneSpaceIdProvider: SpaceIdProvider = {
   resolveSpaceId: () => null,
@@ -130,6 +134,8 @@ export const NoneSpaceIdProvider: SpaceIdProvider = {
  * This key is used by SpaceIdStorage to store and retrieve space identifiers
  * from the browser's localStorage. The default value ensures consistency
  * across different parts of the application that need to access the stored space ID.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const DEFAULT_COSEC_SPACE_ID_KEY = 'cosec-space-id';
 
@@ -164,6 +170,8 @@ export const DEFAULT_COSEC_SPACE_ID_KEY = 'cosec-space-id';
  *   storage: myCustomStorage
  * });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface SpaceIdStorageOptions extends Partial<
@@ -206,6 +214,8 @@ export interface SpaceIdStorageOptions extends Partial<
  * spaceStorage.destroy();
  * removeListener();
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class SpaceIdStorage extends KeyStorage<SpaceId> {
   /**
@@ -285,6 +295,8 @@ export class SpaceIdStorage extends KeyStorage<SpaceId> {
  *   }
  * };
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface SpacedResourcePredicate {
   /**
@@ -314,6 +326,8 @@ export interface SpacedResourcePredicate {
  *
  * This interface combines the predicate and storage dependencies required
  * by DefaultSpaceIdProvider to resolve space identifiers.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface SpaceIdProviderOptions {
   /**
@@ -371,6 +385,8 @@ export interface SpaceIdProviderOptions {
  *   spaceIdProvider
  * });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class DefaultSpaceIdProvider implements SpaceIdProvider {
   /**

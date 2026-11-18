@@ -1,5 +1,10 @@
 # `@ahoo-wang/fetcher-cosec`
 
+> **已弃用。** 本包已迁到 CoSec 仓库，新包名为
+> [`@ahoo-wang/cosec-fetcher`](https://www.npmjs.com/package/@ahoo-wang/cosec-fetcher)，
+> fetcher 下一个大版本将移除本包。CoSec 8.0 GA 之前新包在 npm 的 `beta` 标签上。
+> 迁移与文档见 [https://cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。
+
 面向 Fetcher 的 CoSec 请求归属与可选 JWT 认证。服务端契约要求 CoSec 应用、设备、
 请求、空间或 Bearer Token 行为时使用。
 

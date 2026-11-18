@@ -17,6 +17,7 @@ import { RefreshSessionChangedError } from './errors.js';
 
 export { TOKEN_SESSION_ATTRIBUTE } from './constants.js';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export function isSameTokenSession(
   expectedToken: JwtCompositeToken | null,
   currentToken: JwtCompositeToken | null,
@@ -34,6 +35,8 @@ export function isSameTokenSession(
  * Whether two tokens are the same stored token: the same object, or the same
  * session with the same JWTs, as re-reading storage yields (a legacy record
  * is parsed into a new object each time).
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isSameToken(
   expectedToken: JwtCompositeToken,
@@ -48,6 +51,7 @@ export function isSameToken(
   );
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export function assertTokenSession(
   exchange: FetchExchange,
   currentToken: JwtCompositeToken | null,

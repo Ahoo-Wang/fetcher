@@ -28,11 +28,14 @@ import { isTrustedRequest, type RequestTrustCapable } from './requestTrust.js';
 import { CoSecHeaders } from './types.js';
 import { assertTokenSession } from './refreshSession.js';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface AuthorizationInterceptorOptions
   extends JwtTokenManagerCapable, RequestTrustCapable {}
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_NAME =
   'AuthorizationRequestInterceptor';
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export const AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER =
   COSEC_REQUEST_INTERCEPTOR_ORDER + DEFAULT_INTERCEPTOR_ORDER_STEP;
 
@@ -45,6 +48,8 @@ export const AUTHORIZATION_REQUEST_INTERCEPTOR_ORDER =
  * 3. Skipping refresh when explicitly requested via attributes
  *
  * The interceptor runs after CoSecRequestInterceptor but before FetchInterceptor in the chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class AuthorizationRequestInterceptor implements RequestInterceptor {
   readonly name = AUTHORIZATION_REQUEST_INTERCEPTOR_NAME;

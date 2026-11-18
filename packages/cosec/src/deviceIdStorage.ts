@@ -19,8 +19,10 @@ import {
 } from '@ahoo-wang/fetcher-storage';
 import { storageEventBus } from './storageEventBus.js';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export const DEFAULT_COSEC_DEVICE_ID_KEY = 'cosec-device-id';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface DeviceIdStorageOptions extends Partial<
   KeyStorageOptions<string>
@@ -28,6 +30,8 @@ export interface DeviceIdStorageOptions extends Partial<
 
 /**
  * Storage class for managing device identifiers.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class DeviceIdStorage extends KeyStorage<string> {
   constructor({

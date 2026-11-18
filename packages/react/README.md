@@ -3,6 +3,14 @@
 React hooks for Fetcher requests, query state, storage, events, and CoSec
 security. Use them when a component should own async state and cancellation.
 
+> **CoSec hooks are deprecated.** `SecurityProvider`, `SecurityContext`,
+> `useSecurity`, `useSecurityContext`, `RouteGuard`, `RefreshableRouteGuard`
+> and `ANONYMOUS_USER` moved to
+> [`@ahoo-wang/cosec-react`](https://www.npmjs.com/package/@ahoo-wang/cosec-react)
+> in the CoSec repository (npm `beta` tag until CoSec 8.0 GA) and are removed
+> from this package, with its `@ahoo-wang/fetcher-cosec` peer, in the next
+> fetcher major. See [https://cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients).
+
 ## Install
 
 ```bash

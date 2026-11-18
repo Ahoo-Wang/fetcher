@@ -19,6 +19,8 @@ import type { CompositeToken } from './tokenRefresher.js';
  * on everything read from outside the type system (a stored record, a
  * refresh response), so a malformed one is rejected instead of becoming a
  * `Bearer undefined` credential.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isCompositeToken(token: unknown): token is CompositeToken {
   return (

@@ -37,6 +37,8 @@ import {
 
 /**
  * The name of the AuthorizationResponseInterceptor.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME =
   'AuthorizationResponseInterceptor';
@@ -44,6 +46,8 @@ export const AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME =
 /**
  * The order of the AuthorizationResponseInterceptor.
  * Set to a high negative value to ensure it runs early in the interceptor chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
   Number.MIN_SAFE_INTEGER + 1000;
@@ -53,6 +57,8 @@ export const AUTHORIZATION_RESPONSE_INTERCEPTOR_ORDER =
  * 401 response. Retry re-runs the entire interceptor chain (including this
  * interceptor), so without a bound a retried request that still returns 401
  * would recurse refresh indefinitely.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const AUTHORIZATION_RESPONSE_MAX_RETRY = 1;
 
@@ -72,6 +78,8 @@ const AUTHORIZATION_RETRY_COUNT_ATTRIBUTE = 'AuthorizationResponseRetryCount';
  * 3. On successful refresh, stores the new token and retries the original request
  * 4. On refresh failure, clears stored tokens and propagates the error
  * 5. A failure of the retried request itself propagates without clearing the refreshed token
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class AuthorizationResponseInterceptor implements ResponseInterceptor {
   readonly name = AUTHORIZATION_RESPONSE_INTERCEPTOR_NAME;

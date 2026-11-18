@@ -62,6 +62,8 @@ function isRefreshRejected(error: unknown): boolean {
 
 /**
  * Manages JWT token refreshing operations and provides status information
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class JwtTokenManager implements RefreshTokenStatusCapable {
   /** @internal */

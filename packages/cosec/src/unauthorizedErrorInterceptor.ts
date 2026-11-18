@@ -28,11 +28,15 @@ export { UNAUTHORIZED_ERROR_INTERCEPTOR_NAME } from './constants.js';
 /**
  * The execution order for the UnauthorizedErrorInterceptor.
  * Set to 0, indicating it runs at default priority in the interceptor chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const UNAUTHORIZED_ERROR_INTERCEPTOR_ORDER = 0;
 
 /**
  * Configuration options for the UnauthorizedErrorInterceptor.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface UnauthorizedErrorInterceptorOptions {
   /**
@@ -73,6 +77,8 @@ export interface UnauthorizedErrorInterceptorOptions {
  *
  * fetcher.interceptors.error.use(interceptor);
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class UnauthorizedErrorInterceptor implements ErrorInterceptor {
   /**

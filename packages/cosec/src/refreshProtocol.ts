@@ -21,11 +21,14 @@ import type { CompositeToken, TokenRefresher } from './tokenRefresher.js';
  * refresher made by another copy of this package — the CommonJS build next to
  * the ES module one, or a second bundled copy — and the refresh request and
  * the business request still share a single onUnauthorized notification.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const NOTIFICATION_GUARD_REFRESHER = Symbol.for(
   '@ahoo-wang/fetcher-cosec/notification-guard-refresher',
 );
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface NotificationGuardRefresher extends TokenRefresher {
   refresh(
     token: CompositeToken,
@@ -33,6 +36,7 @@ export interface NotificationGuardRefresher extends TokenRefresher {
   ): Promise<CompositeToken>;
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export function isNotificationGuardRefresher(
   refresher: TokenRefresher,
 ): boolean {

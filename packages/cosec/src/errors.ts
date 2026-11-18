@@ -14,6 +14,7 @@
 import { FetcherError } from '@ahoo-wang/fetcher';
 import type { JwtCompositeToken } from './jwtToken.js';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export class RefreshTokenError extends FetcherError {
   constructor(
     public readonly token: JwtCompositeToken,
@@ -24,7 +25,11 @@ export class RefreshTokenError extends FetcherError {
   }
 }
 
-/** The session changed while refreshing; the original request must stop. */
+/**
+ * The session changed while refreshing; the original request must stop.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
+ */
 export class RefreshSessionChangedError extends FetcherError {
   constructor(cause?: unknown) {
     super('The token session changed during refresh.', cause);
@@ -38,6 +43,8 @@ export class RefreshSessionChangedError extends FetcherError {
  * kept and no unauthorized notification is sent. A later request refreshes
  * again. Only a 4xx answer from the refresh endpoint (or a malformed refresh
  * response) ends the session with {@link RefreshTokenError}.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class RefreshUnavailableError extends FetcherError {
   constructor(
@@ -49,7 +56,11 @@ export class RefreshUnavailableError extends FetcherError {
   }
 }
 
-/** The refresh endpoint answered, but not with a composite token. */
+/**
+ * The refresh endpoint answered, but not with a composite token.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
+ */
 export class InvalidRefreshResponseError extends Error {
   constructor() {
     super('The refresh response has no accessToken and refreshToken.');
@@ -62,6 +73,8 @@ export class InvalidRefreshResponseError extends Error {
  * body (a `ReadableStream` or another async iterable) was consumed by the
  * first attempt. The session was refreshed: send the request again with a
  * new body.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class NonReplayableRequestError extends FetcherError {
   constructor() {

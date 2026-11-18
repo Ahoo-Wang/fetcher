@@ -26,6 +26,7 @@ import { useLatest } from '../core/index.js';
  */
 type CompositeTokenProvider = CompositeToken | (() => Promise<CompositeToken>);
 
+/** @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export const ANONYMOUS_USER: CoSecJwtPayload = {
   jti: '',
   sub: 'anonymous',
@@ -35,6 +36,8 @@ export const ANONYMOUS_USER: CoSecJwtPayload = {
 
 /**
  * Options for configuring the useSecurity hook.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface UseSecurityOptions {
   /**
@@ -52,6 +55,8 @@ export interface UseSecurityOptions {
 
 /**
  * Return type for the useSecurity hook.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface UseSecurityReturn {
   /**
@@ -162,6 +167,8 @@ function nextSessionGeneration(tokenStorage: TokenStorage): number {
  *   );
  * }
  * ```
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function useSecurity(
   tokenStorage: TokenStorage,

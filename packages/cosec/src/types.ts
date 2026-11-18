@@ -16,6 +16,8 @@ import type { JwtTokenManager } from './jwtTokenManager.js';
 
 /**
  * CoSec HTTP headers enumeration.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class CoSecHeaders {
   static readonly DEVICE_ID = 'CoSec-Device-Id';
@@ -25,11 +27,13 @@ export class CoSecHeaders {
   static readonly REQUEST_ID = 'CoSec-Request-Id';
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export class ResponseCodes {
   static readonly UNAUTHORIZED = 401;
   static readonly FORBIDDEN = 403;
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface AppIdCapable {
   /**
    * Application ID to be sent in the CoSec-App-Id header.
@@ -37,22 +41,28 @@ export interface AppIdCapable {
   appId: string;
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface DeviceIdStorageCapable {
   deviceIdStorage: DeviceIdStorage;
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface JwtTokenManagerCapable {
   tokenManager: JwtTokenManager;
 }
 
 /**
  * CoSec options interface.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CoSecOptions
   extends AppIdCapable, DeviceIdStorageCapable, JwtTokenManagerCapable {}
 
 /**
  * Authorization result interface.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface AuthorizeResult {
   authorized: boolean;
@@ -61,6 +71,8 @@ export interface AuthorizeResult {
 
 /**
  * Authorization result constants.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const AuthorizeResults = {
   ALLOW: { authorized: true, reason: 'Allow' },

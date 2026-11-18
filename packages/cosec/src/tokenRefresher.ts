@@ -27,6 +27,8 @@ import { NOTIFICATION_GUARD_REFRESHER } from './refreshProtocol.js';
  *
  * @interface AccessToken
  * @property {string} accessToken - The access token string used for authentication.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface AccessToken {
   accessToken: string;
@@ -40,6 +42,8 @@ export interface AccessToken {
  *
  * @interface RefreshToken
  * @property {string} refreshToken - The refresh token string used to obtain new access tokens.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface RefreshToken {
   refreshToken: string;
@@ -57,6 +61,8 @@ export interface RefreshToken {
  * @extends RefreshToken
  * @property {string} accessToken - The access token string used for authentication.
  * @property {string} refreshToken - The refresh token string used to obtain new access tokens.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CompositeToken extends AccessToken, RefreshToken {}
 
@@ -73,6 +79,8 @@ export interface CompositeToken extends AccessToken, RefreshToken {}
  * interceptor may attempt to refresh the token recursively, causing a deadlock.
  *
  * @interface TokenRefresher
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface TokenRefresher {
   /**
@@ -110,6 +118,8 @@ export interface TokenRefresher {
  * @interface CoSecTokenRefresherOptions
  * @property {Fetcher} fetcher - The HTTP client instance used to make requests to the refresh endpoint.
  * @property {string} endpoint - The URL endpoint where token refresh requests are sent.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CoSecTokenRefresherOptions {
   fetcher: Fetcher;
@@ -141,6 +151,8 @@ export interface CoSecTokenRefresherOptions {
  * const currentToken = { accessToken: 'old-token', refreshToken: 'refresh-token' };
  * const newToken = await refresher.refresh(currentToken);
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class CoSecTokenRefresher implements TokenRefresher {
   /**

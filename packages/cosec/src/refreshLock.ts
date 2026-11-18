@@ -17,7 +17,11 @@ interface RefreshLocks {
 
 const lockNames = new WeakMap<object, string>();
 
-/** Names the cross-tab refresh lock of a token storage after its key. */
+/**
+ * Names the cross-tab refresh lock of a token storage after its key.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
+ */
 export function setRefreshLockName(tokenStorage: object, key: string): void {
   lockNames.set(tokenStorage, `cosec-refresh:${key}`);
 }
@@ -28,6 +32,8 @@ export function setRefreshLockName(tokenStorage: object, key: string): void {
  * never spent by two tabs at once. `refresh` learns whether it holds the
  * lock; without Web Locks (or for a storage without a lock name) it runs at
  * once, unlocked.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function withRefreshLock<T>(
   tokenStorage: object,

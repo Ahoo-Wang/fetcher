@@ -15,6 +15,8 @@
  * Whether a request body can be read only once: a `ReadableStream` (from any
  * realm) or another async iterable, which the first fetch consumes. Strings,
  * `Blob`, `FormData`, `URLSearchParams` and buffers can be sent again.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isOneShotBody(body: unknown): boolean {
   if (body === null || typeof body !== 'object') return false;
