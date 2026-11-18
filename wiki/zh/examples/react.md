@@ -34,7 +34,6 @@ pnpm add @ahoo-wang/fetcher@^6.0.0 \
   @ahoo-wang/fetcher-react@^6.0.0 \
   @ahoo-wang/fetcher-eventbus@^6.0.0 \
   @ahoo-wang/fetcher-storage@^6.0.0 \
-  @ahoo-wang/fetcher-cosec@^6.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 

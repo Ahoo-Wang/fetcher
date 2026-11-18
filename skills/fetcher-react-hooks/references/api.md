@@ -17,7 +17,6 @@
 - [Storage Hooks](#storage-hooks)
 - [Event Hooks](#event-hooks)
 - [API Hooks Generation](#api-hooks-generation)
-- [Security (CoSec)](#security-cosec)
 - [Entry Points](#entry-points)
 - [Key Imports](#key-imports)
 
@@ -434,53 +433,6 @@ execute hook plus `useEffect`. A method with two or more inputs, such as
 
 ---
 
-## Security (CoSec)
-
-The Fetcher side (`CoSecConfigurer`, `TokenStorage`, refresh) is
-`$fetcher-cosec-auth`; these components only read and write the token storage.
-
-Wrap the app with `<SecurityProvider tokenStorage={tokenStorage} onSignIn? onSignOut?>`,
-passing the **same** `TokenStorage` instance given to `CoSecConfigurer` (a
-second instance has its own cache and bus and does not see the other's writes
-until `reload()`). `useSecurityContext()` (throws outside the provider) and
-`useSecurity(tokenStorage, options?)` return:
-
-- `currentUser`: the stored access token's payload, even once expired;
-  `ANONYMOUS_USER` when no token is stored.
-- `authenticated`: the access token is unexpired. Re-renders when the refresh
-  token expires; an expired but refreshable access token does not re-render
-  (the next request renews it).
-- `signIn(token | () => Promise<token>)`: async, stores a `CompositeToken`
-  (`{ accessToken, refreshToken }`), then calls `onSignIn`.
-- `signOut()`: removes the token, then calls `onSignOut`.
-
-On the server and during hydration they render the default (anonymous), then
-the stored value.
-
-`RouteGuard` (`children`, `fallback?`, `onUnauthorized?`) renders children only
-when authenticated, otherwise `fallback`; it calls `onUnauthorized` in an
-effect after commit, once each time the user becomes (or starts out)
-unauthenticated, so `navigate('/login')` there is safe.
-
-`RefreshableRouteGuard` (`tokenManager: JwtTokenManager` — e.g.
-`configurer.tokenManager` — `fallback?`, `refreshing?`) refreshes on mount when
-the access token is expired but refreshable, rendering `refreshing` (default
-`<p>Refreshing...</p>`) meanwhile and `fallback` when nothing is refreshable.
-If the refresh rejects, the error is logged and it renders `fallback` — also
-after a `RefreshUnavailableError` (server unreachable), where the session is
-kept, so a later request can still renew the token.
-
-```tsx
-import {
-  SecurityProvider,
-  useSecurityContext,
-  RouteGuard,
-  RefreshableRouteGuard,
-} from '@ahoo-wang/fetcher-react';
-```
-
----
-
 ## Entry Points
 
 | Entry                              | Formats  | Holds                                                                                                                                                |
@@ -489,7 +441,7 @@ import {
 | `@ahoo-wang/fetcher-react/core`    | ESM      | `PromiseStatus`, `usePromiseState`, `useExecutePromise`, `useQuery`, `useLatest`, `useStableValue`, the debounced callback/value/promise/query hooks |
 | `@ahoo-wang/fetcher-react/fetcher` | ESM      | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their types                                                   |
 
-Neither subpath loads CoSec, storage or event-bus code. Peer: `react` `^19.0.0`.
+Neither subpath loads storage or event-bus code. Peer: `react` `^19.0.0`.
 
 ## Key Imports
 
@@ -521,12 +473,6 @@ import {
   createExecuteApiHooks,
   createQueryApiHooks,
   collectMethods,
-  // Security
-  SecurityProvider,
-  useSecurity,
-  useSecurityContext,
-  RouteGuard,
-  RefreshableRouteGuard,
 } from '@ahoo-wang/fetcher-react';
 import type {
   PromiseState,

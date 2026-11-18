@@ -144,4 +144,4 @@ export interface UseFetcherQueryReturn<R, E = FetcherError> extends Omit<
 
 ## 相关专题
 
-[Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [存储与事件订阅](./storage-and-events) · [安全 Hook 与路由守卫](./cosec) · [最新值与稳定值](./utilities)
+[Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [存储与事件订阅](./storage-and-events) · [最新值与稳定值](./utilities)

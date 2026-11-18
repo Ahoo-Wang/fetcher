@@ -309,7 +309,6 @@ Notes:
 ## Ecosystem Usage
 
 - **Storage** (`@ahoo-wang/fetcher-storage`): `KeyStorage` defaults to a local `SerialTypedEventBus`; it syncs across tabs only when given a `BroadcastTypedEventBus`
-- **CoSec** (`@ahoo-wang/fetcher-cosec`): token, device-id, and space-id storages are built on `KeyStorage` with `BroadcastTypedEventBus`
 
 ## Further Reading
 

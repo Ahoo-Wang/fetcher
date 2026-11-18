@@ -148,4 +148,4 @@ export interface UseEventSubscriptionReturn {
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Security hooks and route guards](./cosec) · [Latest and stable values](./utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Debounced execution](./debounce) · [Latest and stable values](./utilities)

@@ -69,7 +69,7 @@ src/
 - ✅ Adding new storage backends (e.g., IndexedDB)
 - ✅ Adding new serializer formats
 - ✅ Writing new tests
-- ⚠️ Changing KeyStorage interface — used by cosec and react packages
+- ⚠️ Changing KeyStorage interface — used by the react package
 - ⚠️ Modifying environment detection logic — affects SSR compatibility
 - 🚫 Breaking the KeyStorage API contract
 - 🚫 Removing in-memory fallback without migration plan

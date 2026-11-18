@@ -1,6 +1,6 @@
 # `@ahoo-wang/fetcher-react`
 
-面向 Fetcher 请求、查询状态、存储、事件与 CoSec 安全的 React Hooks。组件需要持有异步状态和取消行为时使用。
+面向 Fetcher 请求、查询状态、存储与事件的 React Hooks。组件需要持有异步状态和取消行为时使用。
 
 ## 安装
 
@@ -8,7 +8,11 @@
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-按导入的集成安装对应 peer 包：EventBus、Storage 或 CoSec。
+按导入的集成安装对应 peer 包：EventBus 或 Storage。
+
+> **安全 Hook 已迁出。** `SecurityProvider`、`useSecurity`、`RouteGuard`、
+> `RefreshableRouteGuard` 等已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`
+> （CoSec 8.0 GA 之前在 npm 的 `beta` 标签上）。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 
 > **Wow 查询 Hook 已迁出。** `useSingleQuery`、`useListQuery`、`usePagedQuery`、
 > `useCountQuery`、`useListStreamQuery` 等 Wow Hook 已迁往
@@ -89,7 +93,6 @@ export function SaveButton({ user }: { user: User }) {
 - Fetcher：请求执行、JSON 查询、防抖请求与防抖查询。
 - API 对象：从返回 Promise 的方法派生 execute/query Hooks。
 - 状态：类型化 KeyStorage 与事件总线订阅。
-- CoSec：安全 Provider、用户状态与路由守卫。
 
 ## 文档
 

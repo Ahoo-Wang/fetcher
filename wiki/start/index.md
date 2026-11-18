@@ -16,6 +16,6 @@ Fetcher adds reusable request configuration and result handling to native Fetch.
 
 The runnable HTTP and Storybook examples have deterministic fixtures. When you move them into your application, supply the routes and response JSON documented in each example. Installing a client does not create a server.
 
-Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting CoSec or storage events, check their [integration requirements](../guides/integrations/index.md). Wow, the generator and Viewer belong to the 5.x line; from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript).
+Already have an API contract? [Declare service methods](../guides/services/declarative-client.md) or [generate from OpenAPI](../guides/services/generated-client.md). Before adopting storage events, check their [integration requirements](../guides/integrations/index.md); CoSec authentication lives at [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients). Wow, the generator and Viewer belong to the 5.x line; from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript).
 
 Continue with [next tasks](./next-steps.md), or [evaluate the architecture](../architecture/index.md) before choosing components.

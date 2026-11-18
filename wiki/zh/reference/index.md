@@ -20,7 +20,6 @@ pageClass: reference-index-page
 | [openapi](./openapi/index.md)              | OpenAPI 类型契约 | 3      |
 | [generator](./generator/index.md)（5.x）   | 生成客户端       | 5      |
 | [openai](./openai/index.md)                | 对话与 token 流  | 2      |
-| [cosec](./cosec/index.md)                  | 认证与刷新       | 3      |
 | [react](./react/index.md)                  | 组件请求状态     | 7      |
 | [wow](./wow/index.md)（5.x）               | 命令与查询       | 9      |
 | [viewer](./viewer/index.md)（5.x，已弃用） | 数据视图与持久化 | 8      |

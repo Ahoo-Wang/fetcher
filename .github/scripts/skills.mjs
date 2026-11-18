@@ -30,12 +30,18 @@ import { pathToFileURL } from 'node:url';
 
 /** The only skill that may name packages this repository does not publish. */
 export const MIGRATION_SKILL = 'fetcher-v6-migration';
-/** Packages that left fetcher in 6.0; allowed only in the migration skill. */
+/**
+ * Packages that left fetcher: the Wow-coupled ones in 6.0, and CoSec
+ * (`@ahoo-wang/fetcher-cosec`, now `@ahoo-wang/cosec-fetcher` in the CoSec
+ * repository) after 6.x. Allowed only in the migration skill, which still
+ * describes their 6.0 changes.
+ */
 export const FORMER_PACKAGES = new Set([
   '@ahoo-wang/fetcher-wow',
   '@ahoo-wang/fetcher-generator',
   '@ahoo-wang/fetcher-viewer',
   '@ahoo-wang/fetcher-view-engine',
+  '@ahoo-wang/fetcher-cosec',
 ]);
 /** Replacements in the Wow repository, on npm from Wow 9.2.0. */
 export const EXTERNAL_PACKAGE = /^@ahoo-wang\/wow-[a-z-]*$/;

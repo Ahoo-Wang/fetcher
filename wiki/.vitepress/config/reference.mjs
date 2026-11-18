@@ -86,16 +86,6 @@ export const referencePackages = [
     topics: ['index', 'client-and-completions', 'streaming', 'symbols'],
   },
   {
-    name: 'cosec',
-    topics: [
-      'index',
-      'configuration',
-      'tokens-and-refresh',
-      'interceptors-and-attribution',
-      'symbols',
-    ],
-  },
-  {
     name: 'react',
     topics: [
       'index',
@@ -104,7 +94,6 @@ export const referencePackages = [
       'api-hooks',
       'debounce',
       'storage-and-events',
-      'cosec',
       'utilities',
       'symbols',
     ],

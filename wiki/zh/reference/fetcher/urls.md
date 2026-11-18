@@ -29,7 +29,7 @@ description: 'URL 构建与模板 — @ahoo-wang/fetcher 5.0.0'
 | `urlTemplateRegexResolve(template, regex, params?)`        | 使用调用者提供的正则捕获组确定键名，执行同样的替换规则。                                                                                                                                                                                                      |
 | `urlTemplateRegexExtract(template, regex)`                 | 循环调用 `regex.exec`，必须使用 global 正则以推进匹配。                                                                                                                                                                                                       |
 
-`Date` 值转为 ISO 8601 文本，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 并记住生成的 URL。对同一请求再次运行（如 CoSec 401 重试）时保留该 URL，因此 `/api` 这类相对基础地址不会被重复拼接；再次运行前设置的 URL 参数用 `applyParams` 附加，替换后的 URL 则完整解析。名称和顺序常量见[拦截器](./interceptors.md)。无论是否传入参数映射，缺失模板参数都在网络 I/O 前失败。
+`Date` 值转为 ISO 8601 文本，值内斜杠编码为 `%2F`。`UrlResolveInterceptor` 使用客户端构建器改写 `exchange.request.url`，随后清空 `request.urlParams` 并记住生成的 URL。对同一请求再次运行（如重放请求的拦截器）时保留该 URL，因此 `/api` 这类相对基础地址不会被重复拼接；再次运行前设置的 URL 参数用 `applyParams` 附加，替换后的 URL 则完整解析。名称和顺序常量见[拦截器](./interceptors.md)。无论是否传入参数映射，缺失模板参数都在网络 I/O 前失败。
 
 ## 完整示例 {#example}
 

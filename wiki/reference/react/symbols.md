@@ -6,11 +6,10 @@ description: 'React symbol index — @ahoo-wang/fetcher-react root, /core and /f
 
 # Complete symbol index
 
-Every symbol below is exported from the root entry `@ahoo-wang/fetcher-react`. The Subpath column names the subpath that also exports it: `/core` (React-only hooks, no integration packages) or `/fetcher` (Fetcher hooks, no CoSec, storage or event-bus code). See [subpath entries](./index#subpath-entries); — means root only.
+Every symbol below is exported from the root entry `@ahoo-wang/fetcher-react`. The Subpath column names the subpath that also exports it: `/core` (React-only hooks, no integration packages) or `/fetcher` (Fetcher hooks, no storage or event-bus code). See [subpath entries](./index#subpath-entries); — means root only.
 
 | Symbol                              | Subpath    | Topic                                                                                   |
 | ----------------------------------- | ---------- | --------------------------------------------------------------------------------------- |
-| `ANONYMOUS_USER`                    | —          | [Security hooks and route guards](./cosec#api-ANONYMOUS_USER)                           |
 | `APIHooks`                          | —          | [API hook factories](./api-hooks#api-APIHooks)                                          |
 | `ApiHooksMapping`                   | —          | [API hook factories](./api-hooks#api-ApiHooksMapping)                                   |
 | `ApiMethod`                         | —          | [API hook factories](./api-hooks#api-ApiMethod)                                         |
@@ -28,14 +27,6 @@ Every symbol below is exported from the root entry `@ahoo-wang/fetcher-react`. T
 | `QueryAPIHooks`                     | —          | [API hook factories](./api-hooks#api-QueryAPIHooks)                                     |
 | `QueryMethod`                       | —          | [API hook factories](./api-hooks#api-QueryMethod)                                       |
 | `QueryOptions`                      | `/core`    | [Promise and query state](./promise-and-query-state#api-QueryOptions)                   |
-| `RefreshableRouteGuard`             | —          | [Security hooks and route guards](./cosec#api-RefreshableRouteGuard)                    |
-| `RefreshableRouteGuardProps`        | —          | [Security hooks and route guards](./cosec#api-RefreshableRouteGuardProps)               |
-| `RouteGuard`                        | —          | [Security hooks and route guards](./cosec#api-RouteGuard)                               |
-| `RouteGuardProps`                   | —          | [Security hooks and route guards](./cosec#api-RouteGuardProps)                          |
-| `SecurityContext`                   | —          | [Security hooks and route guards](./cosec#api-SecurityContext)                          |
-| `SecurityContextOptions`            | —          | [Security hooks and route guards](./cosec#api-SecurityContextOptions)                   |
-| `SecurityContextValue`              | —          | [Security hooks and route guards](./cosec#api-SecurityContextValue)                     |
-| `SecurityProvider`                  | —          | [Security hooks and route guards](./cosec#api-SecurityProvider)                         |
 | `UseApiMethodExecuteOptions`        | —          | [API hook factories](./api-hooks#api-UseApiMethodExecuteOptions)                        |
 | `UseApiMethodExecuteReturn`         | —          | [API hook factories](./api-hooks#api-UseApiMethodExecuteReturn)                         |
 | `UseApiMethodQueryOptions`          | —          | [API hook factories](./api-hooks#api-UseApiMethodQueryOptions)                          |
@@ -62,8 +53,6 @@ Every symbol below is exported from the root entry `@ahoo-wang/fetcher-react`. T
 | `UsePromiseStateReturn`             | `/core`    | [Promise and query state](./promise-and-query-state#api-UsePromiseStateReturn)          |
 | `UseQueryOptions`                   | `/core`    | [Promise and query state](./promise-and-query-state#api-UseQueryOptions)                |
 | `UseQueryReturn`                    | `/core`    | [Promise and query state](./promise-and-query-state#api-UseQueryReturn)                 |
-| `UseSecurityOptions`                | —          | [Security hooks and route guards](./cosec#api-UseSecurityOptions)                       |
-| `UseSecurityReturn`                 | —          | [Security hooks and route guards](./cosec#api-UseSecurityReturn)                        |
 | `collectMethods`                    | —          | [API hook factories](./api-hooks#api-collectMethods)                                    |
 | `createExecuteApiHooks`             | —          | [API hook factories](./api-hooks#api-createExecuteApiHooks)                             |
 | `createQueryApiHooks`               | —          | [API hook factories](./api-hooks#api-createQueryApiHooks)                               |
@@ -83,6 +72,4 @@ Every symbol below is exported from the root entry `@ahoo-wang/fetcher-react`. T
 | `useLatest`                         | `/core`    | [Latest and stable values](./utilities#api-useLatest)                                   |
 | `usePromiseState`                   | `/core`    | [Promise and query state](./promise-and-query-state#api-usePromiseState)                |
 | `useQuery`                          | `/core`    | [Promise and query state](./promise-and-query-state#api-useQuery)                       |
-| `useSecurity`                       | —          | [Security hooks and route guards](./cosec#api-useSecurity)                              |
-| `useSecurityContext`                | —          | [Security hooks and route guards](./cosec#api-useSecurityContext)                       |
 | `useStableValue`                    | `/core`    | [Latest and stable values](./utilities#api-useStableValue)                              |

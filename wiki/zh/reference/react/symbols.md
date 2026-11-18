@@ -6,11 +6,10 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 
 # 完整符号索引
 
-下表每个符号都从根入口 `@ahoo-wang/fetcher-react` 导出。“子路径”列给出同样导出它的子路径：`/core`（只依赖 React 的 Hook，不加载任何集成包）或 `/fetcher`（Fetcher Hook，不加载 CoSec、存储或事件总线代码）。见[子路径入口](./index#subpath-entries)；— 表示只在根入口。
+下表每个符号都从根入口 `@ahoo-wang/fetcher-react` 导出。“子路径”列给出同样导出它的子路径：`/core`（只依赖 React 的 Hook，不加载任何集成包）或 `/fetcher`（Fetcher Hook，不加载存储或事件总线代码）。见[子路径入口](./index#subpath-entries)；— 表示只在根入口。
 
 | 符号                                | 子路径     | 专题                                                                         |
 | ----------------------------------- | ---------- | ---------------------------------------------------------------------------- |
-| `ANONYMOUS_USER`                    | —          | [安全 Hook 与路由守卫](./cosec#api-ANONYMOUS_USER)                           |
 | `APIHooks`                          | —          | [API Hook 工厂](./api-hooks#api-APIHooks)                                    |
 | `ApiHooksMapping`                   | —          | [API Hook 工厂](./api-hooks#api-ApiHooksMapping)                             |
 | `ApiMethod`                         | —          | [API Hook 工厂](./api-hooks#api-ApiMethod)                                   |
@@ -28,14 +27,6 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `QueryAPIHooks`                     | —          | [API Hook 工厂](./api-hooks#api-QueryAPIHooks)                               |
 | `QueryMethod`                       | —          | [API Hook 工厂](./api-hooks#api-QueryMethod)                                 |
 | `QueryOptions`                      | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-QueryOptions)             |
-| `RefreshableRouteGuard`             | —          | [安全 Hook 与路由守卫](./cosec#api-RefreshableRouteGuard)                    |
-| `RefreshableRouteGuardProps`        | —          | [安全 Hook 与路由守卫](./cosec#api-RefreshableRouteGuardProps)               |
-| `RouteGuard`                        | —          | [安全 Hook 与路由守卫](./cosec#api-RouteGuard)                               |
-| `RouteGuardProps`                   | —          | [安全 Hook 与路由守卫](./cosec#api-RouteGuardProps)                          |
-| `SecurityContext`                   | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityContext)                          |
-| `SecurityContextOptions`            | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityContextOptions)                   |
-| `SecurityContextValue`              | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityContextValue)                     |
-| `SecurityProvider`                  | —          | [安全 Hook 与路由守卫](./cosec#api-SecurityProvider)                         |
 | `UseApiMethodExecuteOptions`        | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodExecuteOptions)                  |
 | `UseApiMethodExecuteReturn`         | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodExecuteReturn)                   |
 | `UseApiMethodQueryOptions`          | —          | [API Hook 工厂](./api-hooks#api-UseApiMethodQueryOptions)                    |
@@ -62,8 +53,6 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `UsePromiseStateReturn`             | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UsePromiseStateReturn)    |
 | `UseQueryOptions`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryOptions)          |
 | `UseQueryReturn`                    | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-UseQueryReturn)           |
-| `UseSecurityOptions`                | —          | [安全 Hook 与路由守卫](./cosec#api-UseSecurityOptions)                       |
-| `UseSecurityReturn`                 | —          | [安全 Hook 与路由守卫](./cosec#api-UseSecurityReturn)                        |
 | `collectMethods`                    | —          | [API Hook 工厂](./api-hooks#api-collectMethods)                              |
 | `createExecuteApiHooks`             | —          | [API Hook 工厂](./api-hooks#api-createExecuteApiHooks)                       |
 | `createQueryApiHooks`               | —          | [API Hook 工厂](./api-hooks#api-createQueryApiHooks)                         |
@@ -83,6 +72,4 @@ description: 'React 完整符号索引 — @ahoo-wang/fetcher-react 根入口、
 | `useLatest`                         | `/core`    | [最新值与稳定值](./utilities#api-useLatest)                                  |
 | `usePromiseState`                   | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-usePromiseState)          |
 | `useQuery`                          | `/core`    | [Promise 与查询状态](./promise-and-query-state#api-useQuery)                 |
-| `useSecurity`                       | —          | [安全 Hook 与路由守卫](./cosec#api-useSecurity)                              |
-| `useSecurityContext`                | —          | [安全 Hook 与路由守卫](./cosec#api-useSecurityContext)                       |
 | `useStableValue`                    | `/core`    | [最新值与稳定值](./utilities#api-useStableValue)                             |

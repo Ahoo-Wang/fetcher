@@ -68,7 +68,6 @@ try {
 | OpenAPI TypeScript 类型 | `@ahoo-wang/fetcher-openapi`     |
 | React Hooks             | `@ahoo-wang/fetcher-react`       |
 | 类型化存储              | `@ahoo-wang/fetcher-storage`     |
-| CoSec 认证              | `@ahoo-wang/fetcher-cosec`       |
 
 [选择包](https://fetcher.ahoo.me/zh/architecture/package-boundaries)说明 peer 依赖和最小可用组合。
 
@@ -87,6 +86,17 @@ try {
 
 新包（包括 `@ahoo-wang/wow-view-engine`）自 Wow 首个稳定版 9.2.0 起已发布到 npm；自 Wow 9.2.1 起兼容 fetcher 6（peer 范围 `^5.1.5 || ^6.0.0`）。升级 5.x 应用时，先切换到 Wow 包（9.2.1 及以上），再升级 fetcher。文档见 [wow.ahoo.me](https://wow.ahoo.me)。
 fetcher 5.x 版本线继续从 `5.x` 分支发布修复。
+
+### 已迁往 CoSec 仓的包
+
+CoSec 认证已迁到 CoSec 仓库，版本跟随 CoSec，依赖上面这些 fetcher 包：
+
+| 原来                          | 现在                       |
+| ----------------------------- | -------------------------- |
+| `@ahoo-wang/fetcher-cosec`    | `@ahoo-wang/cosec-fetcher` |
+| `fetcher-react` 里的安全 Hook | `@ahoo-wang/cosec-react`   |
+
+CoSec 8.0 GA 之前它们在 npm 的 `beta` 标签上。文档见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 
 ## 学习与构建
 

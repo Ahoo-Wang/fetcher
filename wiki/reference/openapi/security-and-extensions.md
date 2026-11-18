@@ -5,7 +5,7 @@ description: 'Security and extensions — Fetcher 6.0.0'
 
 # Security and extensions
 
-These types describe security requirements and vendor metadata. They do not authenticate requests or enforce access policies. For runtime CoSec integration see [CoSec configuration](../cosec/configuration).
+These types describe security requirements and vendor metadata. They do not authenticate requests or enforce access policies. For runtime CoSec authentication see [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 
 ## Security objects
 

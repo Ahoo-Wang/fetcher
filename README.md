@@ -70,7 +70,6 @@ try {
 | OpenAPI TypeScript types     | `@ahoo-wang/fetcher-openapi`     |
 | React hooks                  | `@ahoo-wang/fetcher-react`       |
 | Typed storage                | `@ahoo-wang/fetcher-storage`     |
-| CoSec authentication         | `@ahoo-wang/fetcher-cosec`       |
 
 [Choose packages](https://fetcher.ahoo.me/architecture/package-boundaries) explains peer
 dependencies and the smallest useful combination.
@@ -91,6 +90,17 @@ versioned with Wow, and depend on the fetcher packages above:
 
 The new packages, `@ahoo-wang/wow-view-engine` included, are on npm from Wow 9.2.0, Wow's first stable release; from Wow 9.2.1 they accept fetcher 6 (peer range `^5.1.5 || ^6.0.0`). To upgrade a 5.x application, switch to the Wow packages (9.2.1 or later) first, then upgrade fetcher. Documentation: [wow.ahoo.me](https://wow.ahoo.me).
 The fetcher 5.x line keeps receiving fixes from the `5.x` branch.
+
+### Moved to the CoSec repository
+
+CoSec authentication now lives in the CoSec repository, is versioned with CoSec, and depends on the fetcher packages above:
+
+| Was                               | Now                        |
+| --------------------------------- | -------------------------- |
+| `@ahoo-wang/fetcher-cosec`        | `@ahoo-wang/cosec-fetcher` |
+| Security hooks in `fetcher-react` | `@ahoo-wang/cosec-react`   |
+
+They are on npm's `beta` tag until CoSec 8.0 GA. Documentation: [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 
 ## Learn and build
 

@@ -16,7 +16,7 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 | `packages/fetcher/`                                                  | Core HTTP client; no internal dependencies           |
 | `packages/decorator/`, `packages/eventbus/`, `packages/eventstream/` | API decorators, event bus, SSE streams               |
 | `packages/openapi/`                                                  | OpenAPI types                                        |
-| `packages/openai/`, `packages/cosec/`                                | OpenAI client and CoSec authentication               |
+| `packages/openai/`                                                   | OpenAI client                                        |
 | `packages/storage/`                                                  | Cross-environment storage                            |
 | `packages/react/`                                                    | React hooks                                          |
 | `stories/`, `.storybook/`                                            | Shared Storybook stories and configuration           |
@@ -26,8 +26,12 @@ TypeScript HTTP-client ecosystem built around `Fetcher`.
 The Wow client, the Wow React hooks, the view engine and the generator moved to
 the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)
 (`@ahoo-wang/wow-*`); the deprecated viewer stays on the `5.x` branch, which
-also carries fetcher 5.x fixes. Dependencies run one way, Wow → fetcher: no
-package here may depend on `@ahoo-wang/wow-*` (`.github/scripts/dependency-direction.mjs`,
+also carries fetcher 5.x fixes. CoSec authentication moved to the CoSec
+repository (`@ahoo-wang/cosec-fetcher`, `@ahoo-wang/cosec-react`; see
+[cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)). Dependencies run
+one way, Wow → fetcher and CoSec → fetcher: no package, integration test or
+documentation example here may depend on `@ahoo-wang/wow-*`,
+`@ahoo-wang/cosec-*` or `@ahoo-wang/fetcher-cosec` (`.github/scripts/dependency-direction.mjs`,
 run in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests
 against changes to the core packages Wow consumes (`fetcher`, `decorator`,
 `eventstream`, `openapi`); it is advisory.

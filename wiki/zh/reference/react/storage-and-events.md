@@ -148,4 +148,4 @@ export interface UseEventSubscriptionReturn {
 
 ## 相关专题
 
-[Fetcher 请求 Hook](./fetcher-hooks) · [Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [安全 Hook 与路由守卫](./cosec) · [最新值与稳定值](./utilities)
+[Fetcher 请求 Hook](./fetcher-hooks) · [Promise 与查询状态](./promise-and-query-state) · [API Hook 工厂](./api-hooks) · [防抖执行](./debounce) · [最新值与稳定值](./utilities)

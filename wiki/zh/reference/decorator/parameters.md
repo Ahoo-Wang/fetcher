@@ -34,7 +34,7 @@ description: '参数绑定 — @ahoo-wang/fetcher-decorator 5.0.0'
 
 `getParameterNames(func): string[]` 解析 `Function.toString()`，以函数为键在 WeakMap 缓存；解析失败返回空数组，非函数在解析前抛 TypeError。只读取函数签名，不读函数体；单个参数不带括号的箭头函数（`value => value`、`async value => …`）同样可以读取。实现按顶层逗号分割（默认值、字符串、模板与正则表达式字面量以及注释中的逗号与括号不会分割；跟在操作数之后的 `/` 视为除号），并去掉类型与默认值。名称按 ECMAScript 标识符规则读取，`搜索`、`café` 等 Unicode 名称完整保留，`\u` 转义会被解码。解构参数得到 `''`，使后续名称保持原索引；剩余参数得到去掉 `...` 的名称。压缩后的名称不是稳定契约。
 
-`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。未命名 `@path()` 的推断名称若不匹配路径模板（按 fetcher 的 `urlTemplateStyle` 读取）的任何占位符，每个端点只输出一次警告：这正是压缩器改名参数的表现。纯对象参数（展开为键）不会警告。没有参数的占位符不报告，因为拦截器可能补上（cosec 补 `{tenantId}`/`{ownerId}`）；若无人补上，解析 URL 会以 `Missing required path parameter` 失败。
+`getParameterName(target, propertyKey, index, providedName?)` 优先返回真值显式名称，再尝试推断，否则 undefined（解构参数没有推断名称）。没有解析名称的绑定值回退到 `param${index}`。未命名 `@path()` 的推断名称若不匹配路径模板（按 fetcher 的 `urlTemplateStyle` 读取）的任何占位符，每个端点只输出一次警告：这正是压缩器改名参数的表现。纯对象参数（展开为键）不会警告。没有参数的占位符不报告，因为拦截器可能补上（归属拦截器可能补 `{tenantId}`/`{ownerId}`）；若无人补上，解析 URL 会以 `Missing required path parameter` 失败。
 
 ## 取消与继承元数据 {#cancellation}
 

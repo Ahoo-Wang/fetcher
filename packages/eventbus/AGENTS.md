@@ -73,7 +73,7 @@ src/
 - ✅ Adding new event bus variants (e.g., priority-based)
 - ✅ Adding new messenger implementations
 - ✅ Writing new tests
-- ⚠️ Changing EventBus interface — used by storage, cosec, react packages
+- ⚠️ Changing EventBus interface — used by storage and react packages
 - ⚠️ Modifying BroadcastChannel usage — affects cross-tab communication
 - 🚫 Removing typed event bus variants (Serial/Parallel/Broadcast)
 - 🚫 Breaking the EventBus subscriber contract

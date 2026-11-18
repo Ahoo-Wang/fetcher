@@ -23,24 +23,28 @@ React Hook 将异步操作连接到一个挂载组件：状态、执行、查询
 
 ## 子路径入口 {#subpath-entries}
 
-| 入口                               | 导出                                                                                            | 加载                                               |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| `@ahoo-wang/fetcher-react`         | 这些页面上的全部 Hook 与组件                                                                    | 下方声明的全部 peer                                |
-| `@ahoo-wang/fetcher-react/core`    | Promise 与查询状态、防抖回调/值/查询、`useLatest`、`useStableValue`                             | 只有 React，不加载任何 `@ahoo-wang/*` 包           |
-| `@ahoo-wang/fetcher-react/fetcher` | `useFetcher`、`useFetcherQuery`、`useDebouncedFetcher`、`useDebouncedFetcherQuery` 及其选项类型 | `@ahoo-wang/fetcher`；不加载 CoSec、存储或事件总线 |
+| 入口                               | 导出                                                                                            | 加载                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `@ahoo-wang/fetcher-react`         | 这些页面上的全部 Hook 与组件                                                                    | 下方声明的全部 peer                        |
+| `@ahoo-wang/fetcher-react/core`    | Promise 与查询状态、防抖回调/值/查询、`useLatest`、`useStableValue`                             | 只有 React，不加载任何 `@ahoo-wang/*` 包   |
+| `@ahoo-wang/fetcher-react/fetcher` | `useFetcher`、`useFetcherQuery`、`useDebouncedFetcher`、`useDebouncedFetcherQuery` 及其选项类型 | `@ahoo-wang/fetcher`；不加载存储或事件总线 |
 
 子路径只提供 ESM；根入口另有 UMD 构建。子路径与根入口共用一个模块图，所以从 `/core` 导入的 Hook 或 `PromiseStatus` 与从根入口导入的是同一个值。[符号索引](./symbols)标出每个符号由哪个子路径导出。导入子路径时，声明的 peer 仍是安装前提；子路径只限制打包加载的内容。
 
 ## 完整安装前提
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → CoSec → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 为 React ^19.0.0；渲染器按应用需要安装（浏览器用 `react-dom`）。即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
+库包声明 Node >=18.20.8；仓库开发要求 Node >=22.12.0、pnpm 10.34.5。命令包含全部递归内部 peer（React → 存储 → 事件总线）；直接运行依赖（`dequal`、`immer`）自动安装。外部 peer 为 React ^19.0.0；渲染器按应用需要安装（浏览器用 `react-dom`）。即使不使用某项功能，peer 仍是安装前提。消费者无需复制仓库的 React Compiler 工具链。
 
 ::: info 6.0 变更
 这些 Hook 已按上述模型重构（破坏性变更）。移除了全屏 Hook、`useRefs`、`useForceUpdate`、`useMounted`、`useRequestId`、`useQueryState`、`propagateError` 选项、`initialQuery`/`setQuery`/`getQuery` 和 `onBeforeExecute`。各专题页说明其 Hook 的变化；[最新值与稳定值](./utilities#removed-in-6-0)列出被移除工具的替代方案。
+:::
+
+::: info 安全 Hook 已迁到 CoSec
+`SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook 已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`，CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 :::
 
 ::: info Wow 查询 Hook 与数据监控
@@ -60,7 +64,6 @@ Wow 查询 Hook（`useListQuery`、`usePagedQuery`、`useFetcherListQuery` 等�
 - [API Hook 工厂](./api-hooks)
 - [防抖执行](./debounce)
 - [存储与事件订阅](./storage-and-events)
-- [安全 Hook 与路由守卫](./cosec)
 - [最新值与稳定值](./utilities)
 - [完整符号索引](./symbols)
 

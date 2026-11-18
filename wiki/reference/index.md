@@ -20,7 +20,6 @@ Each package has an entry page and focused reference topics. Choose the responsi
 | [openapi](./openapi/index.md)                 | OpenAPI type contracts     | 3      |
 | [generator](./generator/index.md) (5.x)       | Generated clients          | 5      |
 | [openai](./openai/index.md)                   | Chat and token streams     | 2      |
-| [cosec](./cosec/index.md)                     | Authentication and refresh | 3      |
 | [react](./react/index.md)                     | Component request state    | 7      |
 | [wow](./wow/index.md) (5.x)                   | Commands and queries       | 9      |
 | [viewer](./viewer/index.md) (5.x, deprecated) | Data views and persistence | 8      |

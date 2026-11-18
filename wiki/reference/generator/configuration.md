@@ -29,7 +29,7 @@ The generator has two separate inputs: constructor/CLI execution options and an 
 | Empty array                            | Explicit override                        | Keep every ordinary API path argument                               |
 | Command-client path arguments          | Always `['tenantId', 'ownerId']`         | Per-tag API configuration does not change command clients           |
 
-The array replaces the default; it does not append. Ignoring a parameter does not remove its URL template placeholder or supply a value. Supply it through request URL parameters, client defaults, or [CoSec attribution](../cosec/interceptors-and-attribution).
+The array replaces the default; it does not append. Ignoring a parameter does not remove its URL template placeholder or supply a value. Supply it through request URL parameters, client defaults, or a CoSec attribution interceptor.
 
 ## Resolution and failures
 

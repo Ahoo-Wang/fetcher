@@ -55,11 +55,6 @@ src/
     useFetcherQuery.ts        — Fetcher-based controlled query hook
     debounced/                — Debounced fetcher hooks
       useDebouncedFetcher.ts, useDebouncedFetcherQuery.ts
-  cosec/
-    SecurityContext.tsx       — Security context provider
-    RouteGuard.tsx            — Route guard component (auth)
-    RefreshableRouteGuard.tsx — Auto-refresh route guard
-    useSecurity.ts            — Security state hook
   eventbus/
     useEventSubscription.ts   — Typed event subscription hook
   storage/
@@ -82,18 +77,18 @@ src/
   hook whose body contains `try`/`catch`, so keep `try`/`catch` in plain
   functions outside the hook (see `settle` in `useExecutePromise.ts`).
 - **API Hooks Factory**: `createQueryApiHooks` / `createExecuteApiHooks` generate typed hook sets
-- **Security**: CoSec integration via SecurityContext and RouteGuard components
-- **Subpaths**: `/core` and `/fetcher` load no security, storage or event-bus
+- **Subpaths**: `/core` and `/fetcher` load no storage or event-bus
   integration; `pnpm test:package` checks this on the build output
 - **Wow hooks moved**: Wow's hooks live in `@ahoo-wang/wow-react` in the
   [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript),
   which does not depend on this package
+- **Security hooks moved**: CoSec's hooks live in `@ahoo-wang/cosec-react` in
+  the CoSec repository ([cosec.ahoo.me](https://cosec.ahoo.me/integration/clients))
 
 ## Dependencies
 
 - Peers: `@ahoo-wang/fetcher` (core HTTP client), `@ahoo-wang/fetcher-eventbus`
-  (event bus), `@ahoo-wang/fetcher-storage` (storage),
-  `@ahoo-wang/fetcher-cosec` (authentication), `react` `^19.0.0`
+  (event bus), `@ahoo-wang/fetcher-storage` (storage), `react` `^19.0.0`
 - Dependencies: `dequal` (deep equality for queries), `immer`
   (`useImmerKeyStorage`)
 

@@ -1,7 +1,7 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Drive React component state from requests with `@ahoo-wang/fetcher-react` 6: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, CoSec `SecurityProvider`/`RouteGuard`, and hooks generated from decorator services. Use for loading/error state, cancellation, debounced search, protected routes. Do not load when a hook or option stopped existing after upgrading from 5.x: that is fetcher-v6-migration. CoSec token setup: fetcher-cosec-auth.
+  Drive React component state from requests with `@ahoo-wang/fetcher-react` 6: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, and hooks generated from decorator services. Use for loading/error state, cancellation, debounced search. Do not load when a hook or option stopped existing after upgrading from 5.x: that is fetcher-v6-migration. CoSec route guards moved to cosec.ahoo.me.
 ---
 
 # fetcher-react-hooks
@@ -10,7 +10,7 @@ description: >
 
 - **Pick the lowest layer that fits**: `usePromiseState` (raw state) → `useExecutePromise` (execute/abort/reset, unmount-safe) → `useFetcher` (one Fetcher request) / `useQuery` (your own query function) → `useFetcherQuery` (POST a query object). Debounced variants wrap each.
 - **Queries are controlled**: keep the query in your own React state and pass it as `query`; the hook executes whenever its content changes (deep-equal, so an inline object literal does not re-run). `query: undefined` means "not ready": nothing runs.
-- **Entry points**: the root entry has everything; `@ahoo-wang/fetcher-react/core` (state, query, debounce hooks) and `@ahoo-wang/fetcher-react/fetcher` (`useFetcher`, `useFetcherQuery` and their debounced forms) are ESM-only subpaths without CoSec, storage or event-bus code.
+- **Entry points**: the root entry has everything; `@ahoo-wang/fetcher-react/core` (state, query, debounce hooks) and `@ahoo-wang/fetcher-react/fetcher` (`useFetcher`, `useFetcherQuery` and their debounced forms) are ESM-only subpaths without storage or event-bus code.
 - **From a decorator service**: `createQueryApiHooks({ api: service })` or `createExecuteApiHooks({ api: service })` generate `use<Method>` hooks instead of hand-written wrappers.
 
 ## Gotchas a capable model gets wrong
@@ -23,7 +23,6 @@ description: >
 - `useDebouncedQuery` / `useDebouncedFetcherQuery` follow the controlled `query`: the first query runs at once, later changes after `debounce.delay`. They return `pending` (a boolean) and `flush()` (apply the waiting query now). `useDebouncedValue(value, { delay })` debounces any value. `useDebouncedCallback`, `useDebouncedExecutePromise` and `useDebouncedFetcher` instead return `run(...args)`, `cancel()` and `isPending()`.
 - Generated query hooks take `{ query, attributes, autoExecute }` and call `method(query, attributes, abortController)`. That fits any one-input method, `getUser(@path('id') id)` included (a decorator method ignores the undecorated extra argument and finds the controller anywhere), so a read that follows an id passes `{ query: id }` to its query hook, not an id to an execute hook from an effect. Generated execute hooks pass the controller to the method only when the generated hook itself is called with `appendAbortController: true` (a hook option: the factories take only `{ api }`); otherwise `abort()` only drops the state update.
 - `useEventSubscription` subscribes once per `bus` and handler `name`; it calls the latest `handle`, so an inline handler is fine.
-- CoSec in React: wrap the app in `SecurityProvider` with the **same** `TokenStorage` instance the `CoSecConfigurer` uses (a second `new TokenStorage()` keeps its own cache and misses sign-ins until reload). Read `authenticated` / `currentUser` / `signIn` / `signOut` from `useSecurityContext()`. `RouteGuard`'s `onUnauthorized` runs in an effect after commit, so `navigate('/login')` there is safe; never navigate during render. `RefreshableRouteGuard` takes `configurer.tokenManager`.
 
 ## Minimal example
 
@@ -59,26 +58,9 @@ const onSubmit = async () => {
 };
 ```
 
-```tsx
-import { useNavigate } from 'react-router';
-import { RouteGuard, SecurityProvider } from '@ahoo-wang/fetcher-react';
-import { tokenStorage } from './http'; // the TokenStorage given to CoSecConfigurer
-
-export function App() {
-  const navigate = useNavigate();
-  return (
-    <SecurityProvider tokenStorage={tokenStorage}>
-      <RouteGuard onUnauthorized={() => navigate('/login')}>
-        <Dashboard />
-      </RouteGuard>
-    </SecurityProvider>
-  );
-}
-```
-
 ## References
 
-- `references/api.md`: hook signatures and return fields, `PromiseStatus` transitions, cancellation rules, debounced hooks, storage and event hooks, API hook generation and CoSec components. Load it for exact options.
+- `references/api.md`: hook signatures and return fields, `PromiseStatus` transitions, cancellation rules, debounced hooks, storage and event hooks, and API hook generation. Load it for exact options.
 
 ## Related Skills
 
@@ -86,5 +68,4 @@ export function App() {
 - $fetcher-decorator-service: services that `createExecuteApiHooks` / `createQueryApiHooks` wrap.
 - $fetcher-storage: `KeyStorage` behind `useKeyStorage`.
 - $fetcher-eventbus: buses behind `useEventSubscription`.
-- $fetcher-cosec-auth: tokens behind `SecurityProvider`.
 - $fetcher-v6-migration: upgrading 5.x hook code and hooks removed in 6.0.
