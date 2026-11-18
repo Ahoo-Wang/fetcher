@@ -37,7 +37,7 @@ function workspace(files) {
   return root;
 }
 
-test('this repository depends on no Wow package', () => {
+test('this repository depends on no Wow or CoSec package', () => {
   assert.deepEqual(violations(process.cwd()), []);
   assert.doesNotThrow(() => execFileSync(process.execPath, [script]));
 });
@@ -83,12 +83,85 @@ test('a Wow package is refused in every dependency field, override, catalog and 
   }
 });
 
+test('a CoSec client or the removed fetcher-cosec is refused, examples included', () => {
+  const root = workspace({
+    'package.json': {
+      name: 'workspace',
+      devDependencies: { '@ahoo-wang/fetcher-cosec': 'workspace:*' },
+    },
+    'pnpm-workspace.yaml':
+      "packages:\n  - packages/*\n  - 'integration-test'\n\ncatalog:\n  '@ahoo-wang/cosec-fetcher': ^8.0.0\n",
+    'README.md':
+      "```ts\nimport { CoSecConfigurer } from '@ahoo-wang/fetcher-cosec';\n```\n",
+    'packages/react/package.json': {
+      name: '@ahoo-wang/fetcher-react',
+      peerDependencies: { '@ahoo-wang/cosec-react': '^8' },
+    },
+    'packages/react/README.zh-CN.md':
+      "```tsx\nimport { RouteGuard } from '@ahoo-wang/cosec-react';\n```\n",
+    'integration-test/src/auth.ts':
+      "export * from '@ahoo-wang/fetcher-cosec/internal';\n",
+    'wiki/guides/auth.md':
+      "```ts\nimport { TokenStorage } from '@ahoo-wang/cosec-fetcher';\n```\n",
+    'wiki/examples/http/auth.ts':
+      "const cosec = await import('@ahoo-wang/cosec-fetcher');\n",
+    'stories/react/Guard.stories.tsx':
+      "import { SecurityProvider } from '@ahoo-wang/cosec-react';\n",
+    'skills/auth/SKILL.md':
+      "```ts\nconst { TokenStorage } = require('@ahoo-wang/fetcher-cosec');\n```\n",
+  });
+  try {
+    assert.deepEqual(violations(root).sort(), [
+      'README.md imports @ahoo-wang/fetcher-cosec',
+      'integration-test/src/auth.ts imports @ahoo-wang/fetcher-cosec/internal',
+      'package.json devDependencies: @ahoo-wang/fetcher-cosec',
+      'packages/react/README.zh-CN.md imports @ahoo-wang/cosec-react',
+      'packages/react/package.json peerDependencies: @ahoo-wang/cosec-react',
+      'pnpm-workspace.yaml catalog: @ahoo-wang/cosec-fetcher',
+      'skills/auth/SKILL.md imports @ahoo-wang/fetcher-cosec',
+      'stories/react/Guard.stories.tsx imports @ahoo-wang/cosec-react',
+      'wiki/examples/http/auth.ts imports @ahoo-wang/cosec-fetcher',
+      'wiki/guides/auth.md imports @ahoo-wang/cosec-fetcher',
+    ]);
+    assert.throws(
+      () => execFileSync(process.execPath, [script, root], { stdio: 'pipe' }),
+      /CoSec → fetcher/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('prose, migration guides, release history and build output are not examples', () => {
+  const root = workspace({
+    'wiki/guides/auth.md':
+      'CoSec moved: install `@ahoo-wang/cosec-fetcher` (see https://cosec.ahoo.me).\n',
+    'skills/fetcher-v6-migration/SKILL.md':
+      "```ts\nimport { QueryClient } from '@ahoo-wang/wow-client';\n```\n",
+    'docs/releases/v6.0.0.md':
+      "```ts\nimport { TokenStorage } from '@ahoo-wang/fetcher-cosec';\n```\n",
+    'wiki/.vitepress/dist/assets/app.js':
+      "import('@ahoo-wang/cosec-fetcher');\n",
+    'wiki/node_modules/x/index.js': "require('@ahoo-wang/fetcher-cosec');\n",
+  });
+  try {
+    assert.deepEqual(violations(root), []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('fetcher packages and look-alike names are allowed', () => {
   const root = workspace({
     'packages/react/package.json': {
       name: '@ahoo-wang/fetcher-react',
       peerDependencies: { '@ahoo-wang/fetcher': 'workspace:^' },
-      devDependencies: { 'wow-client': '1.0.0', '@other/wow-client': '1' },
+      devDependencies: {
+        'wow-client': '1.0.0',
+        '@other/wow-client': '1',
+        '@other/fetcher-cosec': '1',
+        '@ahoo-wang/fetcher-cosecure': '1',
+      },
     },
     'packages/react/src/index.ts':
       "import { Fetcher } from '@ahoo-wang/fetcher';\n// '@ahoo-wang/wow-react' builds on this entry.\n",

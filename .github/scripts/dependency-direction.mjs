@@ -8,12 +8,14 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
- * Dependencies run one way only: Wow → fetcher. The Wow packages
- * (`@ahoo-wang/wow-*`, in the Wow repository under `typescript/`) depend on
- * the published fetcher packages; nothing here may depend on them, or the two
+ * Dependencies run one way only: Wow → fetcher and CoSec → fetcher. The Wow
+ * packages (`@ahoo-wang/wow-*`, in the Wow repository under `typescript/`) and
+ * the CoSec clients (`@ahoo-wang/cosec-*`, in the CoSec repository under
+ * `typescript/`, which replaced `@ahoo-wang/fetcher-cosec`) depend on the
+ * published fetcher packages; nothing here may depend on them, or the
  * repositories would have to release in lockstep.
  */
-export const FORBIDDEN = /^@ahoo-wang\/wow-/;
+export const FORBIDDEN = /^@ahoo-wang\/(?:wow-|cosec-|fetcher-cosec(?:\/|$))/;
 const DEPENDENCY_FIELDS = [
   'dependencies',
   'devDependencies',
@@ -21,8 +23,20 @@ const DEPENDENCY_FIELDS = [
   'optionalDependencies',
 ];
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
+const DOCUMENT = /\.(?:[cm]?[jt]sx?|mdx?)$/;
 const IMPORT =
-  /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"](@ahoo-wang\/wow-[^'"]*)['"]/g;
+  /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"](@ahoo-wang\/[^'"]*)['"]/g;
+const CATALOG = /^\s+['"]?(@ahoo-wang\/[^'":]+)/gm;
+/**
+ * Examples users copy: the wiki (pages and example sources), the Storybook
+ * stories, the agent skills and every README. Release notes and design
+ * history under `docs/` record what was, and migration guides (a directory
+ * named `*migration*`) name the successor packages on purpose, so neither is
+ * checked.
+ */
+const DOCUMENTATION = ['wiki', 'stories', 'skills'];
+const MIGRATION = /[/\\][^/\\]*migration[^/\\]*[/\\]/;
+const SKIPPED = /[/\\](?:node_modules|dist|cache|\.vitepress[/\\]dist)[/\\]/;
 
 /** Workspace globs from pnpm-workspace.yaml: `dir/*` or a plain directory. */
 function workspaceDirectories(root) {
@@ -41,15 +55,27 @@ function workspaceDirectories(root) {
   return directories;
 }
 
-function sourceFiles(directory) {
+function files(directory, pattern, recursive = true) {
   if (!existsSync(directory)) return [];
-  return readdirSync(directory, { recursive: true, withFileTypes: true })
-    .filter(entry => entry.isFile() && SOURCE.test(entry.name))
+  return readdirSync(directory, { recursive, withFileTypes: true })
+    .filter(entry => entry.isFile() && pattern.test(entry.name))
     .map(entry => join(entry.parentPath, entry.name))
-    .filter(file => !/[/\\](?:node_modules|dist)[/\\]/.test(file));
+    .filter(file => !SKIPPED.test(file));
 }
 
-/** Every place in the repository at `root` that depends on a Wow package. */
+function readmes(directory) {
+  return files(directory, /^README(?:\.[\w-]+)?\.md$/, false);
+}
+
+function imports(root, file) {
+  const found = [];
+  for (const [, specifier] of readFileSync(file, 'utf8').matchAll(IMPORT))
+    if (FORBIDDEN.test(specifier))
+      found.push(`${file.slice(root.length + 1)} imports ${specifier}`);
+  return found;
+}
+
+/** Every place in the repository at `root` that depends on a Wow or CoSec package. */
 export function violations(root) {
   const found = [];
   const directories = ['', ...workspaceDirectories(root)];
@@ -64,14 +90,20 @@ export function violations(root) {
     for (const name of Object.keys(pkg.pnpm?.overrides ?? {}))
       if (FORBIDDEN.test(name.replace(/@[^@/]*$/, '')))
         found.push(`${where} pnpm.overrides: ${name}`);
+    for (const file of readmes(join(root, directory)))
+      found.push(...imports(root, file));
     if (directory === '') continue;
-    for (const file of sourceFiles(join(root, directory, 'src')))
-      for (const [, specifier] of readFileSync(file, 'utf8').matchAll(IMPORT))
-        found.push(`${file.slice(root.length + 1)} imports ${specifier}`);
+    for (const file of files(join(root, directory, 'src'), SOURCE))
+      found.push(...imports(root, file));
   }
+  for (const directory of DOCUMENTATION)
+    for (const file of files(join(root, directory), DOCUMENT))
+      if (!MIGRATION.test(file.slice(root.length)))
+        found.push(...imports(root, file));
   const yaml = readFileSync(join(root, 'pnpm-workspace.yaml'), 'utf8');
-  for (const [, name] of yaml.matchAll(/^\s+['"]?(@ahoo-wang\/wow-[^'":]+)/gm))
-    found.push(`pnpm-workspace.yaml catalog: ${name}`);
+  for (const [, name] of yaml.matchAll(CATALOG))
+    if (FORBIDDEN.test(name))
+      found.push(`pnpm-workspace.yaml catalog: ${name}`);
   return found;
 }
 
@@ -82,13 +114,15 @@ if (
   const found = violations(process.argv[2] ?? process.cwd());
   if (found.length > 0) {
     console.error(
-      'Dependencies run one way, Wow → fetcher: nothing in this repository ' +
-        'may depend on @ahoo-wang/wow-*.\n' +
+      'Dependencies run one way, Wow → fetcher and CoSec → fetcher: nothing ' +
+        'in this repository may depend on @ahoo-wang/wow-*, @ahoo-wang/cosec-* ' +
+        'or @ahoo-wang/fetcher-cosec.\n' +
         found.map(line => `  ${line}`).join('\n'),
     );
     process.exit(1);
   }
   console.log(
-    'Dependency direction: no workspace depends on @ahoo-wang/wow-*.',
+    'Dependency direction: nothing depends on @ahoo-wang/wow-*, ' +
+      '@ahoo-wang/cosec-* or @ahoo-wang/fetcher-cosec.',
   );
 }
