@@ -8,7 +8,6 @@ const require = createRequire(import.meta.url);
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const workspaceAliases = Object.fromEntries(
   [
-    'cosec',
     'decorator',
     'eventbus',
     'eventstream',

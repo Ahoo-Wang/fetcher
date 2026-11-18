@@ -21,7 +21,6 @@ on:
       - 'packages/decorator/**'
       - 'packages/eventstream/**'
       - 'packages/openai/**'
-      - 'packages/cosec/**'
       - 'integration-test/**'
       - 'package.json'
       - 'pnpm-lock.yaml'

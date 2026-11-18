@@ -103,7 +103,7 @@ for (const file of fetcherModules) {
     } else {
       assert.doesNotMatch(
         fileName,
-        /^@ahoo-wang\/fetcher-(cosec|storage|eventbus)(?:\/|$)/,
+        /^@ahoo-wang\/fetcher-(storage|eventbus)(?:\/|$)/,
         `The fetcher entry loads an integration from ${fileURLToPath(file)}`,
       );
     }

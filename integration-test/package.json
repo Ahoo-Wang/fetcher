@@ -45,7 +45,6 @@
   },
   "dependencies": {
     "@ahoo-wang/fetcher": "workspace:^",
-    "@ahoo-wang/fetcher-cosec": "workspace:^",
     "@ahoo-wang/fetcher-decorator": "workspace:^",
     "@ahoo-wang/fetcher-eventstream": "workspace:^",
     "@ahoo-wang/fetcher-openai": "workspace:^"

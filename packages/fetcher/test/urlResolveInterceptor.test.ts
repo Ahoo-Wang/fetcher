@@ -96,7 +96,7 @@ describe('UrlResolveInterceptor', () => {
   });
 
   // Regression test for #2009: a relative base URL must not be prefixed again
-  // when the same exchange re-runs the request chain (CoSec 401 retry).
+  // when the same exchange re-runs the request chain (e.g. an auth interceptor's 401 retry).
   it.each(['/api', 'api', '/api/', ''])(
     'should not prefix the relative base URL %j again on a re-run',
     baseURL => {
