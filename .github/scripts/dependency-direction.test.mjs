@@ -161,6 +161,9 @@ test('only a 5.x page or a migration guide may install the removed fetcher-cosec
     'wiki/reference/react/index.md':
       '```sh\nnpm install @ahoo-wang/fetcher-cosec\n```\n',
     'skills/auth/SKILL.md': 'Run `yarn add @ahoo-wang/fetcher-cosec`.\n',
+    // Strict on purpose: the old name inside the command line is reported.
+    'wiki/guides/moved.md':
+      '```sh\npnpm add @ahoo-wang/cosec-fetcher@beta # was @ahoo-wang/fetcher-cosec\n```\n',
     // Allowed: a 5.x-only page, a migration guide, prose, look-alike names.
     'wiki/reference/viewer/index.md':
       '::: warning 5.x only\nThis page applies to 5.x.\n:::\n\n```sh\npnpm add @ahoo-wang/fetcher-cosec\n```\n',
@@ -173,10 +176,11 @@ test('only a 5.x page or a migration guide may install the removed fetcher-cosec
   });
   try {
     assert.deepEqual(violations(root).sort(), [
-      'README.md installs @ahoo-wang/fetcher-cosec',
-      'packages/react/README.md installs @ahoo-wang/fetcher-cosec',
-      'skills/auth/SKILL.md installs @ahoo-wang/fetcher-cosec',
-      'wiki/reference/react/index.md installs @ahoo-wang/fetcher-cosec',
+      'README.md installs @ahoo-wang/fetcher-cosec (an install command names it; mention the old name outside the command)',
+      'packages/react/README.md installs @ahoo-wang/fetcher-cosec (an install command names it; mention the old name outside the command)',
+      'skills/auth/SKILL.md installs @ahoo-wang/fetcher-cosec (an install command names it; mention the old name outside the command)',
+      'wiki/guides/moved.md installs @ahoo-wang/fetcher-cosec (an install command names it; mention the old name outside the command)',
+      'wiki/reference/react/index.md installs @ahoo-wang/fetcher-cosec (an install command names it; mention the old name outside the command)',
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });

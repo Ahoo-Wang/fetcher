@@ -31,6 +31,12 @@ const CATALOG = /^\s+['"]?(@ahoo-wang\/[^'":]+)/gm;
  * Packages this repository no longer publishes. Beyond importing them, a page
  * must not tell readers to install them, unless it applies to the 5.x line
  * only (its `::: warning … 5.x …` banner): those pages document 5.x as it was.
+ *
+ * The match is deliberately strict: it looks at the whole install command,
+ * continuation lines included, so a command that installs the successor but
+ * also names the old package on the same line — say
+ * `pnpm add @ahoo-wang/cosec-fetcher@beta # was @ahoo-wang/fetcher-cosec` — is
+ * reported too. Name the old package in the prose around the command instead.
  */
 export const REMOVED = /@ahoo-wang\/fetcher-cosec(?![\w-])/;
 const INSTALL =
@@ -85,7 +91,10 @@ function imports(root, file) {
   if (/\.mdx?$/.test(file) && !FIVE_X_ONLY.test(text))
     for (const [command] of text.matchAll(INSTALL)) {
       const name = command.match(REMOVED)?.[0];
-      if (name) found.push(`${where} installs ${name}`);
+      if (name)
+        found.push(
+          `${where} installs ${name} (an install command names it; mention the old name outside the command)`,
+        );
     }
   return found;
 }
