@@ -1,7 +1,9 @@
 name: PR Metadata
 on:
   pull_request:
-    # 6.x too: it keeps the 6.x line, like 5.x keeps 5.x.
+    # 6.x too: PRs into the 6.x maintenance branch need this check. 5.x is
+    # absent because a pull_request run reads this file from the base branch,
+    # and the 5.x branch's own copy lists 5.x.
     branches: [main, 6.x]
     types: [opened, synchronize, reopened, edited, ready_for_review]
 permissions:
