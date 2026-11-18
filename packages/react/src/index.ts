@@ -13,7 +13,6 @@
 
 export * from './api/index.js';
 export * from './core/index.js';
-export * from './cosec/index.js';
 export * from './storage/index.js';
 export * from './fetcher/index.js';
 export * from './eventbus/index.js';

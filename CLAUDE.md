@@ -51,7 +51,7 @@ Each package also supports its own scripts directly: `pnpm --filter <package-nam
 
 ## Monorepo Structure
 
-pnpm workspaces monorepo with 9 packages in `packages/` plus `integration-test/` and `wiki/`. Dependency versions are centralized via the `catalog:` protocol in `pnpm-workspace.yaml`.
+pnpm workspaces monorepo with 8 packages in `packages/` plus `integration-test/` and `wiki/`. Dependency versions are centralized via the `catalog:` protocol in `pnpm-workspace.yaml`.
 
 ### Package Dependency Graph
 
@@ -66,16 +66,19 @@ fetcher (core HTTP client, no internal deps)
   |
   +-- openai  (depends on fetcher + eventstream + decorator)
   +-- storage (depends on eventbus)
-  +-- cosec   (depends on fetcher + eventbus + storage)
   |
-  +-- react    (depends on fetcher + eventbus + storage + cosec)
+  +-- react    (depends on fetcher + eventbus + storage)
 ```
 
 ### Moved to the Wow repository
 
 The Wow-coupled packages live in [Ahoo-Wang/Wow](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) under `typescript/`, versioned with Wow: `@ahoo-wang/wow-client` (was `fetcher-wow`), `@ahoo-wang/wow-react` (the Wow hooks from `fetcher-react`), `@ahoo-wang/wow-view-engine` (was `fetcher-view-engine`) and `@ahoo-wang/wow-generator` (was `fetcher-generator`). `@ahoo-wang/fetcher-viewer` (deprecated on npm, replaced by `@ahoo-wang/wow-view-engine`) and the data-monitor hooks were not moved; they stay on the `5.x` branch, which keeps the 5.x line. The new packages, `@ahoo-wang/wow-view-engine` included, are on npm from Wow 9.2.0 (first stable release); from Wow 9.2.1 their fetcher peer range is `^5.1.5 || ^6.0.0`. The 5.x line (`5.x` branch, 5.1.x on npm) still carries `@ahoo-wang/fetcher-wow`, the Wow hooks in `@ahoo-wang/fetcher-react`, `@ahoo-wang/fetcher-generator` and `@ahoo-wang/fetcher-viewer` for existing consumers; users upgrading to 6.0 switch to the Wow packages (9.2.1 or later) first. Docs: https://wow.ahoo.me.
 
-Dependencies run one way, **Wow → fetcher**: no package here may depend on `@ahoo-wang/wow-*` (checked by `.github/scripts/dependency-direction.mjs` in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests against changes to the core packages Wow uses: `fetcher`, `decorator`, `eventstream` and `openapi` (advisory).
+### Moved to the CoSec repository
+
+CoSec authentication lives in the CoSec repository under `typescript/`, versioned with CoSec: `@ahoo-wang/cosec-fetcher` (was `fetcher-cosec`) and `@ahoo-wang/cosec-react` (the security hooks from `fetcher-react`), on npm's `beta` tag until CoSec 8.0 GA. Docs: https://cosec.ahoo.me/integration/clients. Fetcher 6.x is the last line that carries `@ahoo-wang/fetcher-cosec`.
+
+Dependencies run one way, **Wow → fetcher** and **CoSec → fetcher**: no package, integration test or documentation example here may depend on `@ahoo-wang/wow-*`, `@ahoo-wang/cosec-*` or `@ahoo-wang/fetcher-cosec` (checked by `.github/scripts/dependency-direction.mjs` in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests against changes to the core packages Wow uses: `fetcher`, `decorator`, `eventstream` and `openapi` (advisory).
 
 ### Package Build Config
 

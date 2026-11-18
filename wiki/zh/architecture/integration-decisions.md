@@ -26,12 +26,11 @@ Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`�
 
 ## 服务专用集成
 
-| 集成              | 所需契约                              | 服务/应用保留的责任                                               |
-| ----------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| Wow（5.x 客户端） | 命令结果/阶段及支持的查询 DSL         | 授权、租户隔离、幂等、投影新鲜度                                  |
-| CoSec             | token 存储、归属头、刷新端点/会话规则 | 身份生命周期、重放安全、服务端授权、哪些源接收凭据（`isTrusted`） |
-| SSE / OpenAI 流   | 兼容事件流和载荷格式                  | 部分结果 UX、取消及必要时的重连策略                               |
+| 集成              | 所需契约                      | 服务/应用保留的责任                 |
+| ----------------- | ----------------------------- | ----------------------------------- |
+| Wow（5.x 客户端） | 命令结果/阶段及支持的查询 DSL | 授权、租户隔离、幂等、投影新鲜度    |
+| SSE / OpenAI 流   | 兼容事件流和载荷格式          | 部分结果 UX、取消及必要时的重连策略 |
 
-客户端条件描述发送的查询，不是访问控制。命令阶段描述协议进度，不是通用一致性保证。CoSec 带保护的刷新实现专用于其认证 exchange（[packages/cosec/src/authorizationResponseInterceptor.ts:80](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/src/authorizationResponseInterceptor.ts#L80)），SSE 提取则要求可读响应体（[packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)）。
+客户端条件描述发送的查询，不是访问控制。命令阶段描述协议进度，不是通用一致性保证。SSE 提取要求可读响应体（[packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)）。
 
-继续阅读 [CoSec](../guides/integrations/cosec.md)及[流处理](../guides/streaming/index.md)。Wow 客户端属于 5.x 线（[Wow 指南](../guides/integrations/wow.md)）；从 6.0 起文档位于 [wow.ahoo.me](https://wow.ahoo.me)。跨身份共享这些集成前阅读[运行环境](./runtime-support.md)；增加重试前阅读[失败模型](./failure-model.md)。
+继续阅读[流处理](../guides/streaming/index.md)。CoSec 认证已迁到 CoSec 仓库：改用 `@ahoo-wang/cosec-fetcher`（原 `@ahoo-wang/fetcher-cosec`）与 `@ahoo-wang/cosec-react`（原 `@ahoo-wang/fetcher-react` 中的安全 Hook），CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。Wow 客户端属于 5.x 线（[Wow 指南](../guides/integrations/wow.md)）；从 6.0 起文档位于 [wow.ahoo.me](https://wow.ahoo.me)。跨身份共享这些集成前阅读[运行环境](./runtime-support.md)；增加重试前阅读[失败模型](./failure-model.md)。

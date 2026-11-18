@@ -61,4 +61,3 @@ remove();
 
 - $fetcher-eventbus: the buses and messengers underneath storage events.
 - $fetcher-react-hooks: `useKeyStorage` / `useImmerKeyStorage` bind a `KeyStorage` to component state.
-- $fetcher-cosec-auth: token, device-id and space-id storages built on `KeyStorage`.

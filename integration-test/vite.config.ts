@@ -27,14 +27,12 @@ export default defineConfig({
         '@ahoo-wang/fetcher',
         '@ahoo-wang/fetcher-decorator',
         '@ahoo-wang/fetcher-eventstream',
-        '@ahoo-wang/fetcher-cosec',
       ],
       output: {
         globals: {
           '@ahoo-wang/fetcher': 'Fetcher',
           '@ahoo-wang/fetcher-decorator': 'FetcherDecorator',
           '@ahoo-wang/fetcher-eventstream': 'FetcherEventStream',
-          '@ahoo-wang/fetcher-cosec': 'FetcherCoSec',
         },
       },
     },

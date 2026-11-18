@@ -598,7 +598,7 @@ describe('FunctionMetadata', () => {
   it('should not warn about placeholders an interceptor fills when every @path() is named explicitly', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // The Wow + cosec shape: {tenantId}/{ownerId} come from an interceptor.
+    // The Wow + CoSec shape: {tenantId}/{ownerId} come from an interceptor.
     new FunctionMetadata(
       'load',
       {},

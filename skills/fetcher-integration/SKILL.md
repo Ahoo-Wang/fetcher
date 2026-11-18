@@ -8,7 +8,7 @@ description: >
 
 ## Decisions
 
-- **`NamedFetcher` vs `Fetcher`**: use `NamedFetcher('name', options)` whenever decorators, CoSec or hooks will look the client up by name; it registers itself in `fetcherRegistrar` (a reused name silently replaces the earlier one). `fetcherRegistrar.default` throws if nothing is named `'default'`.
+- **`NamedFetcher` vs `Fetcher`**: use `NamedFetcher('name', options)` whenever decorators or hooks will look the client up by name; it registers itself in `fetcherRegistrar` (a reused name silently replaces the earlier one). `fetcherRegistrar.default` throws if nothing is named `'default'`.
 - **What a call returns**: `get/post/put/patch/delete/fetch` default to `ResultExtractors.Response`; `request()` defaults to `ResultExtractors.Exchange`. Pass `{ resultExtractor: ResultExtractors.Json }` as the **third** argument for typed data.
 - **Where cross-cutting logic goes**: an interceptor, not a wrapper function — auth, tracing, retries and error recovery all belong in `fetcher.interceptors.request/response/error`. This holds for decorated service classes too: they run through the same fetcher's interceptors.
 - **Direct calls vs a service class**: call the fetcher directly when URLs or bodies are built at runtime or there are a few one-off calls; stable endpoints declared as a class are `$fetcher-decorator-service`.
@@ -58,6 +58,5 @@ const user = await api.get<User>(
 ## Related Skills
 
 - $fetcher-decorator-service: stable endpoints declared as a class on top of a named fetcher.
-- $fetcher-cosec-auth: JWT, refresh and 401/403 handling as interceptors.
 - $fetcher-llm-streaming: SSE and token streams from a Fetcher response.
 - $fetcher-react-hooks: request state in React components.

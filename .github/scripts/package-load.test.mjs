@@ -15,22 +15,21 @@ test('satisfies the engines ranges the manifests use', () => {
   assert.equal(satisfies('v18.20.8', '>=18.20.8'), true);
   assert.equal(satisfies('v18.20.7', '>=18.20.8'), false);
   assert.equal(satisfies('v24.11.0', '>=18.20.8'), true);
-  const cosec = '^22.12.0 || ^24.0.0 || >=26.0.0';
-  assert.equal(satisfies('v18.20.8', cosec), false);
-  assert.equal(satisfies('v20.19.0', cosec), false);
-  assert.equal(satisfies('v22.11.0', cosec), false);
-  assert.equal(satisfies('v22.12.0', cosec), true);
-  assert.equal(satisfies('v23.11.0', cosec), false);
-  assert.equal(satisfies('v24.0.0', cosec), true);
-  assert.equal(satisfies('v25.9.0', cosec), false);
-  assert.equal(satisfies('v26.0.0', cosec), true);
+  const union = '^22.12.0 || ^24.0.0 || >=26.0.0';
+  assert.equal(satisfies('v18.20.8', union), false);
+  assert.equal(satisfies('v20.19.0', union), false);
+  assert.equal(satisfies('v22.11.0', union), false);
+  assert.equal(satisfies('v22.12.0', union), true);
+  assert.equal(satisfies('v23.11.0', union), false);
+  assert.equal(satisfies('v24.0.0', union), true);
+  assert.equal(satisfies('v25.9.0', union), false);
+  assert.equal(satisfies('v26.0.0', union), true);
   assert.equal(satisfies('v18.0.0', undefined), true);
   assert.throws(() => satisfies('v20.0.0', '~20.1.0'), /Unsupported/);
 });
 
 test('every published engines range is one satisfies understands', () => {
   for (const name of [
-    'cosec',
     'decorator',
     'eventbus',
     'eventstream',
@@ -45,18 +44,6 @@ test('every published engines range is one satisfies understands', () => {
     );
     assert.doesNotThrow(() => satisfies('v22.12.0', manifest.engines?.node));
   }
-});
-
-test('the CoSec CommonJS entry is not claimed where require(esm) is missing', () => {
-  const manifest = JSON.parse(
-    readFileSync(`${repository}packages/cosec/package.json`, 'utf8'),
-  );
-  // nanoid 6 is ES modules only and supports Node 22, 24 and 26+;
-  // require() of an ES module works from 22.12.
-  assert.equal(satisfies('v18.20.8', manifest.engines.node), false);
-  assert.equal(satisfies('v20.19.0', manifest.engines.node), false);
-  assert.equal(satisfies('v22.11.0', manifest.engines.node), false);
-  assert.equal(satisfies('v22.12.0', manifest.engines.node), true);
 });
 
 test('loads each entry the way its conditions allow', () => {

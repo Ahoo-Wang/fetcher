@@ -37,7 +37,7 @@ Removed from `@ahoo-wang/fetcher-react` in 6.0:
 - Redesign, **replaced by a controlled `query`**: `useQueryState`, `useCancellableQueryState`, `UseQueryStateOptions`, `UseQueryStateReturn`, `isValidateQuery`; the `initialQuery` option and the returned `setQuery`/`getQuery` on `useQuery`, `useFetcherQuery`, the query API hooks and the debounced query hooks.
 - Redesign, other: `propagateError` (read the state `execute` resolves to); `onBeforeExecute` and `OnBeforeExecuteCallback` (prepare arguments before `execute`); `PromiseStateCallbacks` and `usePromiseState`'s `onSuccess`/`onError` (use `useExecutePromise`'s); `run`/`cancel`/`isPending` on `useDebouncedQuery`/`useDebouncedFetcherQuery` (now `pending`, `flush()`, `execute()`).
 
-`useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, `usePromiseState`, the debounced hooks, `createExecuteApiHooks`/`createQueryApiHooks`, the CoSec components, storage and event hooks stay. Do not confuse `useFetcherQuery` (kept) with `useFetcherPagedQuery` (moved).
+`useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, `usePromiseState`, the debounced hooks, `createExecuteApiHooks`/`createQueryApiHooks`, storage and event hooks stay (the CoSec components stayed through 6.x, then moved to CoSec: see [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)). Do not confuse `useFetcherQuery` (kept) with `useFetcherPagedQuery` (moved).
 
 ## 3. Upgrade, in this order
 
@@ -50,7 +50,7 @@ Removed from `@ahoo-wang/fetcher-react` in 6.0:
    - `execute` never rejects: replace `propagateError: true` + `try/catch` with `const { status, result, error } = await execute(…)` and branch on `status` (`'idle'` when cancelled).
    - Debounced query hooks: `pending` and `flush()` replace `run`/`cancel`/`isPending()`; they auto-execute by default and run the first query at once.
    - Generated execute hooks: drop `onBeforeExecute`; `UseApiMethodExecuteOptions` lost its first type parameter; `appendAbortController: true` forwards the controller.
-   - Still compiles, behaves differently: `reset()` cancels the in-flight request; `onAbort` is synchronous; `useFetcher` no longer writes `request.abortController`; a failed `useFetcher` exposes the failed `exchange`; an auto-executing query renders `loading` on its first render; `RouteGuard` calls `onUnauthorized` after commit; `useKeyStorage`/`useSecurity` render the default during SSR and hydration.
+   - Still compiles, behaves differently: `reset()` cancels the in-flight request; `onAbort` is synchronous; `useFetcher` no longer writes `request.abortController`; a failed `useFetcher` exposes the failed `exchange`; an auto-executing query renders `loading` on its first render; `useKeyStorage` renders the default during SSR and hydration.
 6. **Behavior checks** (section 4) for every package you use.
 7. **Verify**: type-check, run the tests, re-run the grep checklist until only intended hits remain.
 
@@ -60,7 +60,7 @@ The ones that most often break an app (full list with grep checks in `references
 
 - **Errors** (`@ahoo-wang/fetcher`): a status failure rejects with the `HttpStatusValidationError` itself — test `error instanceof HttpStatusValidationError` (before `ExchangeError`, its superclass), not `error.cause`. An **error interceptor that throws** (including a CoSec `onUnauthorized`/`onForbidden` callback) no longer escapes raw: the call rejects with an `ExchangeError` whose `cause` is the thrown value, and later error interceptors do not run — a `catch` that tested for your own error class must read `error.cause`.
 - **Requests** (`@ahoo-wang/fetcher`): no default `Content-Type` (only plain-object and string bodies get `application/json`); `undefined`/`null` query values are omitted, arrays repeat (`ids=1&ids=2`, was `ids=1%2C2`), a `Date` is ISO 8601; a missing or `null` path parameter throws `Missing required path parameter`; a timeout now also applies when a `signal` is passed.
-- **CoSec** (`@ahoo-wang/fetcher-cosec`): a refresh that fails on a network error, timeout, abort or **5xx keeps the session** and rejects with `RefreshUnavailableError` (inside the call's `ExchangeError`, at `cause`), **without** `onUnauthorized` — only a 4xx or a malformed refresh response signs out with `RefreshTokenError`. A custom `TokenRefresher` must reject with an error carrying `exchange.response.status` for a rejection to sign out. Add `isTrusted: sameOriginTrust` unless every absolute URL the client requests is yours. Set a `timeout` on the refresh client: browser tabs now refresh one at a time under a Web Lock.
+- **CoSec** (`@ahoo-wang/fetcher-cosec`): 6.0 changed when a failed refresh signs out and added `isTrusted`; `references/api.md` has the details. The package left fetcher after 6.x and continues in the CoSec repository, documented at [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 - **Streams**: a stream that ends before its terminating event (OpenAI `data: [DONE]`) rejects with `EventStreamIncompleteError`; `ChatResponse.usage` is optional.
 - **Decorator**: an array `@query('ids')` is sent as `ids=1&ids=2` (was `0=1&1=2`); a named `@attribute('x')` object is stored whole; an undecorated subclass override runs as written.
 - **CDN/UMD**: `dist/index.umd.js` → `dist/index.umd.cjs` in `fetcher-cosec`, `-eventbus`, `-openai`, `-openapi`, `-storage`, `-react`.
@@ -72,5 +72,4 @@ The ones that most often break an app (full list with grep checks in `references
 ## Related Skills
 
 - $fetcher-react-hooks: the 6.x API of `@ahoo-wang/fetcher-react`, for writing the rewritten hook calls.
-- $fetcher-cosec-auth: the 6.x CoSec refresh, trust and 401/403 semantics.
 - $fetcher-integration: the 6.x error classes and interceptor behavior of `@ahoo-wang/fetcher`.

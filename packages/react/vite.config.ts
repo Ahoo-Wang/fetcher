@@ -43,7 +43,6 @@ export default defineConfig({
         '@ahoo-wang/fetcher',
         '@ahoo-wang/fetcher-eventbus',
         '@ahoo-wang/fetcher-storage',
-        '@ahoo-wang/fetcher-cosec',
       ],
       output: {
         keepNames: true,
@@ -59,7 +58,6 @@ export default defineConfig({
           '@ahoo-wang/fetcher': 'Fetcher',
           '@ahoo-wang/fetcher-eventbus': 'FetcherEventBus',
           '@ahoo-wang/fetcher-storage': 'FetcherStorage',
-          '@ahoo-wang/fetcher-cosec': 'FetcherCoSec',
         },
       },
     },

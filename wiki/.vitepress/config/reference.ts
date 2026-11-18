@@ -44,7 +44,6 @@ const labels: Record<string, [string, string]> = {
   'guides/viewer/saved-views': ['Saved views', '保存视图'],
   'guides/viewer/remote-data': ['Remote data', '远端数据'],
   'guides/integrations/wow': ['Wow commands and state', 'Wow 命令与状态'],
-  'guides/integrations/cosec': ['CoSec authentication', 'CoSec 认证'],
   'guides/integrations/storage-and-events': [
     'Storage and events',
     '存储与事件',

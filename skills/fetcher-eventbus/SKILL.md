@@ -67,4 +67,3 @@ cartUpdated.destroy();
 
 - $fetcher-storage: persisted, typed values whose changes flow over these buses.
 - $fetcher-react-hooks: `useEventSubscription` subscribes a component to a bus.
-- $fetcher-cosec-auth: token and device-id storages that broadcast across tabs.

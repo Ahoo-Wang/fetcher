@@ -16,6 +16,6 @@ Fetcher 在原生 Fetch 之上提供可复用的请求配置与结果处理。�
 
 可运行的 HTTP 和 Storybook 示例使用确定性夹具。移入应用时，必须提供示例中写明的路由与响应 JSON。安装客户端不会创建服务端。
 
-已有 API 契约时，可以[声明服务方法](../guides/services/declarative-client.md)或[从 OpenAPI 生成](../guides/services/generated-client.md)。接入 CoSec 或存储事件前，先检查[集成前提](../guides/integrations/index.md)。Wow、生成器和 Viewer 属于 5.x 线；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。
+已有 API 契约时，可以[声明服务方法](../guides/services/declarative-client.md)或[从 OpenAPI 生成](../guides/services/generated-client.md)。接入存储事件前，先检查[集成前提](../guides/integrations/index.md)；CoSec 认证见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。Wow、生成器和 Viewer 属于 5.x 线；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)。
 
 继续选择[下一项任务](./next-steps.md)，或先[评估架构](../architecture/index.md)再决定组件。

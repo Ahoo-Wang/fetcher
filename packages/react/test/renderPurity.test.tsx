@@ -13,46 +13,10 @@
 
 import { act, render, renderHook } from '@testing-library/react';
 import { Fetcher, ResultExtractors } from '@ahoo-wang/fetcher';
-import { useState } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
-import { TokenStorage } from '@ahoo-wang/fetcher-cosec';
 import { InMemoryStorage, KeyStorage } from '@ahoo-wang/fetcher-storage';
-import {
-  RouteGuard,
-  SecurityProvider,
-  useFetcher,
-  useKeyStorage,
-} from '../src';
-
-describe('RouteGuard', () => {
-  it('calls onUnauthorized after commit, not on every render', () => {
-    const tokenStorage = new TokenStorage({
-      key: 'purity-guard',
-      storage: new InMemoryStorage(),
-    });
-    const onUnauthorized = vi.fn();
-    let rerender!: () => void;
-    function Parent() {
-      const [, setTick] = useState(0);
-      rerender = () => setTick(tick => tick + 1);
-      return (
-        <SecurityProvider tokenStorage={tokenStorage}>
-          <RouteGuard onUnauthorized={onUnauthorized}>
-            <div>Protected</div>
-          </RouteGuard>
-        </SecurityProvider>
-      );
-    }
-    render(<Parent />);
-    expect(onUnauthorized).toHaveBeenCalledTimes(1);
-
-    act(() => rerender());
-    act(() => rerender());
-    expect(onUnauthorized).toHaveBeenCalledTimes(1);
-    tokenStorage.destroy();
-  });
-});
+import { useFetcher, useKeyStorage } from '../src';
 
 describe('useKeyStorage hydration', () => {
   it('hydrates from the default the server rendered, then shows the stored value', async () => {

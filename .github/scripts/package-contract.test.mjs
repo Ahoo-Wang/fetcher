@@ -96,9 +96,9 @@ test('reports duplicate UMD names and globals that do not match', () => {
     pkg('storage', {
       vite: { name: 'Fetcher', external: new Set(), globals: {} },
     }),
-    pkg('cosec', {
+    pkg('react', {
       vite: {
-        name: 'FetcherCoSec',
+        name: 'FetcherReact',
         external: new Set(),
         globals: { '@ahoo-wang/storage': 'FetcherStorage' },
       },
@@ -106,7 +106,7 @@ test('reports duplicate UMD names and globals that do not match', () => {
   ]);
   assert.deepEqual(found, [
     "packages/storage: UMD global Fetcher is also packages/fetcher's",
-    'packages/cosec: reads @ahoo-wang/storage as the global FetcherStorage, but its build writes Fetcher',
+    'packages/react: reads @ahoo-wang/storage as the global FetcherStorage, but its build writes Fetcher',
   ]);
 });
 

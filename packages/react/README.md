@@ -1,7 +1,6 @@
 # `@ahoo-wang/fetcher-react`
 
-React hooks for Fetcher requests, query state, storage, events, and CoSec
-security. Use them when a component should own async state and cancellation.
+React hooks for Fetcher requests, query state, storage, and events. Use them when a component should own async state and cancellation.
 
 ## Install
 
@@ -9,8 +8,13 @@ security. Use them when a component should own async state and cancellation.
 pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 ```
 
-Install the peer package for each integration you import: event bus, storage,
-or CoSec.
+Install the peer package for each integration you import: event bus or
+storage.
+
+> **Security hooks have moved.** `SecurityProvider`, `useSecurity`,
+> `RouteGuard`, `RefreshableRouteGuard` and the rest moved to
+> `@ahoo-wang/cosec-react` in the CoSec repository (npm `beta` tag until
+> CoSec 8.0 GA). See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 
 > **Wow query hooks have moved.** `useSingleQuery`, `useListQuery`,
 > `usePagedQuery`, `useCountQuery`, `useListStreamQuery` and the other Wow
@@ -94,7 +98,6 @@ export function SaveButton({ user }: { user: User }) {
 - Fetcher: request execution, JSON queries, debounced requests and queries.
 - API objects: derive execute/query hooks from promise-returning methods.
 - State: typed KeyStorage and event-bus subscriptions.
-- CoSec: security provider, user state, and route guards.
 
 ## Documentation
 

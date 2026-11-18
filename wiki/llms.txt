@@ -61,7 +61,6 @@
 
 - [Platform integrations](/guides/integrations/) — Choose a concrete task for platform integrations.
 - [Send a Wow Command and Read State](/guides/integrations/wow) — Configure application aggregate routes, inspect command results, and query or stream snapshot state.
-- [Add CoSec Authentication](/guides/integrations/cosec) — Create a browser authentication session with refresh, token ownership, and cleanup.
 - [Share State and Events](/guides/integrations/storage-and-events) — Verify local state and ordered events, then opt into browser tab notifications.
 
 ## architecture
@@ -141,18 +140,12 @@
 - [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 6.0.0
 - [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 6.0.0
 - [openai public symbols](/reference/openai/symbols) — Complete root exports with behavior contracts and source locations.
-- [Cosec reference](/reference/cosec/) — Cosec reference — Fetcher 6.0.0
-- [CoSec configuration](/reference/cosec/configuration) — CoSec configuration — Fetcher 6.0.0
-- [Tokens and refresh](/reference/cosec/tokens-and-refresh) — Tokens and refresh — Fetcher 6.0.0
-- [Interceptors and attribution](/reference/cosec/interceptors-and-attribution) — Interceptors and attribution — Fetcher 6.0.0
-- [cosec public symbols](/reference/cosec/symbols) — Complete root exports with behavior contracts and source locations.
 - [React reference](/reference/react/) — React entry selection, installation and behavior contracts
 - [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0
 - [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 6.0.0
 - [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 6.0.0
 - [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 6.0.0
 - [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 6.0.0
-- [Security hooks and route guards](/reference/react/cosec) — Security hooks and route guards — @ahoo-wang/fetcher-react 6.0.0
 - [Latest and stable values](/reference/react/utilities) — Latest and stable values — @ahoo-wang/fetcher-react 6.0.0
 - [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react root, /core and /fetcher entries
 - [Wow reference](/reference/wow/) — Wow entry selection, installation and behavior contracts

@@ -5,7 +5,7 @@ description: '安全与扩展 — Fetcher 6.0.0'
 
 # 安全与扩展
 
-这些类型描述安全要求和供应商元数据，不为请求鉴权，也不执行访问策略。运行时 CoSec 集成见 [CoSec 配置](../cosec/configuration)。
+这些类型描述安全要求和供应商元数据，不为请求鉴权，也不执行访问策略。运行时 CoSec 认证见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 
 ## 安全对象
 

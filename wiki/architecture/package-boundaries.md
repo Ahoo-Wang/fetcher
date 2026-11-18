@@ -17,9 +17,8 @@ flowchart LR
   eventbus --> fetcher
   eventstream --> fetcher
   storage --> eventbus
-  cosec --> fetcher & eventbus & storage
   openai --> fetcher & eventstream & decorator
-  react --> fetcher & eventbus & storage & cosec
+  react --> fetcher & eventbus & storage
   openapi
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
@@ -29,14 +28,14 @@ flowchart LR
 | fetcher                | HTTP defaults, interception, extraction; no internal dependency                                                                | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
 | decorator              | Declarative services; metadata setup and runtime `reflect-metadata` dependency                                                 | [packages/decorator/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L54)                                                                                                                             |
 | eventbus / eventstream | Event delivery / SSE processing; each peers with core                                                                          | [packages/eventbus/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L52), [packages/eventstream/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L53) |
-| storage / cosec        | Storage events / authentication protocol; additional state lifetime to own                                                     | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56), [packages/cosec/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L54)               |
+| storage                | Storage events; additional state lifetime to own                                                                               | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56)                                                                                                                                 |
 | openai                 | Service-specific runtime client using core, decorators, and streams                                                            | [packages/openai/package.json:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L59)                                                                                                                                   |
 | react                  | Request and integration Hooks; React/ReactDOM peers, direct `dequal` and `immer` dependencies; `/core` and `/fetcher` subpaths | [packages/react/package.json:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L74)                                                                                                                                     |
 | openapi                | OpenAPI 3 type vocabulary; neither sends requests nor validates input                                                          | [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)                                                                                                                                 |
 
 ## Installation is not execution
 
-A React peer edge to CoSec does not mean every Hook authenticates through CoSec. Importing `@ahoo-wang/fetcher-react/core` loads only React, and `@ahoo-wang/fetcher-react/fetcher` loads only `@ahoo-wang/fetcher`, but the declared peers remain installation requirements; see [React subpath entries](../reference/react/index.md#subpath-entries). The [request lifecycle](./request-lifecycle.md) shows execution instead.
+A React peer edge to storage or the event bus does not mean every Hook persists state or publishes events. Importing `@ahoo-wang/fetcher-react/core` loads only React, and `@ahoo-wang/fetcher-react/fetcher` loads only `@ahoo-wang/fetcher`, but the declared peers remain installation requirements; see [React subpath entries](../reference/react/index.md#subpath-entries). The [request lifecycle](./request-lifecycle.md) shows execution instead.
 
 OpenAPI types themselves neither send requests nor validate input. React Compiler tooling listed as development dependencies does not by itself impose the repository's compiler pipeline on every consumer. Follow [declarative services](../guides/services/declarative-client.md) for service declarations, and see [runtime support](./runtime-support.md) before choosing consumer versions.
 

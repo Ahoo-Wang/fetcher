@@ -33,7 +33,8 @@ jobs:
           cache: pnpm
       - name: Check CI policy regressions
         run: node --test .github/scripts/*.test.mjs
-      # Wow → fetcher only: no workspace may depend on @ahoo-wang/wow-*.
+      # Wow → fetcher and CoSec → fetcher only: nothing here may depend on
+      # @ahoo-wang/wow-*, @ahoo-wang/cosec-* or @ahoo-wang/fetcher-cosec.
       - name: Check dependency direction
         run: node .github/scripts/dependency-direction.mjs
       # Manifests match the source and the builds: imports declared, no unused

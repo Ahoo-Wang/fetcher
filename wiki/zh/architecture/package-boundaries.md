@@ -17,9 +17,8 @@ flowchart LR
   eventbus --> fetcher
   eventstream --> fetcher
   storage --> eventbus
-  cosec --> fetcher & eventbus & storage
   openai --> fetcher & eventstream & decorator
-  react --> fetcher & eventbus & storage & cosec
+  react --> fetcher & eventbus & storage
   openapi
   classDef default fill:#2d333b,stroke:#6d5dfc,color:#e6edf3
 ```
@@ -29,14 +28,14 @@ flowchart LR
 | fetcher                | HTTP 默认配置、拦截、结果提取；无内部依赖                                                           | [packages/fetcher/package.json:31](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/fetcher/package.json#L31)                                                                                                                                 |
 | decorator              | 声明式服务；需要 metadata 配置及运行依赖 `reflect-metadata`                                         | [packages/decorator/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/decorator/package.json#L54)                                                                                                                             |
 | eventbus / eventstream | 事件分发 / SSE 处理；各自以核心包为 peer                                                            | [packages/eventbus/package.json:52](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventbus/package.json#L52), [packages/eventstream/package.json:53](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/package.json#L53) |
-| storage / cosec        | 存储事件 / 认证协议；需要额外管理状态生命周期                                                       | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56), [packages/cosec/package.json:54](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/cosec/package.json#L54)               |
+| storage                | 存储事件；需要额外管理状态生命周期                                                                  | [packages/storage/package.json:56](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/package.json#L56)                                                                                                                                 |
 | openai                 | 基于核心、装饰器与流的服务专用运行客户端                                                            | [packages/openai/package.json:59](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openai/package.json#L59)                                                                                                                                   |
 | react                  | 请求与集成 Hook；React/ReactDOM peer，直接依赖 `dequal` 与 `immer`；提供 `/core`、`/fetcher` 子路径 | [packages/react/package.json:74](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/react/package.json#L74)                                                                                                                                     |
 | openapi                | OpenAPI 3 类型词汇；既不发送请求，也不验证输入                                                      | [packages/openapi/src/index.ts:19](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/openapi/src/index.ts#L19)                                                                                                                                 |
 
 ## 安装不等于执行
 
-React 对 CoSec 的 peer 边不表示每个 Hook 都通过 CoSec 认证。导入 `@ahoo-wang/fetcher-react/core` 只加载 React，导入 `@ahoo-wang/fetcher-react/fetcher` 只加载 `@ahoo-wang/fetcher`，但声明的 peer 仍是安装前提，见 [React 子路径入口](../reference/react/index.md#subpath-entries)。执行路径见[请求生命周期](./request-lifecycle.md)。
+React 对存储或事件总线的 peer 边不表示每个 Hook 都会持久化状态或发布事件。导入 `@ahoo-wang/fetcher-react/core` 只加载 React，导入 `@ahoo-wang/fetcher-react/fetcher` 只加载 `@ahoo-wang/fetcher`，但声明的 peer 仍是安装前提，见 [React 子路径入口](../reference/react/index.md#subpath-entries)。执行路径见[请求生命周期](./request-lifecycle.md)。
 
 OpenAPI 类型本身既不发送请求，也不验证输入。作为开发依赖列出的 React Compiler 工具链，并不会把仓库的编译管线强加给每个消费者。服务声明见[声明式服务](../guides/services/declarative-client.md)；选择消费者版本前先阅读[运行环境](./runtime-support.md)。
 

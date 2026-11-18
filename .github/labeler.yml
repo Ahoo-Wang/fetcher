@@ -70,7 +70,6 @@ documentation:
   - changed-files:
       - any-glob-to-any-file:
           - 'packages/openai/**'
-          - 'packages/cosec/**'
 
 'area: react':
   - changed-files:

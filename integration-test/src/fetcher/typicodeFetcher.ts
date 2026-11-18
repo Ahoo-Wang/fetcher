@@ -12,12 +12,6 @@
  */
 
 import { NamedFetcher } from '@ahoo-wang/fetcher';
-import {
-  authorizationRequestInterceptor,
-  cosecRequestInterceptor,
-  authorizationResponseInterceptor,
-  cosecResourceAttributionInterceptor,
-} from '../cosec';
 
 // A JSONPlaceholder-compatible host. The `required` test project starts a
 // local one (test/jsonplaceholder/globalSetup.ts) and sets
@@ -27,8 +21,3 @@ import {
 export const typicodeFetcher = new NamedFetcher('typicode', {
   baseURL: process.env.JSONPLACEHOLDER_BASE_URL || 'http://localhost:3000',
 });
-
-typicodeFetcher.interceptors.request.use(cosecRequestInterceptor);
-typicodeFetcher.interceptors.request.use(authorizationRequestInterceptor);
-typicodeFetcher.interceptors.response.use(authorizationResponseInterceptor);
-typicodeFetcher.interceptors.response.use(cosecResourceAttributionInterceptor);

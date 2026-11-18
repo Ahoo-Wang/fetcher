@@ -23,24 +23,28 @@ One model runs through every hook: a request is identified by its `AbortControll
 
 ## Subpath entries {#subpath-entries}
 
-| Entry                              | Exports                                                                                                   | Loads                                                |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `@ahoo-wang/fetcher-react`         | Every hook and component on these pages                                                                   | All declared peers below                             |
-| `@ahoo-wang/fetcher-react/core`    | Promise and query state, debounced callbacks, values and queries, `useLatest`, `useStableValue`           | React only; no `@ahoo-wang/*` package                |
-| `@ahoo-wang/fetcher-react/fetcher` | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their option types | `@ahoo-wang/fetcher`; no CoSec, storage or event bus |
+| Entry                              | Exports                                                                                                   | Loads                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `@ahoo-wang/fetcher-react`         | Every hook and component on these pages                                                                   | All declared peers below                      |
+| `@ahoo-wang/fetcher-react/core`    | Promise and query state, debounced callbacks, values and queries, `useLatest`, `useStableValue`           | React only; no `@ahoo-wang/*` package         |
+| `@ahoo-wang/fetcher-react/fetcher` | `useFetcher`, `useFetcherQuery`, `useDebouncedFetcher`, `useDebouncedFetcherQuery` and their option types | `@ahoo-wang/fetcher`; no storage or event bus |
 
 The subpaths are ESM-only; the root entry also ships a UMD build. They share one module graph with the root entry, so a hook or `PromiseStatus` imported from `/core` is the same value as the one imported from the root. The [symbol index](./symbols) marks which subpath exports each symbol. Declared peers are still installation requirements when you import a subpath; the subpath only limits what your bundle loads.
 
 ## Installation prerequisites
 
 ```sh
-pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
+pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react @ahoo-wang/fetcher-storage react react-dom
 ```
 
-The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → CoSec → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer is React ^19.0.0; install the renderer your app uses (`react-dom` in the browser). Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
+The library package declares Node >=18.20.8; repository development requires Node >=22.12.0 and pnpm 10.34.5. The command includes all transitive internal peers (React → storage → event bus). Direct runtime dependencies (`dequal`, `immer`) are installed automatically. The external peer is React ^19.0.0; install the renderer your app uses (`react-dom` in the browser). Peers are installation requirements even when a particular feature is unused. Consumers do not need to duplicate the repository React Compiler toolchain.
 
 ::: info Changed in 6.0
 The hooks were reworked around the model above (breaking). Removed: the fullscreen hooks, `useRefs`, `useForceUpdate`, `useMounted`, `useRequestId`, `useQueryState`, the `propagateError` option, `initialQuery`/`setQuery`/`getQuery` and `onBeforeExecute`. Each topic page notes what changed for its hooks; [Latest and stable values](./utilities#removed-in-6-0) lists what to use instead of the removed utilities.
+:::
+
+::: info Security hooks moved to CoSec
+`SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the rest of the security hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository, on npm's `beta` tag until CoSec 8.0 GA. See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 :::
 
 ::: info Wow query hooks and data monitoring
@@ -60,7 +64,6 @@ For setup, fixtures and expected results follow [the guide](../../guides/react/i
 - [API hook factories](./api-hooks)
 - [Debounced execution](./debounce)
 - [Storage and event subscriptions](./storage-and-events)
-- [Security hooks and route guards](./cosec)
 - [Latest and stable values](./utilities)
 - [Complete symbol index](./symbols)
 

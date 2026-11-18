@@ -290,4 +290,4 @@ export interface UseDebouncedFetcherQueryReturn<
 
 ## Related topics
 
-[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Storage and event subscriptions](./storage-and-events) · [Security hooks and route guards](./cosec) · [Latest and stable values](./utilities)
+[Fetcher hooks](./fetcher-hooks) · [Promise and query state](./promise-and-query-state) · [API hook factories](./api-hooks) · [Storage and event subscriptions](./storage-and-events) · [Latest and stable values](./utilities)
