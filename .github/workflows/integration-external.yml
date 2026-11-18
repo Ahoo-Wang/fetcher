@@ -15,7 +15,7 @@ name: Integration External
 
 on:
   pull_request:
-    branches: [main, 5.x]
+    branches: [main, 5.x, 6.x]
     paths:
       - 'packages/fetcher/**'
       - 'packages/decorator/**'
@@ -28,7 +28,7 @@ on:
       - 'pnpm-workspace.yaml'
       - '.github/workflows/integration-external.yml'
   push:
-    branches: [main, 5.x]
+    branches: [main, 5.x, 6.x]
   schedule:
     # Daily on the default branch, so drift in a live service shows up even
     # on days without a push.

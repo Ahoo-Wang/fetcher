@@ -1,5 +1,11 @@
 # `@ahoo-wang/fetcher-cosec`
 
+> **Deprecated.** This package moved to the CoSec repository as
+> [`@ahoo-wang/cosec-fetcher`](https://www.npmjs.com/package/@ahoo-wang/cosec-fetcher)
+> and is removed in the next fetcher major. The new package is on npm's `beta`
+> tag until CoSec 8.0 GA. Migration and documentation:
+> [https://cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients).
+
 CoSec request attribution and optional JWT authentication for Fetcher. Use it
 when the server contract expects CoSec application, device, request, space, or
 Bearer-token behavior.

@@ -13,6 +13,7 @@
 
 import { nanoid } from 'nanoid';
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface IdGenerator {
   generateId(): string;
 }
@@ -20,6 +21,8 @@ export interface IdGenerator {
 /**
  * Nano ID implementation of IdGenerator.
  * Generates unique request IDs using Nano ID.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class NanoIdGenerator implements IdGenerator {
   /**
@@ -32,4 +35,5 @@ export class NanoIdGenerator implements IdGenerator {
   }
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export const idGenerator = new NanoIdGenerator();

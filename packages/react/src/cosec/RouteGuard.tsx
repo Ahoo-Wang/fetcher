@@ -17,6 +17,8 @@ import { useSecurityContext } from './SecurityContext.js';
 
 /**
  * Props for the RouteGuard component.
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface RouteGuardProps {
   /**
@@ -65,6 +67,8 @@ export interface RouteGuardProps {
  *   );
  * }
  * ```
+ *
+ * @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function RouteGuard({
   children,

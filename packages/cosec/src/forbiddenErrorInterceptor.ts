@@ -17,17 +17,23 @@ import { ResponseCodes } from './types.js';
 /**
  * The name identifier for the ForbiddenErrorInterceptor.
  * Used for interceptor registration and identification in the interceptor chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const FORBIDDEN_ERROR_INTERCEPTOR_NAME = 'ForbiddenErrorInterceptor';
 
 /**
  * The execution order for the ForbiddenErrorInterceptor.
  * Set to 0, indicating it runs at default priority in the interceptor chain.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const FORBIDDEN_ERROR_INTERCEPTOR_ORDER = 0;
 
 /**
  * Configuration options for the ForbiddenErrorInterceptor.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface ForbiddenErrorInterceptorOptions {
   /**
@@ -109,6 +115,8 @@ export interface ForbiddenErrorInterceptorOptions {
  *   }
  * });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class ForbiddenErrorInterceptor implements ErrorInterceptor {
   /**

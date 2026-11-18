@@ -83,6 +83,8 @@ import { NoneSpaceIdProvider } from './spaceIdProvider.js';
  *   onForbidden: handle403
  * };
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CoSecConfig
   extends AppIdCapable, Partial<DeviceIdStorageCapable>, RequestTrustCapable {
@@ -370,6 +372,8 @@ export interface CoSecConfig
  * // - CoSec-Device-Id: <generated>
  * // - CoSec-Request-Id: <unique-per-request>
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class CoSecConfigurer implements FetcherConfigurer {
   /**

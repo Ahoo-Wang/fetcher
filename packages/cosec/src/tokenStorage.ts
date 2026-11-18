@@ -21,6 +21,8 @@ import { setRefreshLockName } from './refreshLock.js';
 
 /**
  * Default key used for storing CoSec tokens in storage.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const DEFAULT_COSEC_TOKEN_KEY = 'cosec-token';
 
@@ -42,6 +44,8 @@ if (!sharedState[SHARED_TOKEN_SERIALIZERS]) {
 /**
  * Options for configuring TokenStorage.
  * Extends KeyStorageOptions excluding 'serializer' and includes EarlyPeriodCapable properties.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface TokenStorageOptions
   extends
@@ -52,6 +56,8 @@ export interface TokenStorageOptions
  * Storage class for managing access and refresh tokens in CoSec authentication.
  * Provides methods to store, retrieve, and manage JWT composite tokens with early period support.
  * Extends KeyStorage to handle persistence and implements EarlyPeriodCapable for token refresh timing.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class TokenStorage
   extends KeyStorage<JwtCompositeToken>

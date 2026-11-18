@@ -13,6 +13,8 @@
 /**
  * Interface representing a JWT payload as defined in RFC 7519.
  * Contains standard JWT claims as well as custom properties.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface JwtPayload {
   /**
@@ -57,6 +59,8 @@ export interface JwtPayload {
 /**
  * Interface representing a JWT payload with CoSec-specific extensions.
  * Extends the standard JwtPayload interface with additional CoSec-specific properties.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CoSecJwtPayload extends JwtPayload {
   /**
@@ -87,6 +91,8 @@ export interface CoSecJwtPayload extends JwtPayload {
  *
  * @param token - The JWT token string to parse
  * @returns The parsed JWT payload or null if parsing fails
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
   try {
@@ -129,6 +135,7 @@ export function parseJwtPayload<T extends JwtPayload>(token: string): T | null {
   }
 }
 
+/** @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface EarlyPeriodCapable {
   /**
    * The time in seconds before actual expiration when the token should be considered expired (default: 0)
@@ -151,6 +158,8 @@ export interface EarlyPeriodCapable {
  * @param token - The JWT token to check, either as a string or as a JwtPayload object
  * @param earlyPeriod - The time in seconds before actual expiration when the token should be considered expired (default: 0)
  * @returns true if the token is expired (or will expire within the early period) or cannot be parsed, false otherwise
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export function isTokenExpired(
   token: string | CoSecJwtPayload,

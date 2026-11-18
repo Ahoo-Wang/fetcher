@@ -43,6 +43,8 @@ import { isCompositeToken } from './compositeToken.js';
  *   console.log(token.payload?.userId);
  * }
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface IJwtToken<
   Payload extends JwtPayload,
@@ -78,6 +80,8 @@ export interface IJwtToken<
  * console.log(token.isExpired); // false if not expired
  * console.log(token.payload?.sub); // user ID from payload
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class JwtToken<
   Payload extends JwtPayload,
@@ -126,6 +130,8 @@ export class JwtToken<
  * Interface for checking refresh token status capabilities.
  *
  * This interface defines methods to check if token refresh is needed and possible.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface RefreshTokenStatusCapable {
   /**
@@ -165,6 +171,8 @@ export interface RefreshTokenStatusCapable {
  *   // Refresh the access token
  * }
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class JwtCompositeToken
   implements EarlyPeriodCapable, RefreshTokenStatusCapable
@@ -254,6 +262,8 @@ function legacyTokenSessionId(token: CompositeToken): string {
  * const serialized = serializer.serialize(token);
  * const deserialized = serializer.deserialize(serialized);
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class JwtCompositeTokenSerializer
   implements Serializer<string, JwtCompositeToken>, EarlyPeriodCapable
@@ -328,5 +338,7 @@ export class JwtCompositeTokenSerializer
  * Default instance of JwtCompositeTokenSerializer with no early period.
  *
  * This pre-configured serializer can be used directly for basic serialization needs.
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const jwtCompositeTokenSerializer = new JwtCompositeTokenSerializer();

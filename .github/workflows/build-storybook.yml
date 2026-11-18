@@ -2,9 +2,9 @@ name: Build Storybook
 
 on:
   push:
-    branches: [main, 5.x]
+    branches: [main, 5.x, 6.x]
   pull_request:
-    branches: [main, 5.x]
+    branches: [main, 5.x, 6.x]
   workflow_dispatch:
 
 permissions:

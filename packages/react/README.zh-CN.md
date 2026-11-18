@@ -2,6 +2,13 @@
 
 面向 Fetcher 请求、查询状态、存储、事件与 CoSec 安全的 React Hooks。组件需要持有异步状态和取消行为时使用。
 
+> **CoSec Hook 已弃用。** `SecurityProvider`、`SecurityContext`、`useSecurity`、
+> `useSecurityContext`、`RouteGuard`、`RefreshableRouteGuard` 与 `ANONYMOUS_USER`
+> 已迁到 CoSec 仓库的
+> [`@ahoo-wang/cosec-react`](https://www.npmjs.com/package/@ahoo-wang/cosec-react)
+> （CoSec 8.0 GA 之前在 npm 的 `beta` 标签上），fetcher 下一个大版本将从本包移除它们及对
+> `@ahoo-wang/fetcher-cosec` 的 peer 依赖。见 [https://cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。
+
 ## 安装
 
 ```bash

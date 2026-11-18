@@ -58,6 +58,8 @@ import {
  *   })
  * };
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export interface CoSecRequestOptions
   extends AppIdCapable, DeviceIdStorageCapable, RequestTrustCapable {
@@ -84,6 +86,8 @@ export interface CoSecRequestOptions
  * fetcher.addInterceptor(new CoSecRequestInterceptor(options));
  * console.log(interceptor.name); // 'CoSecRequestInterceptor'
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export const COSEC_REQUEST_INTERCEPTOR_NAME = 'CoSecRequestInterceptor';
 
@@ -176,6 +180,8 @@ export {
  *   spaceIdProvider
  * });
  * ```
+ *
+ * @deprecated `@ahoo-wang/fetcher-cosec` moved to `@ahoo-wang/cosec-fetcher` in the CoSec repository and is removed in the next fetcher major. See https://cosec.ahoo.me/integration/clients.
  */
 export class CoSecRequestInterceptor implements RequestInterceptor {
   /**

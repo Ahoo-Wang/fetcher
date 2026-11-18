@@ -17,6 +17,7 @@ import { useEffect, useState } from 'react';
 import type { JwtTokenManager } from '@ahoo-wang/fetcher-cosec';
 import { useSecurityContext } from './SecurityContext.js';
 
+/** @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export interface RefreshableRouteGuardProps extends Omit<
   RouteGuardProps,
   'onUnauthorized'
@@ -25,6 +26,7 @@ export interface RefreshableRouteGuardProps extends Omit<
   tokenManager: JwtTokenManager;
 }
 
+/** @deprecated The CoSec hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository and are removed from `@ahoo-wang/fetcher-react` in the next fetcher major. See https://cosec.ahoo.me/integration/clients. */
 export function RefreshableRouteGuard({
   children,
   fallback,
