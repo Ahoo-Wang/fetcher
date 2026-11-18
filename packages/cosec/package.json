@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-cosec",
-  "version": "6.1.0",
+  "version": "6.1.1",
   "description": "Deprecated: moved to @ahoo-wang/cosec-fetcher (npm beta tag until CoSec 8.0 GA), see https://cosec.ahoo.me/integration/clients. Enterprise-grade CoSec authentication integration for the Fetcher HTTP client with comprehensive security features including automatic token management, device tracking, and request attribution.",
   "keywords": [
     "fetch",
