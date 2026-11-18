@@ -1,7 +1,8 @@
 name: PR Metadata
 on:
   pull_request:
-    branches: [main]
+    # 6.x too: it keeps the 6.x line, like 5.x keeps 5.x.
+    branches: [main, 6.x]
     types: [opened, synchronize, reopened, edited, ready_for_review]
 permissions:
   contents: read
