@@ -151,6 +151,38 @@ test('prose, migration guides, release history and build output are not examples
   }
 });
 
+test('only a 5.x page or a migration guide may install the removed fetcher-cosec', () => {
+  const root = workspace({
+    'README.md':
+      '```bash\npnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-cosec\n```\n',
+    'packages/react/package.json': { name: '@ahoo-wang/fetcher-react' },
+    'packages/react/README.md':
+      '```bash\npnpm add @ahoo-wang/fetcher-react@^6.0.0 \\\n  @ahoo-wang/fetcher-cosec@^6.0.0 \\\n  react\n```\n',
+    'wiki/reference/react/index.md':
+      '```sh\nnpm install @ahoo-wang/fetcher-cosec\n```\n',
+    'skills/auth/SKILL.md': 'Run `yarn add @ahoo-wang/fetcher-cosec`.\n',
+    // Allowed: a 5.x-only page, a migration guide, prose, look-alike names.
+    'wiki/reference/viewer/index.md':
+      '::: warning 5.x only\nThis page applies to 5.x.\n:::\n\n```sh\npnpm add @ahoo-wang/fetcher-cosec\n```\n',
+    'wiki/zh/reference/viewer/index.md':
+      '::: warning 已弃用（仅适用于 5.x）\n:::\n\n```sh\npnpm add @ahoo-wang/fetcher-cosec\n```\n',
+    'skills/fetcher-v6-migration/SKILL.md':
+      '```sh\npnpm add @ahoo-wang/fetcher-cosec@6\n```\n',
+    'wiki/guides/auth.md':
+      'Was `@ahoo-wang/fetcher-cosec`; now run `pnpm add @ahoo-wang/cosec-fetcher@beta`.\n\n```sh\npnpm add @ahoo-wang/fetcher-cosecure\n```\n',
+  });
+  try {
+    assert.deepEqual(violations(root).sort(), [
+      'README.md installs @ahoo-wang/fetcher-cosec',
+      'packages/react/README.md installs @ahoo-wang/fetcher-cosec',
+      'skills/auth/SKILL.md installs @ahoo-wang/fetcher-cosec',
+      'wiki/reference/react/index.md installs @ahoo-wang/fetcher-cosec',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('fetcher packages and look-alike names are allowed', () => {
   const root = workspace({
     'packages/react/package.json': {

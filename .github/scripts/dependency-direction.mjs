@@ -28,6 +28,15 @@ const IMPORT =
   /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"](@ahoo-wang\/[^'"]*)['"]/g;
 const CATALOG = /^\s+['"]?(@ahoo-wang\/[^'":]+)/gm;
 /**
+ * Packages this repository no longer publishes. Beyond importing them, a page
+ * must not tell readers to install them, unless it applies to the 5.x line
+ * only (its `::: warning … 5.x …` banner): those pages document 5.x as it was.
+ */
+export const REMOVED = /@ahoo-wang\/fetcher-cosec(?![\w-])/;
+const INSTALL =
+  /\b(?:pnpm|npm|yarn|bun)\s+(?:add|install|i)\b(?:[^\n]*\\\n)*[^\n]*/g;
+const FIVE_X_ONLY = /^::: warning [^\n]*5\.x/m;
+/**
  * Examples users copy: the wiki (pages and example sources), the Storybook
  * stories, the agent skills and every README. Release notes and design
  * history under `docs/` record what was, and migration guides (a directory
@@ -69,9 +78,15 @@ function readmes(directory) {
 
 function imports(root, file) {
   const found = [];
-  for (const [, specifier] of readFileSync(file, 'utf8').matchAll(IMPORT))
-    if (FORBIDDEN.test(specifier))
-      found.push(`${file.slice(root.length + 1)} imports ${specifier}`);
+  const where = file.slice(root.length + 1);
+  const text = readFileSync(file, 'utf8');
+  for (const [, specifier] of text.matchAll(IMPORT))
+    if (FORBIDDEN.test(specifier)) found.push(`${where} imports ${specifier}`);
+  if (/\.mdx?$/.test(file) && !FIVE_X_ONLY.test(text))
+    for (const [command] of text.matchAll(INSTALL)) {
+      const name = command.match(REMOVED)?.[0];
+      if (name) found.push(`${where} installs ${name}`);
+    }
   return found;
 }
 
