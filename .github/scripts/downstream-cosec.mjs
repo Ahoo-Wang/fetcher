@@ -242,37 +242,65 @@ const STEPS = [
   ['test', 'Package tests'],
 ];
 
-/** The Markdown of the job summary. */
-export function summary({ ref, sha, node, rows, steps, reports }) {
+/** The steps whose `pnpm -r --report-summary` file names the failed packages. */
+export const REPORTED = ['build', 'typecheck', 'test'];
+
+const reason = error => String(error?.message ?? error).split('\n')[0];
+
+/**
+ * The Markdown of the job summary. `peers` is the rows of `peerRows` or
+ * `{ error }` when they could not be read; `steps` (the workflow's `steps`
+ * context) and each `failures[id]` (failed package directories) likewise.
+ */
+export function summary({ ref, sha, node, pnpm, peers, steps, failures }) {
   const lines = [
-    `### CoSec TypeScript against this fetcher (Node ${node})`,
+    `### CoSec TypeScript against this fetcher (Node ${node || 'unknown'})`,
     '',
-    `CoSec \`${ref}\` at \`${sha || 'unknown'}\`.`,
-    '',
-    '| CoSec package | Peer | Declared range | Packed here | Satisfied |',
-    '| --- | --- | --- | --- | --- |',
+    `CoSec \`${ref || 'unknown'}\` at \`${sha || 'unknown'}\`.`,
   ];
-  for (const row of rows) {
-    const mark =
-      row.satisfied === undefined
-        ? 'not read'
-        : row.satisfied
-          ? 'yes'
-          : '**no**';
-    lines.push(
-      `| \`${row.package}\` | \`${row.peer}\` | \`${row.range}\` | ${row.version} | ${mark} |`,
-    );
-  }
-  if (rows.some(row => row.satisfied === false))
+  if (pnpm) {
+    const pinned = pnpm.pinned?.replace(/^pnpm@/, '');
     lines.push(
       '',
-      'A packed version is outside the range CoSec declares. This is not a ' +
-        'failure of this change: CoSec widens the range when it takes this ' +
-        'fetcher version.',
+      pnpm.error
+        ? `pnpm: ${pnpm.used || 'unknown'} (CoSec's pin not read: ${pnpm.error}).`
+        : pinned && pnpm.used && pinned !== pnpm.used
+          ? `pnpm: ${pnpm.used}, **not** the ${pinned} CoSec pins.`
+          : `pnpm: ${pnpm.used || 'unknown'} (CoSec pins ${pinned || 'none'}).`,
     );
+  }
+  lines.push('');
+  if (peers.error) {
+    lines.push(`Peer ranges not read: ${peers.error}`);
+  } else {
+    lines.push(
+      '| CoSec package | Peer | Declared range | Packed here | Satisfied |',
+      '| --- | --- | --- | --- | --- |',
+    );
+    for (const row of peers) {
+      const mark =
+        row.satisfied === undefined
+          ? 'not read'
+          : row.satisfied
+            ? 'yes'
+            : '**no**';
+      lines.push(
+        `| \`${row.package}\` | \`${row.peer}\` | \`${row.range}\` | ${row.version} | ${mark} |`,
+      );
+    }
+    if (peers.some(row => row.satisfied === false))
+      lines.push(
+        '',
+        'A packed version is outside the range CoSec declares. This is not a ' +
+          'failure of this change: CoSec widens the range when it takes this ' +
+          'fetcher version.',
+      );
+  }
   const failed = STEPS.filter(([id]) => steps[id]?.outcome === 'failure');
   lines.push('');
-  if (failed.length === 0) {
+  if (steps.error) {
+    lines.push(`Step outcomes not read: ${steps.error}`);
+  } else if (failed.length === 0) {
     lines.push(
       Object.values(steps).some(step => step.outcome === 'cancelled')
         ? 'The run was cancelled.'
@@ -281,15 +309,56 @@ export function summary({ ref, sha, node, rows, steps, reports }) {
   } else {
     lines.push('Failed:', '');
     for (const [id, title] of failed) {
-      const packages = reports[id] ? failedPackages(reports[id]) : [];
+      const packages = failures[id] ?? [];
       lines.push(
-        packages.length
-          ? `- ${title}: ${packages.map(name => `\`${name}\``).join(', ')}`
-          : `- ${title}`,
+        packages.error
+          ? `- ${title} (its per-package report not read: ${packages.error})`
+          : packages.length
+            ? `- ${title}: ${packages.map(name => `\`${name}\``).join(', ')}`
+            : `- ${title}`,
       );
     }
   }
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * The summary for a CoSec workspace after a run. The library functions throw
+ * on what they cannot read; here each of those becomes a line in the summary,
+ * so the summary step never turns the check red on its own.
+ */
+export function report({ workspaceDir, reportsDir, packagesDir, env }) {
+  const attempt = read => {
+    try {
+      return read();
+    } catch (error) {
+      return { error: reason(error) };
+    }
+  };
+  const steps = attempt(() => JSON.parse(env.STEPS || '{}') ?? {});
+  const pinned = attempt(
+    () =>
+      JSON.parse(readFileSync(join(workspaceDir, 'package.json'), 'utf8'))
+        .packageManager,
+  );
+  return summary({
+    ref: env.COSEC_REF,
+    sha: env.COSEC_SHA,
+    node: env.NODE_VERSION,
+    pnpm: {
+      used: env.PNPM_VERSION,
+      pinned: typeof pinned === 'string' ? pinned : undefined,
+      error: pinned?.error,
+    },
+    peers: attempt(() => peerRows(workspaceDir, packedVersions(packagesDir))),
+    steps,
+    failures: Object.fromEntries(
+      REPORTED.map(id => [
+        id,
+        attempt(() => failedPackages(join(reportsDir, `${id}.json`))),
+      ]),
+    ),
+  });
 }
 
 if (
@@ -297,27 +366,22 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   const [workspaceDir, reportsDir] = process.argv.slice(2);
-  assert.ok(
-    workspaceDir && reportsDir,
-    'Usage: downstream-cosec.mjs <cosec typescript dir> <reports dir>',
-  );
-  const packed = packedVersions(
-    new URL('../../packages/', import.meta.url).pathname,
-  );
-  const reports = Object.fromEntries(
-    ['build', 'typecheck', 'test'].map(id => [
-      id,
-      join(reportsDir, `${id}.json`),
-    ]),
-  );
-  process.stdout.write(
-    summary({
-      ref: process.env.COSEC_REF,
-      sha: process.env.COSEC_SHA,
-      node: process.env.NODE_VERSION,
-      rows: peerRows(workspaceDir, packed),
-      steps: JSON.parse(process.env.STEPS ?? '{}'),
-      reports,
-    }),
-  );
+  try {
+    assert.ok(
+      workspaceDir && reportsDir,
+      'Usage: downstream-cosec.mjs <cosec typescript dir> <reports dir>',
+    );
+    process.stdout.write(
+      report({
+        workspaceDir,
+        reportsDir,
+        packagesDir: new URL('../../packages/', import.meta.url).pathname,
+        env: process.env,
+      }),
+    );
+  } catch (error) {
+    // The steps' own outcomes decide the check; a summary that cannot be
+    // written must not add a failure of its own.
+    process.stdout.write(`CoSec summary not written: ${reason(error)}\n`);
+  }
 }

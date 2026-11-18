@@ -13,6 +13,7 @@ import {
   failedPackages,
   packedVersions,
   peerRows,
+  report,
   satisfies,
   summary,
 } from './downstream-cosec.mjs';
@@ -217,43 +218,41 @@ test('failed packages come from a pnpm --report-summary file', () => {
   );
 });
 
-test('the summary names the commit, the peer verdicts and the failed step', () => {
-  withTree(
-    {
-      'test.json': {
-        executionStatus: { '/w/cosec-react': { status: 'failure' } },
+test('the summary names the commit, the pnpm, the peer verdicts and the failed step', () => {
+  const text = summary({
+    ref: 'main',
+    sha: 'aa6e9c8',
+    node: '24.22.2',
+    pnpm: { used: '11.28.11', pinned: 'pnpm@11.28.11' },
+    peers: [
+      {
+        package: '@ahoo-wang/cosec-fetcher',
+        peer: '@ahoo-wang/fetcher',
+        range: '^6.1.0',
+        version: '7.0.0',
+        satisfied: false,
       },
+    ],
+    steps: {
+      install: { outcome: 'success' },
+      typecheck: { outcome: 'failure' },
+      test: { outcome: 'failure' },
     },
-    root => {
-      const text = summary({
-        ref: 'main',
-        sha: 'aa6e9c8',
-        node: '24.22.2',
-        rows: [
-          {
-            package: '@ahoo-wang/cosec-fetcher',
-            peer: '@ahoo-wang/fetcher',
-            range: '^6.1.0',
-            version: '7.0.0',
-            satisfied: false,
-          },
-        ],
-        steps: {
-          install: { outcome: 'success' },
-          test: { outcome: 'failure' },
-        },
-        reports: { test: join(root, 'test.json') },
-      });
-      assert.match(text, /CoSec `main` at `aa6e9c8`/);
-      assert.match(text, /Node 24\.22\.2/);
-      assert.match(
-        text,
-        /\| `@ahoo-wang\/cosec-fetcher` \| `@ahoo-wang\/fetcher` \| `\^6\.1\.0` \| 7\.0\.0 \| \*\*no\*\* \|/,
-      );
-      assert.match(text, /CoSec widens the range/);
-      assert.match(text, /- Package tests: `cosec-react`/);
-    },
+    failures: { test: ['cosec-react'], typecheck: { error: 'bad JSON' } },
+  });
+  assert.match(text, /CoSec `main` at `aa6e9c8`/);
+  assert.match(text, /Node 24\.22\.2/);
+  assert.match(text, /pnpm: 11\.28\.11 \(CoSec pins 11\.28\.11\)/);
+  assert.match(
+    text,
+    /\| `@ahoo-wang\/cosec-fetcher` \| `@ahoo-wang\/fetcher` \| `\^6\.1\.0` \| 7\.0\.0 \| \*\*no\*\* \|/,
   );
+  assert.match(text, /CoSec widens the range/);
+  assert.match(
+    text,
+    /- Type-check \(its per-package report not read: bad JSON\)/,
+  );
+  assert.match(text, /- Package tests: `cosec-react`/);
 });
 
 test('a passing run with satisfied peers says so and nothing more', () => {
@@ -261,7 +260,8 @@ test('a passing run with satisfied peers says so and nothing more', () => {
     ref: 'main',
     sha: 'aa6e9c8',
     node: '22.23.4',
-    rows: [
+    pnpm: { used: '11.28.11', pinned: 'pnpm@11.28.11' },
+    peers: [
       {
         package: '@ahoo-wang/cosec-fetcher',
         peer: '@ahoo-wang/fetcher',
@@ -271,8 +271,131 @@ test('a passing run with satisfied peers says so and nothing more', () => {
       },
     ],
     steps: { install: { outcome: 'success' }, test: { outcome: 'success' } },
-    reports: {},
+    failures: {},
   });
   assert.match(text, /Every step passed\./);
-  assert.doesNotMatch(text, /widens|Failed/);
+  assert.doesNotMatch(text, /widens|Failed|not read|\*\*not\*\*/);
+});
+
+test('a pnpm other than the one CoSec pins is called out', () => {
+  const text = summary({
+    ref: 'main',
+    sha: 'aa6e9c8',
+    node: '24.22.2',
+    pnpm: { used: '11.28.11', pinned: 'pnpm@11.30.0' },
+    peers: [],
+    steps: {},
+    failures: {},
+  });
+  assert.match(
+    text,
+    /pnpm: 11\.28\.11, \*\*not\*\* the 11\.30\.0 CoSec pins\./,
+  );
+});
+
+const PACKAGES = {
+  'packages/fetcher/package.json': {
+    name: '@ahoo-wang/fetcher',
+    version: '6.1.0',
+  },
+};
+
+const COSEC = {
+  'cosec/package.json': { packageManager: 'pnpm@11.28.11' },
+  'cosec/cosec-fetcher/package.json': {
+    name: '@ahoo-wang/cosec-fetcher',
+    peerDependencies: { '@ahoo-wang/fetcher': 'catalog:peers' },
+  },
+};
+
+test('report reads a CoSec workspace and the per-package reports', () => {
+  withTree(
+    {
+      ...PACKAGES,
+      ...COSEC,
+      'cosec/pnpm-workspace.yaml': WORKSPACE,
+      'reports/test.json': {
+        executionStatus: { '/w/cosec-fetcher': { status: 'failure' } },
+      },
+    },
+    root => {
+      const text = report({
+        workspaceDir: join(root, 'cosec'),
+        reportsDir: join(root, 'reports'),
+        packagesDir: join(root, 'packages'),
+        env: {
+          COSEC_REF: 'main',
+          COSEC_SHA: 'aa6e9c8',
+          NODE_VERSION: '24.22.2',
+          PNPM_VERSION: '11.28.11',
+          STEPS: JSON.stringify({ test: { outcome: 'failure' } }),
+        },
+      });
+      assert.match(text, /pnpm: 11\.28\.11 \(CoSec pins 11\.28\.11\)/);
+      assert.match(text, /\| `\^6\.1\.0` \| 6\.1\.0 \| yes \|/);
+      assert.match(text, /- Package tests: `cosec-fetcher`/);
+    },
+  );
+});
+
+test('report does not throw when CoSec writes its catalogs in a form it cannot read', () => {
+  withTree(
+    {
+      ...PACKAGES,
+      ...COSEC,
+      'cosec/pnpm-workspace.yaml':
+        "catalogs: { peers: { '@ahoo-wang/fetcher': '^6.1.0' } }\n",
+      'reports/build.json': '{ not json',
+    },
+    root => {
+      const text = report({
+        workspaceDir: join(root, 'cosec'),
+        reportsDir: join(root, 'reports'),
+        packagesDir: join(root, 'packages'),
+        env: {
+          COSEC_REF: 'main',
+          NODE_VERSION: '22.23.4',
+          STEPS: JSON.stringify({
+            build: { outcome: 'failure' },
+            test: { outcome: 'skipped' },
+          }),
+        },
+      });
+      assert.match(
+        text,
+        /Peer ranges not read: catalogs is not in block style/,
+      );
+      assert.doesNotMatch(text, /\| CoSec package \|/);
+      assert.match(text, /- Build \(its per-package report not read: /);
+      assert.match(text, /pnpm: unknown \(CoSec pins 11\.28\.11\)/);
+    },
+  );
+});
+
+test('report survives a missing workspace and unreadable step outcomes', () => {
+  withTree(PACKAGES, root => {
+    const text = report({
+      workspaceDir: join(root, 'missing'),
+      reportsDir: join(root, 'missing-reports'),
+      packagesDir: join(root, 'packages'),
+      env: { COSEC_REF: 'main', NODE_VERSION: '24.22.2', STEPS: '{' },
+    });
+    assert.match(text, /Peer ranges not read: ENOENT/);
+    assert.match(text, /CoSec's pin not read: ENOENT/);
+    assert.match(text, /Step outcomes not read: /);
+    assert.doesNotMatch(text, /Every step passed/);
+  });
+});
+
+test('the library functions still throw on what they cannot read', () => {
+  withTree(
+    {
+      'cosec/pnpm-workspace.yaml': "catalog: { react: '^19.0.0' }\n",
+      'reports/test.json': '{ not json',
+    },
+    root => {
+      assert.throws(() => peerRows(join(root, 'cosec'), {}), /block style/);
+      assert.throws(() => failedPackages(join(root, 'reports', 'test.json')));
+    },
+  );
 });

@@ -259,9 +259,11 @@ means "Wow will need a change when it picks up this fetcher version", not
 CoSec clients take as a peer — `fetcher`, `eventbus`, `storage` — or the root
 `package.json` and `pnpm-workspace.yaml` that shape their build. One job builds
 and packs every package with this repository's toolchain; then, on each of
-CoSec's TypeScript CI legs (Node 22.23.4 and 24.22.2, pnpm 11.28.11 as
-CoSec's `typescript/package.json` pins), it checks out Ahoo-Wang/CoSec's
-`main`, adds `overrides:` for the tarballs to that checkout's
+CoSec's TypeScript CI legs (Node 22.23.4 and 24.22.2, copied from CoSec's
+`ci.yml`), it checks out Ahoo-Wang/CoSec's `main`, installs the pnpm version
+that CoSec's `packageManager` pins (read from the checkout's
+`typescript/package.json`, so a pnpm upgrade in CoSec needs no change here),
+adds `overrides:` for the tarballs to that checkout's
 `typescript/pnpm-workspace.yaml` (where CoSec keeps its pnpm settings), installs
 without freezing the lockfile, and runs CoSec's build, type checks, workspace
 script tests and package tests. `allowBuilds` and `minimumReleaseAge` stay as
@@ -270,11 +272,14 @@ Gradle, which CoSec's own CI covers.
 
 Each step runs every package (`pnpm -r --no-bail`), and a step runs whenever
 the steps it needs passed, so one failure does not hide another. The job
-summary (`downstream-cosec.mjs`) names the CoSec commit tested, each peer range
-CoSec declares (resolved through its `catalogs.peers`), the version packed
-here and whether the range admits it, and on failure the step and the CoSec
-packages that failed. An unmet range is not a failure: it means CoSec widens
-the range when it takes this fetcher version.
+summary (`downstream-cosec.mjs`) names the CoSec commit tested, the pnpm that
+ran against the one CoSec pins, each peer range CoSec declares (resolved
+through its `catalogs.peers`), the version packed here and whether the range
+admits it, and on failure the step and the CoSec packages that failed. An
+unmet range is not a failure: it means CoSec widens the range when it takes
+this fetcher version. The summary never fails the job itself: when it cannot
+read CoSec's peer ranges or a per-package report (CoSec changed how it writes
+them, say), it says so in one line and reports the rest.
 
 It is advisory, like the Wow check: a failure means "CoSec will need a change
 when it picks up this fetcher version", and by the agreed convention fetcher

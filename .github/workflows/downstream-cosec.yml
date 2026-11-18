@@ -103,7 +103,8 @@ jobs:
       fail-fast: false
       matrix:
         # CoSec's own TypeScript CI legs (Ahoo-Wang/CoSec ci.yml, job
-        # `typescript`); pnpm is the version its typescript/package.json pins.
+        # `typescript`). pnpm is not listed here: it is read from CoSec's
+        # checkout below.
         node-version: ['22.23.4', '24.22.2']
     steps:
       - name: Checkout fetcher
@@ -120,10 +121,12 @@ jobs:
           path: cosec
           persist-credentials: false
 
+      # The pnpm CoSec pins (`packageManager` in typescript/package.json), read
+      # from the checkout so a pnpm upgrade in CoSec is followed here.
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 11.28.11
+          package_json_file: cosec/typescript/package.json
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -201,5 +204,6 @@ jobs:
           NODE_VERSION: ${{ matrix.node-version }}
           STEPS: ${{ toJSON(steps) }}
         run: |
-          COSEC_SHA="$(git -C cosec rev-parse HEAD 2>/dev/null || true)" \
-            node fetcher/.github/scripts/downstream-cosec.mjs cosec/typescript "$RUNNER_TEMP/cosec-reports" >> "$GITHUB_STEP_SUMMARY"
+          export COSEC_SHA="$(git -C cosec rev-parse HEAD 2>/dev/null || true)"
+          export PNPM_VERSION="$(cd cosec/typescript && pnpm --version 2>/dev/null || true)"
+          node fetcher/.github/scripts/downstream-cosec.mjs cosec/typescript "$RUNNER_TEMP/cosec-reports" >> "$GITHUB_STEP_SUMMARY"
