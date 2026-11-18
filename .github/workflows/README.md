@@ -15,6 +15,7 @@ tests, 30 for browser acceptance and 45 for the Node test matrix).
 | `integration-test.yml`           | Build the integration workspace and dependencies, type-check it, and run its `required` project: the integration cases that reach nothing outside the job, including the Fetcher and decorator suites against a local JSONPlaceholder (json-server, started by the Vitest globalSetup). Required, and part of release admission.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `integration-external.yml`       | Advisory, not required and not in release admission: the `external` integration project (`integration-test/test/external/`, the OpenAI-compatible provider behind the `FETCHER_LLM_*` secrets), then the JSONPlaceholder suites again against the live site. Runs on pull requests touching the packages they exercise, on every push to `main`/`5.x`, daily and on dispatch. See below.                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `downstream-wow.yml`             | Advisory, not required: on changes to the core packages Wow consumes, build them, link them into a checkout of Ahoo-Wang/Wow through `pnpm.overrides`, and run Wow's TypeScript unit tests and type checks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `downstream-cosec.yml`           | Advisory, not required: on changes to the packages CoSec takes as peers (`fetcher`, `eventbus`, `storage`), pack them, install the tarballs into a checkout of Ahoo-Wang/CoSec's `typescript/` workspace, and run its build, type checks and tests on CoSec's Node 22/24 legs with CoSec's pnpm; the job summary says whether CoSec's peer ranges admit the packed versions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `pr-labeler.yml`                 | Apply labels using trusted base configuration; never check out PR code in the write-permission workflow.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `deploy-wiki.yml`                | Build packages once, then Wiki and Storybook, deploy GitHub Pages.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `release.yml`                    | Admit the checked-out SHA against successful full CI and trusted quality checks before build/publish.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -75,8 +76,9 @@ required check counts as passing. Each gate always runs and fails unless every
 job it needs succeeded or was skipped by scope.
 
 Leave advisory checks optional: `Wow TypeScript against this fetcher`
-(`downstream-wow.yml`), `Integration External`, `Label Pull Request` and the
-`changes / changes` scope jobs. Codecov stays a release admission condition,
+(`downstream-wow.yml`), `Pack fetcher packages` and `CoSec TypeScript against
+this fetcher / Node …` (`downstream-cosec.yml`), `Integration External`,
+`Label Pull Request` and the `changes / changes` scope jobs. Codecov stays a release admission condition,
 not a merge requirement (it does not report on every pull request).
 
 **Codacy** is neither a merge nor a release check. It stopped analysing this
@@ -141,8 +143,10 @@ settings. Do not print them. No PR code is executed by the privileged
 labeler. Coverage uploader failures fail Node 24 CI rather than being hidden.
 
 Third-party pnpm/Codecov/labeler actions are pinned to verified commit SHAs.
-`downstream-wow.yml` reads Ahoo-Wang/Wow anonymously with read-only
-`contents` permission and receives no secrets.
+`downstream-wow.yml` and `downstream-cosec.yml` read Ahoo-Wang/Wow and
+Ahoo-Wang/CoSec anonymously with read-only `contents` permission, run on
+`pull_request` (never `pull_request_target`), check out without persisted
+credentials and receive no secrets.
 
 ## Release admission
 
@@ -248,3 +252,32 @@ directories, installs without the lockfile, and runs Wow's TypeScript unit
 tests and type checks. It is advisory: nothing requires it, and a failure
 means "Wow will need a change when it picks up this fetcher version", not
 "this change is wrong".
+
+## Downstream CoSec check
+
+`downstream-cosec.yml` runs when a pull request or a push touches a package the
+CoSec clients take as a peer — `fetcher`, `eventbus`, `storage` — or the root
+`package.json` and `pnpm-workspace.yaml` that shape their build. One job builds
+and packs every package with this repository's toolchain; then, on each of
+CoSec's TypeScript CI legs (Node 22.23.4 and 24.22.2, pnpm 11.28.11 as
+CoSec's `typescript/package.json` pins), it checks out Ahoo-Wang/CoSec's
+`main`, adds `overrides:` for the tarballs to that checkout's
+`typescript/pnpm-workspace.yaml` (where CoSec keeps its pnpm settings), installs
+without freezing the lockfile, and runs CoSec's build, type checks, workspace
+script tests and package tests. `allowBuilds` and `minimumReleaseAge` stay as
+CoSec sets them. `pnpm test:host` is not run: it needs a CoSec host built with
+Gradle, which CoSec's own CI covers.
+
+Each step runs every package (`pnpm -r --no-bail`), and a step runs whenever
+the steps it needs passed, so one failure does not hide another. The job
+summary (`downstream-cosec.mjs`) names the CoSec commit tested, each peer range
+CoSec declares (resolved through its `catalogs.peers`), the version packed
+here and whether the range admits it, and on failure the step and the CoSec
+packages that failed. An unmet range is not a failure: it means CoSec widens
+the range when it takes this fetcher version.
+
+It is advisory, like the Wow check: a failure means "CoSec will need a change
+when it picks up this fetcher version", and by the agreed convention fetcher
+tells CoSec. Only CoSec `main` is tested for now. After CoSec 8.0 GA a second
+leg at the latest `v8.*` tag is planned; a release tag is not red on its own the
+way `main` can be, so that leg is the candidate for a required check.

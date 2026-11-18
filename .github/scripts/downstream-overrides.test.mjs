@@ -86,7 +86,7 @@ test("overrides are merged into Wow's own, keeping its entries and comments", ()
       '',
       '# Security overrides.',
       'overrides:',
-      '    # Packed builds of this fetcher commit (downstream-wow.yml).',
+      '    # Packed builds of this fetcher commit (downstream check).',
       "    '@ahoo-wang/fetcher': 'file:/tmp/a.tgz'",
       "    '@ahoo-wang/fetcher-react': 'file:/tmp/b.tgz'",
       '    # vitepress pins vite 5.',
@@ -111,7 +111,7 @@ test('a Wow override of a packed package fails instead of being replaced', () =>
   ])
     assert.throws(
       () => withOverrides(`overrides:\n  ${key}: ^6.0.0\n`, entries),
-      /Wow already overrides @ahoo-wang\/fetcher /,
+      /already overrides @ahoo-wang\/fetcher /,
       key,
     );
   // A package whose name merely starts with a packed one is not a conflict.

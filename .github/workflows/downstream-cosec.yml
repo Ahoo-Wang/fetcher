@@ -1,0 +1,205 @@
+# Advisory: does CoSec's TypeScript still build and pass against this commit's
+# packages? The CoSec clients (@ahoo-wang/cosec-fetcher, @ahoo-wang/cosec-react)
+# live in Ahoo-Wang/CoSec under typescript/ and take @ahoo-wang/fetcher,
+# fetcher-eventbus and fetcher-storage as peers; this runs them against the
+# packages built here. Not a required check: a failure says CoSec will need a
+# change when it picks up this fetcher version, and fetcher tells CoSec so.
+#
+# CoSec is tested at `main` only. After CoSec 8.0 GA, add a second leg at the
+# latest `v8.*` tag: CoSec main can be red on its own, a release tag cannot, so
+# that leg is the one to consider making a required check.
+name: Downstream CoSec
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/fetcher/**'
+      - 'packages/eventbus/**'
+      - 'packages/storage/**'
+      # The root inputs of their build: the catalog sets the build tools and
+      # the ranges `pnpm pack` writes. The packages have their own tsconfig and
+      # vite config, inside the paths above.
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/downstream-cosec.yml'
+      - '.github/scripts/downstream-overrides.mjs'
+      - '.github/scripts/downstream-cosec.mjs'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/fetcher/**'
+      - 'packages/eventbus/**'
+      - 'packages/storage/**'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - '.github/workflows/downstream-cosec.yml'
+      - '.github/scripts/downstream-overrides.mjs'
+      - '.github/scripts/downstream-cosec.mjs'
+  workflow_dispatch:
+    inputs:
+      cosec-ref:
+        description: Ahoo-Wang/CoSec branch, tag or SHA to test against
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Built once with fetcher's own toolchain; the CoSec legs install the tarballs.
+  pack:
+    name: Pack fetcher packages
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fetcher
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.22.3
+
+      - name: Build fetcher packages
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -r --filter './packages/*' build
+
+      # pnpm pack rewrites workspace: and catalog: ranges, so each tarball
+      # installs in CoSec like the package npm would serve.
+      - name: Pack fetcher packages
+        run: |
+          mkdir -p "$RUNNER_TEMP/fetcher-packs"
+          for package in packages/*/; do
+            (cd "$package" && pnpm pack --pack-destination "$RUNNER_TEMP/fetcher-packs")
+          done
+
+      - name: Keep the tarballs
+        uses: actions/upload-artifact@v7
+        with:
+          name: fetcher-packs
+          path: ${{ runner.temp }}/fetcher-packs/
+          retention-days: 1
+          if-no-files-found: error
+
+  cosec-typescript:
+    name: CoSec TypeScript against this fetcher / Node ${{ matrix.node-version }}
+    needs: pack
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # CoSec's own TypeScript CI legs (Ahoo-Wang/CoSec ci.yml, job
+        # `typescript`); pnpm is the version its typescript/package.json pins.
+        node-version: ['22.23.4', '24.22.2']
+    steps:
+      - name: Checkout fetcher
+        uses: actions/checkout@v7
+        with:
+          path: fetcher
+          persist-credentials: false
+
+      - name: Checkout CoSec
+        uses: actions/checkout@v7
+        with:
+          repository: Ahoo-Wang/CoSec
+          ref: ${{ inputs.cosec-ref || 'main' }}
+          path: cosec
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 11.28.11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Fetch the tarballs
+        uses: actions/download-artifact@v8
+        with:
+          name: fetcher-packs
+          path: ${{ runner.temp }}/fetcher-packs
+
+      # CoSec keeps its pnpm settings in typescript/pnpm-workspace.yaml (pnpm
+      # 11 reads them there); only this checkout is changed.
+      - name: Merge the packed builds into CoSec's overrides
+        id: overrides
+        run: node fetcher/.github/scripts/downstream-overrides.mjs "$RUNNER_TEMP/fetcher-packs" cosec/typescript
+
+      # The overrides change resolution, so CoSec's lockfile cannot be frozen.
+      # allowBuilds and minimumReleaseAge stay as CoSec sets them; local
+      # tarballs are not registry releases, so the age gate does not apply.
+      - name: Install CoSec
+        id: install
+        working-directory: cosec/typescript
+        run: pnpm install --no-frozen-lockfile
+
+      # CoSec's build, typecheck and test scripts are `pnpm -r <script>`, which
+      # stop at the first failing package; an advisory check reports every
+      # package, so run them without bailing and keep pnpm's per-package report
+      # for the summary. A later step runs when what it needs passed, so one
+      # failure does not hide another.
+      - name: Build CoSec TypeScript packages
+        id: build
+        working-directory: cosec/typescript
+        run: |
+          mkdir -p "$RUNNER_TEMP/cosec-reports"
+          status=0
+          pnpm -r --no-bail --report-summary build || status=$?
+          mv pnpm-exec-summary.json "$RUNNER_TEMP/cosec-reports/build.json" || true
+          exit "$status"
+
+      - name: Type-check CoSec TypeScript packages
+        id: typecheck
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: cosec/typescript
+        run: |
+          status=0
+          pnpm -r --no-bail --report-summary typecheck || status=$?
+          mv pnpm-exec-summary.json "$RUNNER_TEMP/cosec-reports/typecheck.json" || true
+          exit "$status"
+
+      # The first half of CoSec's `pnpm test`: the workspace's own scripts.
+      - name: Run CoSec workspace script tests
+        id: scripts
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        working-directory: cosec/typescript
+        run: node --test scripts/*.test.mjs
+
+      # The second half. Not `pnpm test:host`: it needs a CoSec host built with
+      # Gradle, which CoSec's own CI runs.
+      - name: Run CoSec TypeScript unit tests
+        id: test
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        working-directory: cosec/typescript
+        run: |
+          status=0
+          pnpm -r --no-bail --report-summary test || status=$?
+          mv pnpm-exec-summary.json "$RUNNER_TEMP/cosec-reports/test.json" || true
+          exit "$status"
+
+      - name: Summarise
+        if: ${{ always() }}
+        env:
+          COSEC_REF: ${{ inputs.cosec-ref || 'main' }}
+          NODE_VERSION: ${{ matrix.node-version }}
+          STEPS: ${{ toJSON(steps) }}
+        run: |
+          COSEC_SHA="$(git -C cosec rev-parse HEAD 2>/dev/null || true)" \
+            node fetcher/.github/scripts/downstream-cosec.mjs cosec/typescript "$RUNNER_TEMP/cosec-reports" >> "$GITHUB_STEP_SUMMARY"

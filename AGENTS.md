@@ -34,7 +34,8 @@ documentation example here may depend on `@ahoo-wang/wow-*`,
 `@ahoo-wang/cosec-*` or `@ahoo-wang/fetcher-cosec` (`.github/scripts/dependency-direction.mjs`,
 run in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests
 against changes to the core packages Wow consumes (`fetcher`, `decorator`,
-`eventstream`, `openapi`); it is advisory.
+`eventstream`, `openapi`), and `downstream-cosec.yml` runs CoSec's against
+changes to its peers (`fetcher`, `eventbus`, `storage`); both are advisory.
 
 ## Commands and Verification
 
