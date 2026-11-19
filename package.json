@@ -42,7 +42,7 @@
   "bugs": {
     "url": "https://github.com/Ahoo-Wang/fetcher/issues"
   },
-  "packageManager": "pnpm@10.34.6",
+  "packageManager": "pnpm@10.34.9",
   "engines": {
     "node": ">=22.12.0"
   },
