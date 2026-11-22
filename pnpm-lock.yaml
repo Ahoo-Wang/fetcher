@@ -693,8 +693,8 @@ importers:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.52.1)(@types/node@24.19.2)(@types/react@19.3.0)(less@4.9.1)(lightningcss@1.33.0)(postcss@8.5.33)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(search-insights@2.17.3)(typescript@6.0.3)
       vitepress-mermaid-renderer:
-        specifier: ^1.2.2
-        version: 1.2.2(mermaid@11.15.0)(vue@3.5.34(typescript@6.0.3))
+        specifier: ^1.2.3
+        version: 1.2.3(mermaid@11.15.0)(vue@3.5.34(typescript@6.0.3))
 
 packages:
 
@@ -5397,8 +5397,8 @@ packages:
       yaml:
         optional: true
 
-  vitepress-mermaid-renderer@1.2.2:
-    resolution: {integrity: sha512-ae+FXMF6of+ELj3XDTW8iA8eeepVePIRLfffzr0mHz4R9CqUfExtLI3aaaDmPm6IELTH68SCBHQENnaBz7WSjg==}
+  vitepress-mermaid-renderer@1.2.3:
+    resolution: {integrity: sha512-qcUM8CPLZSH920rAQctUPKwkbp+Pxc/ZnO6m1ne3k0Vyx/1T0svMlCfgH55ylVFHZgAiL70/OxR0TYDOyx8rKw==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       '@mermaid-js/mermaid-zenuml': ^1.0.0
@@ -10555,7 +10555,7 @@ snapshots:
       less: 4.9.1
       yaml: 2.9.1
 
-  vitepress-mermaid-renderer@1.2.2(mermaid@11.15.0)(vue@3.5.34(typescript@6.0.3)):
+  vitepress-mermaid-renderer@1.2.3(mermaid@11.15.0)(vue@3.5.34(typescript@6.0.3)):
     dependencies:
       mermaid: 11.15.0
       vue: 3.5.34(typescript@6.0.3)
