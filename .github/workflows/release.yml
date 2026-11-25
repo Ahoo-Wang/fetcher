@@ -23,6 +23,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node .github/scripts/release-admission.mjs
 
+      # Before building: every package carries one lowercase semver version
+      # that matches the GitHub release's tag and pre-release flag
+      # (scripts/release-version.mjs). Empty on workflow_dispatch.
+      - name: Check release version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: node scripts/release-version.mjs check
+
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
@@ -45,3 +54,5 @@ jobs:
         run: ./scripts/publish-npm.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
