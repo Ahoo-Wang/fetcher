@@ -1,6 +1,6 @@
 {
   "name": "@ahoo-wang/fetcher-react",
-  "version": "6.1.0",
+  "version": "8.0.0-rc.1",
   "description": "React integration for Fetcher HTTP client. React hooks that turn cancellable requests into component state, plus security, storage and event-bus bindings.",
   "keywords": [
     "fetch",
