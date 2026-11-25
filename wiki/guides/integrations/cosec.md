@@ -1,7 +1,7 @@
 ---
 next: false
 title: Move CoSec Authentication to the CoSec Packages
-description: Replace fetcher-cosec and the fetcher-react security hooks with the CoSec repository's packages, or stay on fetcher 6.x for a CoSec 7.x server.
+description: Replace fetcher-cosec and the fetcher-react security hooks with the CoSec repository's packages on the fetcher version their peers accept, or stay on fetcher 6.x for a CoSec 7.x server.
 ---
 
 # Move CoSec Authentication to the CoSec Packages
@@ -15,26 +15,34 @@ Fetcher 8.0 ships no CoSec code. The CoSec client and its React hooks now live i
 
 The rest of `@ahoo-wang/fetcher-react` is unchanged in 8.0.
 
-## Choose by the server's CoSec version
+## Which fetcher version to install
 
-| Your server runs | Use                                                                                                                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CoSec 8          | Fetcher 8 with `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`. They speak the CoSec 8 protocol.                                                               |
-| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x). |
+The CoSec packages are built on fetcher: `@ahoo-wang/cosec-fetcher` takes `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventbus` and `@ahoo-wang/fetcher-storage` as peer dependencies, and those peer ranges decide which fetcher major goes with it. Read them for the version you install:
 
-`@ahoo-wang/fetcher-cosec` is not published for fetcher 8. Upgrade the server to CoSec 8 before moving the client to fetcher 8.
+```bash
+npm view @ahoo-wang/cosec-fetcher@rc peerDependencies
+```
+
+`8.0.0-rc.1` accepts fetcher `^6.1.1` (6.1.1 or a later 6.x), not fetcher 8 yet. From CoSec 8.0.0 the CoSec packages accept fetcher 8 as well. Moving to fetcher 8 before your CoSec packages accept it ends in a peer-dependency conflict.
+
+| Your server runs | Client                                                                                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8          | `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`, on the fetcher major their peer ranges accept: 6.x (6.1.1 or later) with `8.0.0-rc.1`, fetcher 8 from CoSec 8.0.0. |
+| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x).      |
+
+`@ahoo-wang/fetcher-cosec` is not published for fetcher 8, so an application that uses CoSec reaches fetcher 8 through the CoSec packages.
 
 ## Steps
 
 1. Upgrade the server to CoSec 8.
-2. Remove `@ahoo-wang/fetcher-cosec` from the application and upgrade the `@ahoo-wang/fetcher*` packages to 8.
-3. Install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
+2. Remove `@ahoo-wang/fetcher-cosec` from the application and install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
 
    ```bash
    pnpm add @ahoo-wang/cosec-fetcher@rc
    pnpm add @ahoo-wang/cosec-react@rc   # React applications
    ```
 
-4. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
+3. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
+4. Keep the `@ahoo-wang/fetcher*` packages on the major the CoSec packages' peer ranges accept, and upgrade them to 8 once those ranges include it.
 
 [Return to this task group](./index.md); [review integration boundaries](../../architecture/integration-decisions.md).

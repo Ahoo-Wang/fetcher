@@ -1988,27 +1988,35 @@ Fetcher 8.0 ships no CoSec code. The CoSec client and its React hooks now live i
 
 The rest of `@ahoo-wang/fetcher-react` is unchanged in 8.0.
 
-## Choose by the server's CoSec version
+## Which fetcher version to install
 
-| Your server runs | Use                                                                                                                                                                                |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CoSec 8          | Fetcher 8 with `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`. They speak the CoSec 8 protocol.                                                               |
-| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x). |
+The CoSec packages are built on fetcher: `@ahoo-wang/cosec-fetcher` takes `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventbus` and `@ahoo-wang/fetcher-storage` as peer dependencies, and those peer ranges decide which fetcher major goes with it. Read them for the version you install:
 
-`@ahoo-wang/fetcher-cosec` is not published for fetcher 8. Upgrade the server to CoSec 8 before moving the client to fetcher 8.
+```bash
+npm view @ahoo-wang/cosec-fetcher@rc peerDependencies
+```
+
+`8.0.0-rc.1` accepts fetcher `^6.1.1` (6.1.1 or a later 6.x), not fetcher 8 yet. From CoSec 8.0.0 the CoSec packages accept fetcher 8 as well. Moving to fetcher 8 before your CoSec packages accept it ends in a peer-dependency conflict.
+
+| Your server runs | Client                                                                                                                                                                                  |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8          | `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`, on the fetcher major their peer ranges accept: 6.x (6.1.1 or later) with `8.0.0-rc.1`, fetcher 8 from CoSec 8.0.0. |
+| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x).      |
+
+`@ahoo-wang/fetcher-cosec` is not published for fetcher 8, so an application that uses CoSec reaches fetcher 8 through the CoSec packages.
 
 ## Steps
 
 1. Upgrade the server to CoSec 8.
-2. Remove `@ahoo-wang/fetcher-cosec` from the application and upgrade the `@ahoo-wang/fetcher*` packages to 8.
-3. Install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
+2. Remove `@ahoo-wang/fetcher-cosec` from the application and install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
 
    ```bash
    pnpm add @ahoo-wang/cosec-fetcher@rc
    pnpm add @ahoo-wang/cosec-react@rc   # React applications
    ```
 
-4. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
+3. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
+4. Keep the `@ahoo-wang/fetcher*` packages on the major the CoSec packages' peer ranges accept, and upgrade them to 8 once those ranges include it.
 
 [Return to this task group](./index.md); [review integration boundaries](../../architecture/integration-decisions.md).
 
@@ -18825,27 +18833,35 @@ Fetcher 8.0 不再包含任何 CoSec 代码。CoSec 客户端及其 React Hook �
 
 `@ahoo-wang/fetcher-react` 的其余部分在 8.0 中没有变化。
 
-## 按服务端的 CoSec 版本选择
+## 装哪个 fetcher 版本
 
-| 服务端运行 | 使用                                                                                                                                          |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| CoSec 8    | Fetcher 8，配合 `@ahoo-wang/cosec-fetcher`；React 应用再加 `@ahoo-wang/cosec-react`。它们实现 CoSec 8 协议。                                  |
-| CoSec 7.x  | 留在 fetcher 6.x：`@ahoo-wang/fetcher-cosec` 6.x 继续对接 CoSec 7，并从 [`6.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/6.x)接收修复。 |
+CoSec 的包建在 fetcher 之上：`@ahoo-wang/cosec-fetcher` 把 `@ahoo-wang/fetcher`、`@ahoo-wang/fetcher-eventbus`、`@ahoo-wang/fetcher-storage` 声明为对等依赖，搭配哪个 fetcher 大版本以这些对等依赖范围为准。安装前查看对应版本的声明：
 
-`@ahoo-wang/fetcher-cosec` 不会发布 fetcher 8 的版本。先把服务端升级到 CoSec 8，再把客户端迁到 fetcher 8。
+```bash
+npm view @ahoo-wang/cosec-fetcher@rc peerDependencies
+```
+
+`8.0.0-rc.1` 接受 fetcher `^6.1.1`（6.1.1 及以上的 6.x），还不接受 fetcher 8。CoSec 8.0.0 起 CoSec 的包同时接受 fetcher 8。在 CoSec 的包接受 fetcher 8 之前就升级 fetcher，会遇到对等依赖冲突。
+
+| 服务端运行 | 客户端                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8    | `@ahoo-wang/cosec-fetcher`，React 应用再加 `@ahoo-wang/cosec-react`，搭配它们对等依赖接受的 fetcher 大版本：`8.0.0-rc.1` 配 6.x（6.1.1 及以上），CoSec 8.0.0 起可配 fetcher 8。 |
+| CoSec 7.x  | 留在 fetcher 6.x：`@ahoo-wang/fetcher-cosec` 6.x 继续对接 CoSec 7，并从 [`6.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/6.x)接收修复。                                   |
+
+`@ahoo-wang/fetcher-cosec` 不会发布 fetcher 8 的版本，所以使用 CoSec 的应用要经由 CoSec 的包升级到 fetcher 8。
 
 ## 步骤
 
 1. 把服务端升级到 CoSec 8。
-2. 从应用中移除 `@ahoo-wang/fetcher-cosec`，并把 `@ahoo-wang/fetcher*` 各包升级到 8。
-3. 安装 CoSec 的包。CoSec 8.0 正式发布之前它们在 npm 的 `rc` 标签上：
+2. 从应用中移除 `@ahoo-wang/fetcher-cosec`，安装 CoSec 的包。CoSec 8.0 正式发布之前它们在 npm 的 `rc` 标签上：
 
    ```bash
    pnpm add @ahoo-wang/cosec-fetcher@rc
    pnpm add @ahoo-wang/cosec-react@rc   # React 应用
    ```
 
-4. 按 CoSec 文档里的新旧对照改写导入与配置：[cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。该页列出旧包每个导出的去向；请照它改写，不要假定只是换个导入路径。
+3. 按 CoSec 文档里的新旧对照改写导入与配置：[cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。该页列出旧包每个导出的去向；请照它改写，不要假定只是换个导入路径。
+4. `@ahoo-wang/fetcher*` 各包保持在 CoSec 的包对等依赖接受的大版本上，等这些范围包含 8 之后再升级到 8。
 
 [返回本任务组](./index.md)；[查看集成边界](../../architecture/integration-decisions.md)。
 
