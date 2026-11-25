@@ -44,7 +44,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react
 :::
 
 ::: info 安全 Hook 已迁到 CoSec
-`SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook 已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`，CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+`SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook 已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`。见 [CoSec 迁移指南](../../guides/integrations/cosec.md)。
 :::
 
 ::: info Wow 查询 Hook 与数据监控

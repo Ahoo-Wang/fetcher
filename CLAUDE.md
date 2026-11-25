@@ -76,7 +76,7 @@ The Wow-coupled packages live in [Ahoo-Wang/Wow](https://github.com/Ahoo-Wang/Wo
 
 ### Moved to the CoSec repository
 
-CoSec authentication lives in the CoSec repository under `typescript/`, versioned with CoSec: `@ahoo-wang/cosec-fetcher` (was `fetcher-cosec`) and `@ahoo-wang/cosec-react` (the security hooks from `fetcher-react`), on npm's `beta` tag until CoSec 8.0 GA. Docs: https://cosec.ahoo.me/integration/clients. Fetcher 6.x is the last line that carries `@ahoo-wang/fetcher-cosec`.
+CoSec authentication lives in the CoSec repository under `typescript/`, versioned with CoSec: `@ahoo-wang/cosec-fetcher` (was `fetcher-cosec`) and `@ahoo-wang/cosec-react` (the security hooks from `fetcher-react`). Docs: https://cosec.ahoo.me/integration/clients; migration page: `wiki/guides/integrations/cosec.md`. Fetcher 6.x (`6.x` branch) is the last line that carries `@ahoo-wang/fetcher-cosec`, for applications whose server runs CoSec 7.x; fetcher 8 carries none.
 
 Dependencies run one way, **Wow → fetcher** and **CoSec → fetcher**: no package, integration test or documentation example here may depend on `@ahoo-wang/wow-*`, `@ahoo-wang/cosec-*` or `@ahoo-wang/fetcher-cosec` (checked by `.github/scripts/dependency-direction.mjs` in Engineering Quality). `downstream-wow.yml` runs Wow's TypeScript tests against changes to the core packages Wow uses: `fetcher`, `decorator`, `eventstream` and `openapi` (advisory). `downstream-cosec.yml` does the same for CoSec's TypeScript against its peers `fetcher`, `eventbus` and `storage`, on CoSec's own Node and pnpm (advisory).
 

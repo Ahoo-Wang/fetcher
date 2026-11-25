@@ -1,5 +1,4 @@
 ---
-next: false
 title: Share State and Events
 description: Verify local state and ordered events, then opt into browser tab notifications.
 ---

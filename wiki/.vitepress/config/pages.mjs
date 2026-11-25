@@ -66,7 +66,7 @@ export const readingGroups = [
   },
   {
     directory: 'guides/integrations',
-    topics: ['index', 'wow', 'storage-and-events'],
+    topics: ['index', 'wow', 'storage-and-events', 'cosec'],
   },
   {
     directory: 'architecture',

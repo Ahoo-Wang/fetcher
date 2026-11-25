@@ -44,7 +44,7 @@ The hooks were reworked around the model above (breaking). Removed: the fullscre
 :::
 
 ::: info Security hooks moved to CoSec
-`SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the rest of the security hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository, on npm's `beta` tag until CoSec 8.0 GA. See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+`SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the rest of the security hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository. See [the CoSec migration guide](../../guides/integrations/cosec.md).
 :::
 
 ::: info Wow query hooks and data monitoring

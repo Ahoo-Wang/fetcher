@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-11-18.
+> All documentation pages inlined for LLM consumption. Generated 2026-11-25.
 
 ## Overview
 
@@ -1700,8 +1700,7 @@ Wow requires compatible server protocols and application-specific routes. Storag
 
 - [Send commands and query state](./wow.md) (5.x only; from 6.0 see [wow.ahoo.me](https://wow.ahoo.me))
 - [Share storage and events](./storage-and-events.md)
-
-CoSec authentication moved to the CoSec repository: use `@ahoo-wang/cosec-fetcher` (was `@ahoo-wang/fetcher-cosec`) and `@ahoo-wang/cosec-react` (was the security hooks in `@ahoo-wang/fetcher-react`), on npm's `beta` tag until CoSec 8.0 GA. See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+- [Move CoSec authentication to the CoSec packages](./cosec.md) (`@ahoo-wang/cosec-fetcher` replaces `@ahoo-wang/fetcher-cosec`; `@ahoo-wang/cosec-react` replaces the security hooks of `@ahoo-wang/fetcher-react`)
 
 [All guides](../index.md) · [Integration decisions](../../architecture/integration-decisions.md)
 
@@ -1973,6 +1972,45 @@ See [storage lifecycle](../../reference/storage/key-storage), [serialization and
 [keyStorage.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L153) selects the default local bus, which `destroy()` closes.
 
 [Review integration boundaries](../../architecture/integration-decisions.md); [return to this task group](./index.md).
+
+</doc>
+
+<doc title="Move CoSec Authentication to the CoSec Packages" path="guides/integrations/cosec.md">
+
+# Move CoSec Authentication to the CoSec Packages
+
+Fetcher 8.0 ships no CoSec code. The CoSec client and its React hooks now live in the [CoSec repository](https://github.com/Ahoo-Wang/CoSec) under `typescript/`, are released with CoSec and carry CoSec's version. They depend on the fetcher packages; nothing in fetcher depends on them.
+
+| Fetcher 6.x                                                                                                                         | CoSec 8                    |
+| ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `@ahoo-wang/fetcher-cosec`                                                                                                          | `@ahoo-wang/cosec-fetcher` |
+| `SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the other security hooks in `@ahoo-wang/fetcher-react` | `@ahoo-wang/cosec-react`   |
+
+The rest of `@ahoo-wang/fetcher-react` is unchanged in 8.0.
+
+## Choose by the server's CoSec version
+
+| Your server runs | Use                                                                                                                                                                                |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8          | Fetcher 8 with `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`. They speak the CoSec 8 protocol.                                                               |
+| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x). |
+
+`@ahoo-wang/fetcher-cosec` is not published for fetcher 8. Upgrade the server to CoSec 8 before moving the client to fetcher 8.
+
+## Steps
+
+1. Upgrade the server to CoSec 8.
+2. Remove `@ahoo-wang/fetcher-cosec` from the application and upgrade the `@ahoo-wang/fetcher*` packages to 8.
+3. Install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
+
+   ```bash
+   pnpm add @ahoo-wang/cosec-fetcher@rc
+   pnpm add @ahoo-wang/cosec-react@rc   # React applications
+   ```
+
+4. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
+
+[Return to this task group](./index.md); [review integration boundaries](../../architecture/integration-decisions.md).
 
 </doc>
 
@@ -2266,7 +2304,7 @@ Fetcher main ships no table or data-view component. `@ahoo-wang/fetcher-viewer` 
 
 Client-side conditions describe the query sent; they are not access control. Command stages describe protocol progress; they are not a universal consistency guarantee. SSE extraction requires a readable body ([packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)).
 
-Continue with [streaming](../guides/streaming/index.md). CoSec authentication moved to the CoSec repository: use `@ahoo-wang/cosec-fetcher` (was `@ahoo-wang/fetcher-cosec`) and `@ahoo-wang/cosec-react` (was the security hooks in `@ahoo-wang/fetcher-react`), on npm's `beta` tag until CoSec 8.0 GA. See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients). The Wow client belongs to the 5.x line ([Wow guide](../guides/integrations/wow.md)); from 6.0 it is documented at [wow.ahoo.me](https://wow.ahoo.me). Before sharing these integrations across identities, read [runtime support](./runtime-support.md); before adding retries, read the [failure model](./failure-model.md).
+Continue with [streaming](../guides/streaming/index.md). CoSec authentication moved to the CoSec repository: use `@ahoo-wang/cosec-fetcher` (was `@ahoo-wang/fetcher-cosec`) and `@ahoo-wang/cosec-react` (was the security hooks in `@ahoo-wang/fetcher-react`); see [the CoSec migration guide](../guides/integrations/cosec.md). The Wow client belongs to the 5.x line ([Wow guide](../guides/integrations/wow.md)); from 6.0 it is documented at [wow.ahoo.me](https://wow.ahoo.me). Before sharing these integrations across identities, read [runtime support](./runtime-support.md); before adding retries, read the [failure model](./failure-model.md).
 
 </doc>
 
@@ -6593,7 +6631,7 @@ The hooks were reworked around the model above (breaking). Removed: the fullscre
 :::
 
 ::: info Security hooks moved to CoSec
-`SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the rest of the security hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository, on npm's `beta` tag until CoSec 8.0 GA. See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+`SecurityProvider`, `useSecurity`, `RouteGuard`, `RefreshableRouteGuard` and the rest of the security hooks moved to `@ahoo-wang/cosec-react` in the CoSec repository. See [the CoSec migration guide](../../guides/integrations/cosec.md).
 :::
 
 ::: info Wow query hooks and data monitoring
@@ -18499,8 +18537,7 @@ Wow 需要兼容的服务端协议和应用路由。存储与本地事件不需�
 
 - [发送命令与查询状态](./wow.md)（仅 5.x；6.0 起见 [wow.ahoo.me](https://wow.ahoo.me)）
 - [组合存储与事件](./storage-and-events.md)
-
-CoSec 认证已迁到 CoSec 仓库：改用 `@ahoo-wang/cosec-fetcher`（原 `@ahoo-wang/fetcher-cosec`）与 `@ahoo-wang/cosec-react`（原 `@ahoo-wang/fetcher-react` 中的安全 Hook），CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+- [把 CoSec 认证迁到 CoSec 的包](./cosec.md)（`@ahoo-wang/cosec-fetcher` 取代 `@ahoo-wang/fetcher-cosec`；`@ahoo-wang/cosec-react` 取代 `@ahoo-wang/fetcher-react` 的安全 Hook）
 
 [全部指南](../index.md) · [集成决策](../../architecture/integration-decisions.md)
 
@@ -18772,6 +18809,45 @@ export function watchTheme(onTheme: (theme: string) => void) {
 [keyStorage.ts:153](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/storage/src/keyStorage.ts#L153) 选择默认本地总线，`destroy()` 会关闭它。
 
 [评估集成边界](../../architecture/integration-decisions.md)；[返回本组任务](./index.md)。
+
+</doc>
+
+<doc title="把 CoSec 认证迁到 CoSec 的包" path="zh/guides/integrations/cosec.md">
+
+# 把 CoSec 认证迁到 CoSec 的包
+
+Fetcher 8.0 不再包含任何 CoSec 代码。CoSec 客户端及其 React Hook 现在位于 [CoSec 仓库](https://github.com/Ahoo-Wang/CoSec)的 `typescript/` 下，随 CoSec 发布，版本号与 CoSec 一致。它们依赖 fetcher 的包；fetcher 里没有任何东西依赖它们。
+
+| Fetcher 6.x                                                                                                          | CoSec 8                    |
+| -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `@ahoo-wang/fetcher-cosec`                                                                                           | `@ahoo-wang/cosec-fetcher` |
+| `@ahoo-wang/fetcher-react` 里的 `SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook | `@ahoo-wang/cosec-react`   |
+
+`@ahoo-wang/fetcher-react` 的其余部分在 8.0 中没有变化。
+
+## 按服务端的 CoSec 版本选择
+
+| 服务端运行 | 使用                                                                                                                                          |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8    | Fetcher 8，配合 `@ahoo-wang/cosec-fetcher`；React 应用再加 `@ahoo-wang/cosec-react`。它们实现 CoSec 8 协议。                                  |
+| CoSec 7.x  | 留在 fetcher 6.x：`@ahoo-wang/fetcher-cosec` 6.x 继续对接 CoSec 7，并从 [`6.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/6.x)接收修复。 |
+
+`@ahoo-wang/fetcher-cosec` 不会发布 fetcher 8 的版本。先把服务端升级到 CoSec 8，再把客户端迁到 fetcher 8。
+
+## 步骤
+
+1. 把服务端升级到 CoSec 8。
+2. 从应用中移除 `@ahoo-wang/fetcher-cosec`，并把 `@ahoo-wang/fetcher*` 各包升级到 8。
+3. 安装 CoSec 的包。CoSec 8.0 正式发布之前它们在 npm 的 `rc` 标签上：
+
+   ```bash
+   pnpm add @ahoo-wang/cosec-fetcher@rc
+   pnpm add @ahoo-wang/cosec-react@rc   # React 应用
+   ```
+
+4. 按 CoSec 文档里的新旧对照改写导入与配置：[cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。该页列出旧包每个导出的去向；请照它改写，不要假定只是换个导入路径。
+
+[返回本任务组](./index.md)；[查看集成边界](../../architecture/integration-decisions.md)。
 
 </doc>
 
@@ -19062,7 +19138,7 @@ Fetcher main 不提供表格或数据视图组件。`@ahoo-wang/fetcher-viewer`�
 
 客户端条件描述发送的查询，不是访问控制。命令阶段描述协议进度，不是通用一致性保证。SSE 提取要求可读响应体（[packages/eventstream/src/eventStreamResultExtractor.ts:41](https://github.com/Ahoo-Wang/fetcher/blob/main/packages/eventstream/src/eventStreamResultExtractor.ts#L41)）。
 
-继续阅读[流处理](../guides/streaming/index.md)。CoSec 认证已迁到 CoSec 仓库：改用 `@ahoo-wang/cosec-fetcher`（原 `@ahoo-wang/fetcher-cosec`）与 `@ahoo-wang/cosec-react`（原 `@ahoo-wang/fetcher-react` 中的安全 Hook），CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。Wow 客户端属于 5.x 线（[Wow 指南](../guides/integrations/wow.md)）；从 6.0 起文档位于 [wow.ahoo.me](https://wow.ahoo.me)。跨身份共享这些集成前阅读[运行环境](./runtime-support.md)；增加重试前阅读[失败模型](./failure-model.md)。
+继续阅读[流处理](../guides/streaming/index.md)。CoSec 认证已迁到 CoSec 仓库：改用 `@ahoo-wang/cosec-fetcher`（原 `@ahoo-wang/fetcher-cosec`）与 `@ahoo-wang/cosec-react`（原 `@ahoo-wang/fetcher-react` 中的安全 Hook），见 [CoSec 迁移指南](../guides/integrations/cosec.md)。Wow 客户端属于 5.x 线（[Wow 指南](../guides/integrations/wow.md)）；从 6.0 起文档位于 [wow.ahoo.me](https://wow.ahoo.me)。跨身份共享这些集成前阅读[运行环境](./runtime-support.md)；增加重试前阅读[失败模型](./failure-model.md)。
 
 </doc>
 
@@ -23381,7 +23457,7 @@ pnpm add @ahoo-wang/fetcher @ahoo-wang/fetcher-eventbus @ahoo-wang/fetcher-react
 :::
 
 ::: info 安全 Hook 已迁到 CoSec
-`SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook 已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`，CoSec 8.0 GA 之前在 npm 的 `beta` 标签上。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+`SecurityProvider`、`useSecurity`、`RouteGuard`、`RefreshableRouteGuard` 等安全 Hook 已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`。见 [CoSec 迁移指南](../../guides/integrations/cosec.md)。
 :::
 
 ::: info Wow 查询 Hook 与数据监控
