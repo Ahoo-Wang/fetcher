@@ -100,7 +100,7 @@ CoSec authentication now lives in the CoSec repository, is versioned with CoSec,
 | `@ahoo-wang/fetcher-cosec`        | `@ahoo-wang/cosec-fetcher` |
 | Security hooks in `fetcher-react` | `@ahoo-wang/cosec-react`   |
 
-They are on npm's `beta` tag until CoSec 8.0 GA. Documentation: [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+Fetcher 8 ships no CoSec package; applications whose server still runs CoSec 7.x stay on fetcher 6.x (`6.x` branch), where `@ahoo-wang/fetcher-cosec` keeps working. Migration: [CoSec migration guide](https://fetcher.ahoo.me/guides/integrations/cosec); old-to-new mapping: [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 
 ## Learn and build
 

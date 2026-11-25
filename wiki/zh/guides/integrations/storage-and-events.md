@@ -1,5 +1,4 @@
 ---
-next: false
 title: 共享状态与事件
 description: 验证本地状态与顺序投递，再按需启用浏览器标签页通知。
 ---

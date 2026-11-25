@@ -11,8 +11,8 @@ pnpm add react react-dom @ahoo-wang/fetcher @ahoo-wang/fetcher-react
 按导入的集成安装对应 peer 包：EventBus 或 Storage。
 
 > **安全 Hook 已迁出。** `SecurityProvider`、`useSecurity`、`RouteGuard`、
-> `RefreshableRouteGuard` 等已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`
-> （CoSec 8.0 GA 之前在 npm 的 `beta` 标签上）。见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+> `RefreshableRouteGuard` 等已迁到 CoSec 仓库的 `@ahoo-wang/cosec-react`。
+> 见 [CoSec 迁移指南](https://fetcher.ahoo.me/zh/guides/integrations/cosec)。
 
 > **Wow 查询 Hook 已迁出。** `useSingleQuery`、`useListQuery`、`usePagedQuery`、
 > `useCountQuery`、`useListStreamQuery` 等 Wow Hook 已迁往

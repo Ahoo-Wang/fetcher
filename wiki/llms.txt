@@ -62,6 +62,7 @@
 - [Platform integrations](/guides/integrations/) — Choose a concrete task for platform integrations.
 - [Send a Wow Command and Read State](/guides/integrations/wow) — Configure application aggregate routes, inspect command results, and query or stream snapshot state.
 - [Share State and Events](/guides/integrations/storage-and-events) — Verify local state and ordered events, then opt into browser tab notifications.
+- [Move CoSec Authentication to the CoSec Packages](/guides/integrations/cosec) — Replace fetcher-cosec and the fetcher-react security hooks with the CoSec repository's packages on the fetcher version their peers accept, or stay on fetcher 6.x for a CoSec 7.x server.
 
 ## architecture
 

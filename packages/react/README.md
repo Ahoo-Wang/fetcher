@@ -13,8 +13,8 @@ storage.
 
 > **Security hooks have moved.** `SecurityProvider`, `useSecurity`,
 > `RouteGuard`, `RefreshableRouteGuard` and the rest moved to
-> `@ahoo-wang/cosec-react` in the CoSec repository (npm `beta` tag until
-> CoSec 8.0 GA). See [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+> `@ahoo-wang/cosec-react` in the CoSec repository. See the
+> [CoSec migration guide](https://fetcher.ahoo.me/guides/integrations/cosec).
 
 > **Wow query hooks have moved.** `useSingleQuery`, `useListQuery`,
 > `usePagedQuery`, `useCountQuery`, `useListStreamQuery` and the other Wow

@@ -96,7 +96,7 @@ CoSec 认证已迁到 CoSec 仓库，版本跟随 CoSec，依赖上面这些 fet
 | `@ahoo-wang/fetcher-cosec`    | `@ahoo-wang/cosec-fetcher` |
 | `fetcher-react` 里的安全 Hook | `@ahoo-wang/cosec-react`   |
 
-CoSec 8.0 GA 之前它们在 npm 的 `beta` 标签上。文档见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+Fetcher 8 不含任何 CoSec 包；服务端仍运行 CoSec 7.x 的应用留在 fetcher 6.x（`6.x` 分支），其中的 `@ahoo-wang/fetcher-cosec` 继续可用。迁移见 [CoSec 迁移指南](https://fetcher.ahoo.me/zh/guides/integrations/cosec)；新旧对照见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 
 ## 学习与构建
 
