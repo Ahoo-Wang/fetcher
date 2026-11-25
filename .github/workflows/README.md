@@ -148,7 +148,39 @@ Third-party pnpm/Codecov/labeler actions are pinned to verified commit SHAs.
 
 `pnpm update-version <version>` versions every workspace package and
 `scripts/publish-npm.sh` publishes every scoped one. The isolated
-release-script test uses a fake publisher and never sends packages to npm.
+release-script test uses a fake publisher and a fake `npm view` and never
+sends packages to npm.
+
+Before building, the release workflow runs `scripts/release-version.mjs check`
+(and the publisher runs it again): every versioned `package.json` must carry
+the same version, written `MAJOR.MINOR.PATCH` or
+`MAJOR.MINOR.PATCH-<lowercase word>.<number>` (`8.0.0-rc.1`; semver compares
+prerelease identifiers by ASCII, so `8.0.0-RC1` would sort below
+`8.0.0-beta.9`), the GitHub release's tag must be `v<version>`, and its
+pre-release flag must match whether the version is a prerelease. Each package
+is then published with an explicit dist-tag (npm refuses a prerelease without
+one, and otherwise moves `latest` to whatever was published):
+
+| Version                                        | dist-tag                                |
+| ---------------------------------------------- | --------------------------------------- |
+| prerelease (`8.0.0-rc.1`, `8.0.0-beta.2`)      | its word (`rc`, `beta`), never `latest` |
+| stable, at or above the package's npm `latest` | `latest`                                |
+| stable, below the package's npm `latest`       | `latest-<major>` (`latest-6`)           |
+
+The last row keeps a maintenance release (6.x after 8.0.0) from taking
+`latest` back; it is decided per package, so a package with no newer major
+(`fetcher-cosec`) keeps `latest`. `NPM_DIST_TAG` overrides the choice but
+cannot put a prerelease on `latest`.
+
+`release-version.mjs plan` makes every npm lookup before the first package
+goes out: each package's dist-tag and whether npm already has this version
+(`npm view <name>@<version> version`). A lookup that fails other than with a
+404 stops the release with nothing published. A package npm already has is
+skipped and named in the log, so rerunning a release that stopped part-way
+publishes only the rest. The publish loop reads the plan from its own file
+descriptor, so a publisher that reads standard input (npm asking for a
+one-time password) cannot swallow the remaining packages, and it exits
+non-zero unless published plus skipped equals the number of planned packages.
 
 Admission reads `git rev-parse HEAD` after checkout (including release tags), then
 requires the latest successful `push` or `workflow_dispatch` run for that SHA of
