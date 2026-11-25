@@ -47,12 +47,18 @@ function workspace(versions) {
  * dist-tags.latest` answers from NPM_LATEST (a JSON map), `npm view
  * <name>@<version> version` from NPM_PUBLISHED (a JSON list of specs), E404
  * otherwise; a name listed in NPM_FAIL fails like an unreachable registry.
+ * With `readsStdin`, `pnpm` first reads its standard input to the end, the
+ * way npm does when it prompts for a one-time password. With `drainsFd3` it
+ * reads the inherited plan descriptor, which ends the publish loop early.
  */
-function fakeTools(dir) {
+function fakeTools(dir, { readsStdin = false, drainsFd3 = false } = {}) {
   mkdirSync(join(dir, 'bin'));
   writeFileSync(
     join(dir, 'bin/pnpm'),
-    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$PUBLISH_LOG"\n',
+    '#!/bin/sh\n' +
+      (readsStdin ? 'cat > /dev/null\n' : '') +
+      (drainsFd3 ? 'cat <&3 > /dev/null\n' : '') +
+      'printf "%s\\n" "$*" >> "$PUBLISH_LOG"\n',
     { mode: 0o755 },
   );
   writeFileSync(
@@ -389,6 +395,41 @@ test('publishPlan decides every tag and published state up front', () => {
           },
         }),
       /registry down/,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a publisher that reads standard input does not swallow the rest of the plan', () => {
+  const dir = workspace(aligned('8.0.0-rc.1'));
+  try {
+    fakeTools(dir, { readsStdin: true });
+    assert.equal(
+      publish(dir),
+      'publish packages/fetcher/ --access public --no-git-checks --tag rc\n' +
+        'publish packages/react/ --access public --no-git-checks --tag rc\n',
+    );
+    assert.match(publish.stdout, /Published 2, skipped 0 of 2 packages/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('the publisher fails when the loop ends before the plan does', () => {
+  const dir = workspace(aligned('8.0.0-rc.1'));
+  try {
+    fakeTools(dir, { drainsFd3: true });
+    assert.throws(
+      () => publish(dir),
+      error =>
+        /Expected 2 packages to be published or skipped/.test(
+          String(error.stderr),
+        ) && /Published 1, skipped 0 of 2/.test(String(error.stdout)),
+    );
+    assert.equal(
+      readFileSync(join(dir, 'published'), 'utf8'),
+      'publish packages/fetcher/ --access public --no-git-checks --tag rc\n',
     );
   } finally {
     rmSync(dir, { recursive: true, force: true });

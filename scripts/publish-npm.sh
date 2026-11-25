@@ -23,15 +23,29 @@ echo "Starting NPM publish process..."
 version=$(node "$script_dir/release-version.mjs" check)
 echo "Release version $version"
 plan=$(node "$script_dir/release-version.mjs" plan)
+planned=$(grep -c . <<< "$plan" || true)
 
-while IFS=$'\t' read -r package package_name tag state; do
+# The plan is read from fd 3, not stdin: pnpm publish (npm, when it prompts
+# for a one-time password) may read stdin and would swallow the rest of it.
+published=0
+skipped=0
+while IFS=$'\t' read -r -u 3 package package_name tag state; do
   [ -n "$package" ] || continue
   if [ "$state" = "published" ]; then
     echo "Skipping $package_name@$version: already on npm"
+    skipped=$((skipped + 1))
     continue
   fi
   echo "Publishing $package_name@$version with dist-tag $tag"
   pnpm publish "$package" --access public --no-git-checks --tag "$tag"
-done <<< "$plan"
+  published=$((published + 1))
+done 3<<< "$plan"
+
+echo "Published $published, skipped $skipped of $planned packages"
+# Whatever ends the loop early must not end as a success.
+if [ $((published + skipped)) -ne "$planned" ]; then
+  echo "Expected $planned packages to be published or skipped" >&2
+  exit 1
+fi
 
 echo "NPM publish process completed successfully!"

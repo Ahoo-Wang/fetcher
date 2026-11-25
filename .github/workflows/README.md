@@ -181,7 +181,10 @@ goes out: each package's dist-tag and whether npm already has this version
 (`npm view <name>@<version> version`). A lookup that fails other than with a
 404 stops the release with nothing published. A package npm already has is
 skipped and named in the log, so rerunning a release that stopped part-way
-publishes only the rest.
+publishes only the rest. The publish loop reads the plan from its own file
+descriptor, so a publisher that reads standard input (npm asking for a
+one-time password) cannot swallow the remaining packages, and it exits
+non-zero unless published plus skipped equals the number of planned packages.
 
 Admission reads `git rev-parse HEAD` after checkout (including release tags), then
 requires the latest successful `push` or `workflow_dispatch` run for that SHA of
