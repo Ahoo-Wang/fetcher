@@ -2,22 +2,50 @@
 
 # Publish the packages in the monorepo to NPM
 # This script is called from the GitHub Actions release workflow
+#
+# scripts/release-version.mjs decides everything before the first package
+# goes out:
+# - every package carries one lowercase semver version, matching RELEASE_TAG /
+#   RELEASE_PRERELEASE (from the GitHub release) when they are set;
+# - each package's dist-tag: a prerelease (8.0.0-rc.1) under its word (rc),
+#   never latest; a stable version under latest, or latest-<major> when npm's
+#   latest is already higher (a maintenance release). NPM_DIST_TAG overrides it;
+# - which packages npm already has at this version, so rerunning a release
+#   that stopped half-way publishes only the rest.
+# A failed npm lookup stops the release before anything is published.
 
 set -e
 
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 echo "Starting NPM publish process..."
 
-# Publish each package in the monorepo
-for package in packages/*/; do
-  if [ -f "$package/package.json" ]; then
-    package_name=$(node -p "require('./$package/package.json').name")
-    if [[ "$package_name" != *"@"* ]]; then
-      echo "Skipping $package_name as it's not a scoped package"
-      continue
-    fi
-    echo "Publishing $package_name"
-    pnpm publish "$package" --access public --no-git-checks
+version=$(node "$script_dir/release-version.mjs" check)
+echo "Release version $version"
+plan=$(node "$script_dir/release-version.mjs" plan)
+planned=$(grep -c . <<< "$plan" || true)
+
+# The plan is read from fd 3, not stdin: pnpm publish (npm, when it prompts
+# for a one-time password) may read stdin and would swallow the rest of it.
+published=0
+skipped=0
+while IFS=$'\t' read -r -u 3 package package_name tag state; do
+  [ -n "$package" ] || continue
+  if [ "$state" = "published" ]; then
+    echo "Skipping $package_name@$version: already on npm"
+    skipped=$((skipped + 1))
+    continue
   fi
-done
+  echo "Publishing $package_name@$version with dist-tag $tag"
+  pnpm publish "$package" --access public --no-git-checks --tag "$tag"
+  published=$((published + 1))
+done 3<<< "$plan"
+
+echo "Published $published, skipped $skipped of $planned packages"
+# Whatever ends the loop early must not end as a success.
+if [ $((published + skipped)) -ne "$planned" ]; then
+  echo "Expected $planned packages to be published or skipped" >&2
+  exit 1
+fi
 
 echo "NPM publish process completed successfully!"
