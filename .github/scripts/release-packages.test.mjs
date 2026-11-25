@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   writeFileSync,
@@ -19,6 +20,7 @@ import {
   compareVersions,
   distTag,
   parseVersion,
+  publishPlan,
   releaseVersion,
 } from '../../scripts/release-version.mjs';
 
@@ -41,8 +43,10 @@ function workspace(versions) {
 }
 
 /**
- * Fake `pnpm` (logs its arguments) and `npm` (answers `npm view <name>
- * dist-tags.latest` from NPM_LATEST, a JSON map; E404 for other names).
+ * Fake `pnpm` (logs its arguments) and `npm`: `npm view <name>
+ * dist-tags.latest` answers from NPM_LATEST (a JSON map), `npm view
+ * <name>@<version> version` from NPM_PUBLISHED (a JSON list of specs), E404
+ * otherwise; a name listed in NPM_FAIL fails like an unreachable registry.
  */
 function fakeTools(dir) {
   mkdirSync(join(dir, 'bin'));
@@ -54,8 +58,15 @@ function fakeTools(dir) {
   writeFileSync(
     join(dir, 'bin/npm'),
     '#!/usr/bin/env node\n' +
-      'const latest = JSON.parse(process.env.NPM_LATEST || "{}")[process.argv[3]];\n' +
-      'if (latest) console.log(latest);\n' +
+      'const [, , , spec, field] = process.argv;\n' +
+      'const [, name, version] = /^(@[^/]+\\/[^@]+)(?:@(.+))?$/.exec(spec);\n' +
+      'if (JSON.parse(process.env.NPM_FAIL || "[]").includes(name)) {\n' +
+      '  console.error("npm error code ETIMEDOUT"); process.exit(1);\n' +
+      '}\n' +
+      'const answer = field === "version"\n' +
+      '  ? JSON.parse(process.env.NPM_PUBLISHED || "[]").includes(spec) && version\n' +
+      '  : JSON.parse(process.env.NPM_LATEST || "{}")[name];\n' +
+      'if (answer) console.log(answer);\n' +
       'else { console.error("npm error code E404"); process.exit(1); }\n',
     { mode: 0o755 },
   );
@@ -63,7 +74,7 @@ function fakeTools(dir) {
 
 function publish(dir, env = {}) {
   const log = join(dir, 'published');
-  execFileSync('bash', [resolve('scripts/publish-npm.sh')], {
+  const stdout = execFileSync('bash', [resolve('scripts/publish-npm.sh')], {
     cwd: dir,
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
@@ -73,10 +84,14 @@ function publish(dir, env = {}) {
       NPM_DIST_TAG: '',
       RELEASE_TAG: '',
       RELEASE_PRERELEASE: '',
+      NPM_LATEST: '',
+      NPM_PUBLISHED: '',
+      NPM_FAIL: '',
       ...env,
     },
   });
-  return readFileSync(log, 'utf8');
+  publish.stdout = String(stdout);
+  return existsSync(log) ? readFileSync(log, 'utf8') : '';
 }
 
 const PATHS = ['', 'integration-test', 'packages/fetcher', 'packages/react'];
@@ -158,7 +173,7 @@ test('nothing is published when the versions or the release disagree', () => {
     try {
       fakeTools(dir);
       assert.throws(() => publish(dir, env), JSON.stringify([versions, env]));
-      assert.throws(() => readFileSync(join(dir, 'published')));
+      assert.equal(existsSync(join(dir, 'published')), false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -274,4 +289,108 @@ test('the release workflow checks the version and hands the release to the publi
     readFileSync('scripts/publish-npm.sh', 'utf8'),
     /pnpm publish "\$package" --access public --no-git-checks --tag "\$tag"/,
   );
+});
+
+test('a rerun publishes only the packages npm does not have yet', () => {
+  const dir = workspace(aligned('8.0.0-rc.1'));
+  try {
+    fakeTools(dir);
+    assert.equal(
+      publish(dir, {
+        NPM_PUBLISHED: JSON.stringify(['@ahoo-wang/fetcher@8.0.0-rc.1']),
+      }),
+      'publish packages/react/ --access public --no-git-checks --tag rc\n',
+    );
+    assert.match(
+      publish.stdout,
+      /Skipping @ahoo-wang\/fetcher@8\.0\.0-rc\.1: already on npm/,
+    );
+    rmSync(join(dir, 'published'));
+    assert.equal(
+      publish(dir, {
+        NPM_PUBLISHED: JSON.stringify([
+          '@ahoo-wang/fetcher@8.0.0-rc.1',
+          '@ahoo-wang/fetcher-react@8.0.0-rc.1',
+        ]),
+      }),
+      '',
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a failed npm lookup for any package stops the release before the first publish', () => {
+  // packages/fetcher is published first; the lookup that fails is the second
+  // package's, so passing means every lookup ran before any publish.
+  for (const [version, env] of [
+    ['8.0.0-rc.1', {}],
+    [
+      '8.0.0',
+      { NPM_LATEST: JSON.stringify({ '@ahoo-wang/fetcher': '6.1.1' }) },
+    ],
+    ['8.0.0', { NPM_DIST_TAG: 'latest' }],
+  ]) {
+    const dir = workspace(aligned(version));
+    try {
+      fakeTools(dir);
+      assert.throws(
+        () =>
+          publish(dir, {
+            ...env,
+            NPM_FAIL: JSON.stringify(['@ahoo-wang/fetcher-react']),
+          }),
+        error => /ETIMEDOUT/.test(String(error.stderr)),
+        version,
+      );
+      assert.equal(existsSync(join(dir, 'published')), false, version);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test('publishPlan decides every tag and published state up front', () => {
+  const dir = workspace(aligned('6.1.2'));
+  try {
+    const asked = [];
+    const plan = publishPlan(dir, '6.1.2', undefined, {
+      latest: name => (
+        asked.push(['latest', name]),
+        name === '@ahoo-wang/fetcher' ? '8.0.0' : '6.1.1'
+      ),
+      has: (name, version) => (
+        asked.push(['has', name, version]),
+        name === '@ahoo-wang/fetcher-react'
+      ),
+    });
+    assert.deepEqual(plan, [
+      {
+        directory: 'packages/fetcher/',
+        name: '@ahoo-wang/fetcher',
+        tag: 'latest-6',
+        published: false,
+      },
+      {
+        directory: 'packages/react/',
+        name: '@ahoo-wang/fetcher-react',
+        tag: 'latest',
+        published: true,
+      },
+    ]);
+    assert.equal(asked.length, 4);
+    assert.throws(
+      () =>
+        publishPlan(dir, '6.1.2', undefined, {
+          latest: () => '6.1.1',
+          has: name => {
+            if (name.endsWith('react')) throw new Error('registry down');
+            return false;
+          },
+        }),
+      /registry down/,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

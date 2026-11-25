@@ -5,7 +5,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -163,40 +163,85 @@ export function releaseVersion(root, { releaseTag, prerelease } = {}) {
   return version;
 }
 
-/** npm's `latest` version of `name`, or null when npm has no such package. */
-export function registryLatest(name) {
+/**
+ * `npm view <spec> <field>`, or null when npm answers 404 (no such package or
+ * version). Any other failure throws: an unreachable registry is not an
+ * answer.
+ */
+function npmView(spec, field) {
   try {
-    const out = execFileSync('npm', ['view', name, 'dist-tags.latest'], {
+    const out = execFileSync('npm', ['view', spec, field], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
     return out || null;
   } catch (error) {
-    if (/E404/.test(String(error.stderr))) return null;
-    throw error;
+    if (/\bE404\b/.test(String(error.stderr))) return null;
+    throw new Error(
+      `npm view ${spec} ${field} failed; nothing was published:\n${String(error.stderr ?? error.message).trim()}`,
+    );
   }
+}
+
+/** npm's `latest` version of `name`, or null when npm has no such package. */
+export function registryLatest(name) {
+  return npmView(name, 'dist-tags.latest');
+}
+
+/** Whether npm already has `name@version`. */
+export function registryHas(name, version) {
+  return npmView(`${name}@${version}`, 'version') === version;
+}
+
+/**
+ * What publishing the workspace at `root` does, decided before the first
+ * package goes out: for each scoped package under `packages/`, its directory,
+ * name, dist-tag, and whether npm already has this version (a rerun after a
+ * release that stopped half-way skips those). Any failed lookup throws, so a
+ * release never stops between packages because of a lookup.
+ */
+export function publishPlan(root, version, override, registry = {}) {
+  const has = registry.has ?? registryHas;
+  const latestOf = registry.latest ?? registryLatest;
+  const { prerelease } = parseVersion(version);
+  const plan = [];
+  for (const manifest of versionedManifests(root)) {
+    if (!manifest.startsWith(`packages${sep}`)) continue;
+    const { name } = JSON.parse(readFileSync(join(root, manifest), 'utf8'));
+    if (!name?.startsWith('@')) continue;
+    const latest = prerelease.length || override ? null : latestOf(name);
+    plan.push({
+      directory: `${dirname(manifest).split(sep).join('/')}/`,
+      name,
+      tag: distTag(version, latest, override),
+      published: has(name, version),
+    });
+  }
+  return plan;
 }
 
 if (
   process.argv[1] &&
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
-  const [command, name] = process.argv.slice(2);
+  const [command] = process.argv.slice(2);
   try {
     const version = releaseVersion(process.cwd(), {
       releaseTag: process.env.RELEASE_TAG,
       prerelease: process.env.RELEASE_PRERELEASE,
     });
     if (command === 'check') console.log(version);
-    else if (command === 'tag' && name) {
-      const { prerelease } = parseVersion(version);
-      const latest =
-        prerelease.length || process.env.NPM_DIST_TAG
-          ? null
-          : registryLatest(name);
-      console.log(distTag(version, latest, process.env.NPM_DIST_TAG));
+    else if (command === 'plan') {
+      const lines = publishPlan(
+        process.cwd(),
+        version,
+        process.env.NPM_DIST_TAG,
+      ).map(({ directory, name, tag, published }) =>
+        [directory, name, tag, published ? 'published' : 'new'].join('\t'),
+      );
+      console.log(lines.join('\n'));
     } else {
-      console.error('Usage: release-version.mjs check | tag <package-name>');
+      console.error('Usage: release-version.mjs check | plan');
       process.exit(2);
     }
   } catch (error) {
