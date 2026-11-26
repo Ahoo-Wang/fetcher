@@ -30,14 +30,14 @@ The consumer setup below assumes an existing React + TypeScript Vite application
 Install the React package and its declared peer package graph explicitly:
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^6.0.0 \
-  @ahoo-wang/fetcher-react@^6.0.0 \
-  @ahoo-wang/fetcher-eventbus@^6.0.0 \
-  @ahoo-wang/fetcher-storage@^6.0.0 \
+pnpm add @ahoo-wang/fetcher@^8.0.0 \
+  @ahoo-wang/fetcher-react@^8.0.0 \
+  @ahoo-wang/fetcher-eventbus@^8.0.0 \
+  @ahoo-wang/fetcher-storage@^8.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-These are the hooks of the 6.0 line (React ^19.0.0 peer). The Wow query hooks belong to the 5.x line only (`@ahoo-wang/fetcher-react@^5.1.3`); from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
+These are the hooks of the 8.x line (React ^19.0.0 peer), the hook model introduced in 6.0; the CoSec security hooks are not part of it (see [CoSec migration](../guides/integrations/cosec.md)). The Wow query hooks belong to the 5.x line only (`@ahoo-wang/fetcher-react@^5.1.3`); from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
 
 This section connects an existing Vite application to an existing API; it does not install or create a backend. Copy the component above to `src/ReactRequests.tsx`. Its default base URL is `/api`; point that path at a backend with these demo routes, or pass another `baseURL`:
 

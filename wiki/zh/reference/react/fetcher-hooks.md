@@ -1,6 +1,6 @@
 ---
 title: 'Fetcher 请求 Hook'
-description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 6.0.0'
+description: 'Fetcher 请求 Hook — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # Fetcher 请求 Hook

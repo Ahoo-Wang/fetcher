@@ -1,6 +1,6 @@
 ---
 title: 'Debounced execution'
-description: 'Debounced execution — @ahoo-wang/fetcher-react 6.0.0'
+description: 'Debounced execution — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # Debounced execution

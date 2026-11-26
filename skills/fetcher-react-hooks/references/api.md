@@ -34,7 +34,7 @@ Removed in 6.0 (see `$fetcher-v6-migration`): the fullscreen hooks, the small
 utility hooks for refs, mount checks, forced updates and request ids, the
 standalone query-state hook, the `propagateError` option, `initialQuery` /
 `setQuery` / `getQuery` on query hooks, and `onBeforeExecute` on generated
-hooks. Never suggest them for 6.x code.
+hooks. Never suggest them for 6.x or later code.
 
 ## Hook Layers
 

@@ -1,6 +1,6 @@
 # Fetcher Wiki — Full Content
 
-> All documentation pages inlined for LLM consumption. Generated 2026-11-25.
+> All documentation pages inlined for LLM consumption. Generated 2026-11-26.
 
 ## Overview
 
@@ -1990,33 +1990,31 @@ The rest of `@ahoo-wang/fetcher-react` is unchanged in 8.0.
 
 ## Which fetcher version to install
 
-The CoSec packages are built on fetcher: `@ahoo-wang/cosec-fetcher` takes `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventbus` and `@ahoo-wang/fetcher-storage` as peer dependencies, and those peer ranges decide which fetcher major goes with it. Read them for the version you install:
+The CoSec packages are built on fetcher: `@ahoo-wang/cosec-fetcher` takes `@ahoo-wang/fetcher`, `@ahoo-wang/fetcher-eventbus` and `@ahoo-wang/fetcher-storage` as peer dependencies, and those peer ranges decide which fetcher major goes with it. CoSec 8.0.0 and later accept both fetcher 6 (6.1.1 or later) and fetcher 8; the CoSec 8 release candidates up to `8.0.0-rc.1` accepted fetcher 6 only. To check the version you install:
 
 ```bash
-npm view @ahoo-wang/cosec-fetcher@rc peerDependencies
+npm view @ahoo-wang/cosec-fetcher@^8.0.0 peerDependencies
 ```
 
-`8.0.0-rc.1` accepts fetcher `^6.1.1` (6.1.1 or a later 6.x), not fetcher 8 yet. From CoSec 8.0.0 the CoSec packages accept fetcher 8 as well. Moving to fetcher 8 before your CoSec packages accept it ends in a peer-dependency conflict.
-
-| Your server runs | Client                                                                                                                                                                                  |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CoSec 8          | `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`, on the fetcher major their peer ranges accept: 6.x (6.1.1 or later) with `8.0.0-rc.1`, fetcher 8 from CoSec 8.0.0. |
-| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7 and receives fixes from the [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x).      |
+| Your server runs | Client                                                                                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CoSec 8          | Fetcher 8 with `@ahoo-wang/cosec-fetcher` and, for React, `@ahoo-wang/cosec-react`, 8.0.0 or later.                                                                                                                          |
+| CoSec 7.x        | Stay on fetcher 6.x, where `@ahoo-wang/fetcher-cosec` 6.x keeps working against CoSec 7. The [`6.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/6.x) keeps receiving fixes, published under npm's `latest-6` dist-tag. |
 
 `@ahoo-wang/fetcher-cosec` is not published for fetcher 8, so an application that uses CoSec reaches fetcher 8 through the CoSec packages.
 
 ## Steps
 
 1. Upgrade the server to CoSec 8.
-2. Remove `@ahoo-wang/fetcher-cosec` from the application and install the CoSec packages. Until CoSec 8.0 is generally available they are on npm's `rc` tag:
+2. Remove `@ahoo-wang/fetcher-cosec` from the application and install CoSec 8.0.0 or later. The `^8.0.0` range installs a CoSec 8 release and never a release candidate:
 
    ```bash
-   pnpm add @ahoo-wang/cosec-fetcher@rc
-   pnpm add @ahoo-wang/cosec-react@rc   # React applications
+   pnpm add @ahoo-wang/cosec-fetcher@^8.0.0
+   pnpm add @ahoo-wang/cosec-react@^8.0.0   # React applications
    ```
 
 3. Rewrite the imports and configuration with the old-to-new mapping in the CoSec documentation: [cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients). It lists what each export of the old packages becomes; follow it rather than assuming a one-to-one rename.
-4. Keep the `@ahoo-wang/fetcher*` packages on the major the CoSec packages' peer ranges accept, and upgrade them to 8 once those ranges include it.
+4. Upgrade the `@ahoo-wang/fetcher*` packages to 8. CoSec 8.0.0 also accepts fetcher 6.1.1 or later, so this step can come before or after the others.
 
 [Return to this task group](./index.md); [review integration boundaries](../../architecture/integration-decisions.md).
 
@@ -2550,14 +2548,14 @@ The consumer setup below assumes an existing React + TypeScript Vite application
 Install the React package and its declared peer package graph explicitly:
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^6.0.0 \
-  @ahoo-wang/fetcher-react@^6.0.0 \
-  @ahoo-wang/fetcher-eventbus@^6.0.0 \
-  @ahoo-wang/fetcher-storage@^6.0.0 \
+pnpm add @ahoo-wang/fetcher@^8.0.0 \
+  @ahoo-wang/fetcher-react@^8.0.0 \
+  @ahoo-wang/fetcher-eventbus@^8.0.0 \
+  @ahoo-wang/fetcher-storage@^8.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-These are the hooks of the 6.0 line (React ^19.0.0 peer). The Wow query hooks belong to the 5.x line only (`@ahoo-wang/fetcher-react@^5.1.3`); from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
+These are the hooks of the 8.x line (React ^19.0.0 peer), the hook model introduced in 6.0; the CoSec security hooks are not part of it (see [CoSec migration](../guides/integrations/cosec.md)). The Wow query hooks belong to the 5.x line only (`@ahoo-wang/fetcher-react@^5.1.3`); from 6.0 they live in the [Wow repository](https://github.com/Ahoo-Wang/Wow/tree/main/typescript) ([wow.ahoo.me](https://wow.ahoo.me)).
 
 This section connects an existing Vite application to an existing API; it does not install or create a backend. Copy the component above to `src/ReactRequests.tsx`. Its default base URL is `/api`; point that path at a backend with these demo routes, or pass another `baseURL`:
 
@@ -18835,33 +18833,31 @@ Fetcher 8.0 不再包含任何 CoSec 代码。CoSec 客户端及其 React Hook �
 
 ## 装哪个 fetcher 版本
 
-CoSec 的包建在 fetcher 之上：`@ahoo-wang/cosec-fetcher` 把 `@ahoo-wang/fetcher`、`@ahoo-wang/fetcher-eventbus`、`@ahoo-wang/fetcher-storage` 声明为对等依赖，搭配哪个 fetcher 大版本以这些对等依赖范围为准。安装前查看对应版本的声明：
+CoSec 的包建在 fetcher 之上：`@ahoo-wang/cosec-fetcher` 把 `@ahoo-wang/fetcher`、`@ahoo-wang/fetcher-eventbus`、`@ahoo-wang/fetcher-storage` 声明为对等依赖，搭配哪个 fetcher 大版本以这些对等依赖范围为准。CoSec 8.0.0 及以上同时接受 fetcher 6（6.1.1 及以上）与 fetcher 8；`8.0.0-rc.1` 及更早的 CoSec 8 候选版只接受 fetcher 6。查看你要安装的版本：
 
 ```bash
-npm view @ahoo-wang/cosec-fetcher@rc peerDependencies
+npm view @ahoo-wang/cosec-fetcher@^8.0.0 peerDependencies
 ```
 
-`8.0.0-rc.1` 接受 fetcher `^6.1.1`（6.1.1 及以上的 6.x），还不接受 fetcher 8。CoSec 8.0.0 起 CoSec 的包同时接受 fetcher 8。在 CoSec 的包接受 fetcher 8 之前就升级 fetcher，会遇到对等依赖冲突。
-
-| 服务端运行 | 客户端                                                                                                                                                                          |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CoSec 8    | `@ahoo-wang/cosec-fetcher`，React 应用再加 `@ahoo-wang/cosec-react`，搭配它们对等依赖接受的 fetcher 大版本：`8.0.0-rc.1` 配 6.x（6.1.1 及以上），CoSec 8.0.0 起可配 fetcher 8。 |
-| CoSec 7.x  | 留在 fetcher 6.x：`@ahoo-wang/fetcher-cosec` 6.x 继续对接 CoSec 7，并从 [`6.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/6.x)接收修复。                                   |
+| 服务端运行 | 客户端                                                                                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| CoSec 8    | Fetcher 8，配合 8.0.0 及以上的 `@ahoo-wang/cosec-fetcher`；React 应用再加 `@ahoo-wang/cosec-react`。                                                                           |
+| CoSec 7.x  | 留在 fetcher 6.x：`@ahoo-wang/fetcher-cosec` 6.x 继续对接 CoSec 7。[`6.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/6.x)继续发布修复，在 npm 的 `latest-6` dist-tag 上。 |
 
 `@ahoo-wang/fetcher-cosec` 不会发布 fetcher 8 的版本，所以使用 CoSec 的应用要经由 CoSec 的包升级到 fetcher 8。
 
 ## 步骤
 
 1. 把服务端升级到 CoSec 8。
-2. 从应用中移除 `@ahoo-wang/fetcher-cosec`，安装 CoSec 的包。CoSec 8.0 正式发布之前它们在 npm 的 `rc` 标签上：
+2. 从应用中移除 `@ahoo-wang/fetcher-cosec`，安装 8.0.0 及以上的 CoSec 包。`^8.0.0` 范围只会装到 CoSec 8 的正式版，不会装到候选版：
 
    ```bash
-   pnpm add @ahoo-wang/cosec-fetcher@rc
-   pnpm add @ahoo-wang/cosec-react@rc   # React 应用
+   pnpm add @ahoo-wang/cosec-fetcher@^8.0.0
+   pnpm add @ahoo-wang/cosec-react@^8.0.0   # React 应用
    ```
 
 3. 按 CoSec 文档里的新旧对照改写导入与配置：[cosec.ahoo.me/integration/clients](https://cosec.ahoo.me/integration/clients)。该页列出旧包每个导出的去向；请照它改写，不要假定只是换个导入路径。
-4. `@ahoo-wang/fetcher*` 各包保持在 CoSec 的包对等依赖接受的大版本上，等这些范围包含 8 之后再升级到 8。
+4. 把 `@ahoo-wang/fetcher*` 各包升级到 8。CoSec 8.0.0 同时接受 fetcher 6.1.1 及以上，所以这一步放在其它步骤之前或之后都可以。
 
 [返回本任务组](./index.md)；[查看集成边界](../../architecture/integration-decisions.md)。
 
@@ -19390,14 +19386,14 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 显式安装 React 包及其声明的 peer 包图：
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^6.0.0 \
-  @ahoo-wang/fetcher-react@^6.0.0 \
-  @ahoo-wang/fetcher-eventbus@^6.0.0 \
-  @ahoo-wang/fetcher-storage@^6.0.0 \
+pnpm add @ahoo-wang/fetcher@^8.0.0 \
+  @ahoo-wang/fetcher-react@^8.0.0 \
+  @ahoo-wang/fetcher-eventbus@^8.0.0 \
+  @ahoo-wang/fetcher-storage@^8.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-这些是 6.0 线的 Hook（peer 为 React ^19.0.0）。Wow 查询 Hook 只属于 5.x 线（`@ahoo-wang/fetcher-react@^5.1.3`）；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
+这些是 8.x 线的 Hook（peer 为 React ^19.0.0），沿用 6.0 引入的 Hook 模型；CoSec 安全 Hook 不在其中（见 [CoSec 迁移](../guides/integrations/cosec.md)）。Wow 查询 Hook 只属于 5.x 线（`@ahoo-wang/fetcher-react@^5.1.3`）；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
 
 本节把现有 Vite 应用接入现有 API；它不会安装或创建后端。将上面的组件复制到 `src/ReactRequests.tsx`。它默认使用 `/api` 作为基础 URL；请把该路径指向提供以下演示路由的后端，或传入其他 `baseURL`：
 

@@ -1,6 +1,6 @@
 ---
 title: 'API hook factories'
-description: 'API hook factories — @ahoo-wang/fetcher-react 6.0.0'
+description: 'API hook factories — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # API hook factories

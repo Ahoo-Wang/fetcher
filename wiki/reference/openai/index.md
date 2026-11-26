@@ -1,7 +1,7 @@
 ---
 prev: false
 title: 'Openai reference'
-description: 'Openai reference — Fetcher 6.0.0'
+description: 'Openai reference — Fetcher 8.0.0'
 ---
 
 # Openai reference

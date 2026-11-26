@@ -1,6 +1,6 @@
 ---
 title: 'Latest and stable values'
-description: 'Latest and stable values — @ahoo-wang/fetcher-react 6.0.0'
+description: 'Latest and stable values — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # Latest and stable values
