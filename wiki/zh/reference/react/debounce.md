@@ -1,6 +1,6 @@
 ---
 title: '防抖执行'
-description: '防抖执行 — @ahoo-wang/fetcher-react 6.0.0'
+description: '防抖执行 — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # 防抖执行

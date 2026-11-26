@@ -1,6 +1,6 @@
 ---
 title: 'API Hook 工厂'
-description: 'API Hook 工厂 — @ahoo-wang/fetcher-react 6.0.0'
+description: 'API Hook 工厂 — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # API Hook 工厂

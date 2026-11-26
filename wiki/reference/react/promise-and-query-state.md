@@ -1,6 +1,6 @@
 ---
 title: 'Promise and query state'
-description: 'Promise and query state — @ahoo-wang/fetcher-react 6.0.0'
+description: 'Promise and query state — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # Promise and query state

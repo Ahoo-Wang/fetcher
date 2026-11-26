@@ -1,7 +1,7 @@
 ---
 prev: false
 title: 'Openapi reference'
-description: 'Openapi reference — Fetcher 6.0.0'
+description: 'Openapi reference — Fetcher 8.0.0'
 ---
 
 # Openapi reference

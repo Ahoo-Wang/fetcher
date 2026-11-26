@@ -1,7 +1,7 @@
 ---
 name: fetcher-react-hooks
 description: >
-  Drive React component state from requests with `@ahoo-wang/fetcher-react` 6: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, and hooks generated from decorator services. Use for loading/error state, cancellation, debounced search. Do not load when a hook or option stopped existing after upgrading from 5.x: that is fetcher-v6-migration. CoSec route guards moved to cosec.ahoo.me.
+  Drive React component state from requests with `@ahoo-wang/fetcher-react` 8: `useFetcher`, `useFetcherQuery`, `useQuery`, `useExecutePromise`, debounced variants, `useKeyStorage`, `useEventSubscription`, and hooks generated from decorator services. Use for loading/error state, cancellation, debounced search. Do not load when a hook or option stopped existing after upgrading from 5.x: that is fetcher-v6-migration. CoSec route guards moved to cosec.ahoo.me.
 ---
 
 # fetcher-react-hooks

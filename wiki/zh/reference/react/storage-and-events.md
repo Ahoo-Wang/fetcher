@@ -1,6 +1,6 @@
 ---
 title: '存储与事件订阅'
-description: '存储与事件订阅 — @ahoo-wang/fetcher-react 6.0.0'
+description: '存储与事件订阅 — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # 存储与事件订阅

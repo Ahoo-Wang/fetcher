@@ -62,7 +62,7 @@
 - [Platform integrations](/guides/integrations/) — Choose a concrete task for platform integrations.
 - [Send a Wow Command and Read State](/guides/integrations/wow) — Configure application aggregate routes, inspect command results, and query or stream snapshot state.
 - [Share State and Events](/guides/integrations/storage-and-events) — Verify local state and ordered events, then opt into browser tab notifications.
-- [Move CoSec Authentication to the CoSec Packages](/guides/integrations/cosec) — Replace fetcher-cosec and the fetcher-react security hooks with the CoSec repository's packages on the fetcher version their peers accept, or stay on fetcher 6.x for a CoSec 7.x server.
+- [Move CoSec Authentication to the CoSec Packages](/guides/integrations/cosec) — Replace fetcher-cosec and the fetcher-react security hooks with CoSec 8.0.0 or later, which accepts fetcher 8, or stay on fetcher 6.x for a CoSec 7.x server.
 
 ## architecture
 
@@ -125,10 +125,10 @@
 - [KeyStorage and change listeners](/reference/storage/key-storage) — KeyStorage and change listeners — @ahoo-wang/fetcher-storage 5.0.0
 - [Serialization and runtime storage](/reference/storage/serialization-and-runtime) — Serialization and runtime storage — @ahoo-wang/fetcher-storage 5.0.0
 - [storage public symbols](/reference/storage/symbols) — Complete root exports with behavior contracts and source locations.
-- [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 6.0.0
-- [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 6.0.0
-- [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 6.0.0
-- [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 6.0.0
+- [Openapi reference](/reference/openapi/) — Openapi reference — Fetcher 8.0.0
+- [Documents and operations](/reference/openapi/documents-and-operations) — Documents and operations — Fetcher 8.0.0
+- [Schemas and references](/reference/openapi/schemas-and-references) — Schemas and references — Fetcher 8.0.0
+- [Security and extensions](/reference/openapi/security-and-extensions) — Security and extensions — Fetcher 8.0.0
 - [openapi public symbols](/reference/openapi/symbols) — Complete root exports with behavior contracts and source locations.
 - [Generator reference](/reference/generator/) — Generator reference — Fetcher 5.0.0
 - [Generator CLI](/reference/generator/cli) — Generator CLI — Fetcher 5.0.0
@@ -137,17 +137,17 @@
 - [Programmatic API](/reference/generator/programmatic-api) — Programmatic API — Fetcher 5.0.0
 - [Wow aggregate discovery](/reference/generator/wow-discovery) — Wow aggregate discovery — Fetcher 5.0.0
 - [generator public symbols](/reference/generator/symbols) — Complete root exports with behavior contracts and source locations.
-- [Openai reference](/reference/openai/) — Openai reference — Fetcher 6.0.0
-- [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 6.0.0
-- [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 6.0.0
+- [Openai reference](/reference/openai/) — Openai reference — Fetcher 8.0.0
+- [Client and chat completions](/reference/openai/client-and-completions) — Client and chat completions — Fetcher 8.0.0
+- [Streaming chat completions](/reference/openai/streaming) — Streaming chat completions — Fetcher 8.0.0
 - [openai public symbols](/reference/openai/symbols) — Complete root exports with behavior contracts and source locations.
 - [React reference](/reference/react/) — React entry selection, installation and behavior contracts
-- [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 6.0.0
-- [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 6.0.0
-- [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 6.0.0
-- [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 6.0.0
-- [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 6.0.0
-- [Latest and stable values](/reference/react/utilities) — Latest and stable values — @ahoo-wang/fetcher-react 6.0.0
+- [Fetcher hooks](/reference/react/fetcher-hooks) — Fetcher hooks — @ahoo-wang/fetcher-react 8.0.0
+- [Promise and query state](/reference/react/promise-and-query-state) — Promise and query state — @ahoo-wang/fetcher-react 8.0.0
+- [API hook factories](/reference/react/api-hooks) — API hook factories — @ahoo-wang/fetcher-react 8.0.0
+- [Debounced execution](/reference/react/debounce) — Debounced execution — @ahoo-wang/fetcher-react 8.0.0
+- [Storage and event subscriptions](/reference/react/storage-and-events) — Storage and event subscriptions — @ahoo-wang/fetcher-react 8.0.0
+- [Latest and stable values](/reference/react/utilities) — Latest and stable values — @ahoo-wang/fetcher-react 8.0.0
 - [React symbol index](/reference/react/symbols) — React symbol index — @ahoo-wang/fetcher-react root, /core and /fetcher entries
 - [Wow reference](/reference/wow/) — Wow entry selection, installation and behavior contracts
 - [Client configuration and metadata](/reference/wow/configuration) — Client configuration and metadata — @ahoo-wang/fetcher-wow 5.0.0

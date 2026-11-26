@@ -1,6 +1,6 @@
 ---
 title: 'Promise 与查询状态'
-description: 'Promise 与查询状态 — @ahoo-wang/fetcher-react 6.0.0'
+description: 'Promise 与查询状态 — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # Promise 与查询状态

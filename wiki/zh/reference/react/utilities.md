@@ -1,6 +1,6 @@
 ---
 title: '最新值与稳定值'
-description: '最新值与稳定值 — @ahoo-wang/fetcher-react 6.0.0'
+description: '最新值与稳定值 — @ahoo-wang/fetcher-react 8.0.0'
 ---
 
 # 最新值与稳定值

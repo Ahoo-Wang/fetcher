@@ -88,7 +88,7 @@ versioned with Wow, and depend on the fetcher packages above:
 | `@ahoo-wang/fetcher-view-engine`         | `@ahoo-wang/wow-view-engine`                                                                                                                |
 | `@ahoo-wang/fetcher-viewer` (deprecated) | Not moved: frozen on the [`5.x` branch](https://github.com/Ahoo-Wang/fetcher/tree/5.x); replaced by `@ahoo-wang/wow-view-engine` (Wow 9.2+) |
 
-The new packages, `@ahoo-wang/wow-view-engine` included, are on npm from Wow 9.2.0, Wow's first stable release; from Wow 9.2.1 they accept fetcher 6 (peer range `^5.1.5 || ^6.0.0`). To upgrade a 5.x application, switch to the Wow packages (9.2.1 or later) first, then upgrade fetcher. Documentation: [wow.ahoo.me](https://wow.ahoo.me).
+The new packages, `@ahoo-wang/wow-view-engine` included, are on npm from Wow 9.2.0, Wow's first stable release; from Wow 9.2.1 they accept fetcher 6 (peer range `^5.1.5 || ^6.0.0`). To upgrade a 5.x application, switch to the Wow packages (9.2.1 or later) first, then upgrade fetcher; before moving an application that uses them to fetcher 8, check that their fetcher peer range includes 8. Documentation: [wow.ahoo.me](https://wow.ahoo.me).
 The fetcher 5.x line keeps receiving fixes from the `5.x` branch.
 
 ### Moved to the CoSec repository
@@ -100,7 +100,7 @@ CoSec authentication now lives in the CoSec repository, is versioned with CoSec,
 | `@ahoo-wang/fetcher-cosec`        | `@ahoo-wang/cosec-fetcher` |
 | Security hooks in `fetcher-react` | `@ahoo-wang/cosec-react`   |
 
-Fetcher 8 ships no CoSec package; applications whose server still runs CoSec 7.x stay on fetcher 6.x (`6.x` branch), where `@ahoo-wang/fetcher-cosec` keeps working. Migration: [CoSec migration guide](https://fetcher.ahoo.me/guides/integrations/cosec); old-to-new mapping: [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
+Fetcher 8 ships no CoSec package: with fetcher 8, use `@ahoo-wang/cosec-fetcher` and `@ahoo-wang/cosec-react` 8.0.0 or later, which accept fetcher 6.1.x and 8. Applications whose server still runs CoSec 7.x stay on fetcher 6.x (`6.x` branch, npm dist-tag `latest-6`), where `@ahoo-wang/fetcher-cosec` keeps working. Migration: [CoSec migration guide](https://fetcher.ahoo.me/guides/integrations/cosec); old-to-new mapping: [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients).
 
 ## Learn and build
 

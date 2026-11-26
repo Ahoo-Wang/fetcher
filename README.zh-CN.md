@@ -84,7 +84,7 @@ try {
 | `@ahoo-wang/fetcher-view-engine`      | `@ahoo-wang/wow-view-engine`                                                                                                |
 | `@ahoo-wang/fetcher-viewer`（已弃用） | 未迁移：冻结在 [`5.x` 分支](https://github.com/Ahoo-Wang/fetcher/tree/5.x)；由 `@ahoo-wang/wow-view-engine`（Wow 9.2+）替代 |
 
-新包（包括 `@ahoo-wang/wow-view-engine`）自 Wow 首个稳定版 9.2.0 起已发布到 npm；自 Wow 9.2.1 起兼容 fetcher 6（peer 范围 `^5.1.5 || ^6.0.0`）。升级 5.x 应用时，先切换到 Wow 包（9.2.1 及以上），再升级 fetcher。文档见 [wow.ahoo.me](https://wow.ahoo.me)。
+新包（包括 `@ahoo-wang/wow-view-engine`）自 Wow 首个稳定版 9.2.0 起已发布到 npm；自 Wow 9.2.1 起兼容 fetcher 6（peer 范围 `^5.1.5 || ^6.0.0`）。升级 5.x 应用时，先切换到 Wow 包（9.2.1 及以上），再升级 fetcher；使用 Wow 包的应用升级到 fetcher 8 之前，先确认它们的 fetcher peer 范围包含 8。文档见 [wow.ahoo.me](https://wow.ahoo.me)。
 fetcher 5.x 版本线继续从 `5.x` 分支发布修复。
 
 ### 已迁往 CoSec 仓的包
@@ -96,7 +96,7 @@ CoSec 认证已迁到 CoSec 仓库，版本跟随 CoSec，依赖上面这些 fet
 | `@ahoo-wang/fetcher-cosec`    | `@ahoo-wang/cosec-fetcher` |
 | `fetcher-react` 里的安全 Hook | `@ahoo-wang/cosec-react`   |
 
-Fetcher 8 不含任何 CoSec 包；服务端仍运行 CoSec 7.x 的应用留在 fetcher 6.x（`6.x` 分支），其中的 `@ahoo-wang/fetcher-cosec` 继续可用。迁移见 [CoSec 迁移指南](https://fetcher.ahoo.me/zh/guides/integrations/cosec)；新旧对照见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
+Fetcher 8 不含任何 CoSec 包：配合 fetcher 8 使用 `@ahoo-wang/cosec-fetcher` 与 `@ahoo-wang/cosec-react` 8.0.0 及以上版本，它们同时接受 fetcher 6.1.x 与 8。服务端仍运行 CoSec 7.x 的应用留在 fetcher 6.x（`6.x` 分支，npm dist-tag `latest-6`），其中的 `@ahoo-wang/fetcher-cosec` 继续可用。迁移见 [CoSec 迁移指南](https://fetcher.ahoo.me/zh/guides/integrations/cosec)；新旧对照见 [cosec.ahoo.me](https://cosec.ahoo.me/integration/clients)。
 
 ## 学习与构建
 

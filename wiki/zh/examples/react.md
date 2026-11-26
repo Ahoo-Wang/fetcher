@@ -30,14 +30,14 @@ Storybook fixture 会拦截发往 `https://api.example.test` 的 `fetch`：`/use
 显式安装 React 包及其声明的 peer 包图：
 
 ```bash
-pnpm add @ahoo-wang/fetcher@^6.0.0 \
-  @ahoo-wang/fetcher-react@^6.0.0 \
-  @ahoo-wang/fetcher-eventbus@^6.0.0 \
-  @ahoo-wang/fetcher-storage@^6.0.0 \
+pnpm add @ahoo-wang/fetcher@^8.0.0 \
+  @ahoo-wang/fetcher-react@^8.0.0 \
+  @ahoo-wang/fetcher-eventbus@^8.0.0 \
+  @ahoo-wang/fetcher-storage@^8.0.0 \
   react@^19.3.0 react-dom@^19.3.0
 ```
 
-这些是 6.0 线的 Hook（peer 为 React ^19.0.0）。Wow 查询 Hook 只属于 5.x 线（`@ahoo-wang/fetcher-react@^5.1.3`）；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
+这些是 8.x 线的 Hook（peer 为 React ^19.0.0），沿用 6.0 引入的 Hook 模型；CoSec 安全 Hook 不在其中（见 [CoSec 迁移](../guides/integrations/cosec.md)）。Wow 查询 Hook 只属于 5.x 线（`@ahoo-wang/fetcher-react@^5.1.3`）；从 6.0 起位于 [Wow 仓库](https://github.com/Ahoo-Wang/Wow/tree/main/typescript)（[wow.ahoo.me](https://wow.ahoo.me)）。
 
 本节把现有 Vite 应用接入现有 API；它不会安装或创建后端。将上面的组件复制到 `src/ReactRequests.tsx`。它默认使用 `/api` 作为基础 URL；请把该路径指向提供以下演示路由的后端，或传入其他 `baseURL`：
 
