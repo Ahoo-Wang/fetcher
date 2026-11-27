@@ -144,8 +144,8 @@ importers:
         specifier: 'catalog:'
         version: 0.18.5
       '@chromatic-com/storybook':
-        specifier: ^5.4.0
-        version: 5.4.0(storybook@10.6.1(@types/react@19.3.3)(prettier@3.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
+        specifier: ^5.6.0
+        version: 5.6.0(storybook@10.6.1(@types/react@19.3.3)(prettier@3.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))
       '@eslint/js':
         specifier: 'catalog:'
         version: 10.0.1(eslint@10.15.0(jiti@2.7.0))
@@ -978,8 +978,8 @@ packages:
   '@chevrotain/types@11.1.2':
     resolution: {integrity: sha512-U+HFai5+zmJCkK86QsaJtoITlboZHBqrVketcO2ROv865xfCMSFpELQoz1GkX5GzME8pTa+3kbKrZHQtI0gdbw==}
 
-  '@chromatic-com/storybook@5.4.0':
-    resolution: {integrity: sha512-U4Rny8H6BBa8uiRMnL0CFZyqZ0MWogN/szlMugsInfSnX+PtrLCVp2kjrvaG9bv6X5xSgHpnmepOzLm8+QFseA==}
+  '@chromatic-com/storybook@5.6.0':
+    resolution: {integrity: sha512-Z7YMtr9DVwegQeWcBeQaiK5dLcAvgpX53Qr/eGGYTyAEqTb1meUr5VQNq1wmst0Lj+gT6lQEco0PuFfUuf3jzA==}
     engines: {node: '>=20.0.0', yarn: '>=1.22.18'}
     peerDependencies:
       storybook: ^0.0.0-0 || ^10.1.0 || ^10.1.0-0 || ^10.2.0-0 || ^10.3.0-0 || ^10.4.0-0 || ^10.5.0-0 || ^10.6.0-0 || ^11.0.0-0
@@ -3225,8 +3225,8 @@ packages:
     resolution: {integrity: sha512-PAJdDJusoxnwm1VwW07VWwUN1sl7smmC3OKggvndJFadxxDRyFJBX/ggnu/KE4kQAB7a3Dp8f/YXC1FlUprWmA==}
     engines: {node: '>= 16'}
 
-  chromatic@18.1.0:
-    resolution: {integrity: sha512-I9av8lUc5CQRlYzwKpmOG9cwYvZ4AFmTvtHeNrzOMC1353F9xYw45CHpSNIsNKuOiqqmzci9esXQd5akl0fi6w==}
+  chromatic@18.15.3:
+    resolution: {integrity: sha512-y5RaLkJb/4/pa7hX21kIY10498n6FuYkI8f1TlESAomzJsIa8joFIB+23RBtAIYOKxHb/1WmoJSQ89yrSnzn6A==}
     engines: {node: '>=22.0.0'}
     hasBin: true
     peerDependencies:
@@ -5990,10 +5990,10 @@ snapshots:
 
   '@chevrotain/types@11.1.2': {}
 
-  '@chromatic-com/storybook@5.4.0(storybook@10.6.1(@types/react@19.3.3)(prettier@3.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))':
+  '@chromatic-com/storybook@5.6.0(storybook@10.6.1(@types/react@19.3.3)(prettier@3.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))':
     dependencies:
       '@neoconfetti/react': 1.0.0
-      chromatic: 18.1.0
+      chromatic: 18.15.3
       jsonfile: 6.2.1
       storybook: 10.6.1(@types/react@19.3.3)(prettier@3.9.9)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       strip-ansi: 7.2.0
@@ -8257,7 +8257,7 @@ snapshots:
 
   check-error@2.1.3: {}
 
-  chromatic@18.1.0:
+  chromatic@18.15.3:
     dependencies:
       semver: 7.7.4
 
