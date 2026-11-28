@@ -6,7 +6,7 @@ packages:
 catalog:
   '@arethetypeswrong/cli': ^0.18.5
   '@eslint/js': ^10.0.1
-  '@rolldown/plugin-babel': ^0.2.4
+  '@rolldown/plugin-babel': ^0.3.2
   '@testing-library/react': ^16.3.3
   '@types/node': ^24.19.2
   '@types/react': ^19.3.3
